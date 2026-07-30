@@ -1,17 +1,30 @@
 :root {
+  --bg: #0c0d12;
+  --bg-soft: #14161d;
+  --bg-card: #191c25;
+  --text: #f2f4f9;
+  --muted: #949cb0;
+  --line: #262a36;
+  --glow: #15181f;
+  --accent: #fbbf24;
+  --r: #ff6b6b;
+  --g: #4ecdc4;
+  --b: #9b8cff;
+  --good: #4ecdc4;
+  --radius: 18px;
+  --shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme="classic"] {
   --bg: #12141c;
   --bg-soft: #1b1e2b;
   --bg-card: #21273a;
   --text: #eef1f7;
   --muted: #9aa3b8;
   --line: #2e3550;
-  --accent: #ffd93d;
-  --r: #ff6b6b;
-  --g: #4ecdc4;
-  --b: #9b8cff;
-  --good: #4ecdc4;
-  --radius: 18px;
+  --glow: #1d2233;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  --accent: #ffd93d;
 }
 
 * { box-sizing: border-box; }
@@ -24,7 +37,7 @@ html {
 html, body {
   margin: 0;
   min-height: 100%;
-  background: radial-gradient(1200px 600px at 50% -10%, #1d2233, var(--bg));
+  background: radial-gradient(1100px 700px at 50% -20%, var(--glow), var(--bg));
   color: var(--text);
   font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
   overflow-x: hidden;

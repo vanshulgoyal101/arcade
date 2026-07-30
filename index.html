@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <script>try{if(localStorage.getItem('arcade.theme')==='classic')document.documentElement.setAttribute('data-theme','classic')}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#12141c" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -25,8 +26,8 @@
   <meta property="og:description" content="Nine free, instant browser games — reflex, memory, colour puzzles, mental maths, typing, memory span, ear training and geography. No download. Plays on any device." />
   <meta property="og:url" content="https://games.vanshul.com/" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:image" content="https://games.vanshul.com/assets/og/hub.svg" />
-  <meta property="og:image:type" content="image/svg+xml" />
+  <meta property="og:image" content="https://games.vanshul.com/assets/og/hub.png" />
+  <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="Tiny Arcade — four tiny browser games" />
@@ -35,7 +36,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Tiny Arcade — 9 Free Browser Games" />
   <meta name="twitter:description" content="Nine free, instant browser games — reflex, memory, colour puzzles, mental maths, typing, memory span, ear training and geography. No download." />
-  <meta name="twitter:image" content="https://games.vanshul.com/assets/og/hub.svg" />
+  <meta name="twitter:image" content="https://games.vanshul.com/assets/og/hub.png" />
   <meta name="twitter:image:alt" content="Tiny Arcade — four tiny browser games" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -60,7 +61,7 @@
         "@id": "https://games.vanshul.com/#org",
         "name": "Tiny Arcade",
         "url": "https://games.vanshul.com/",
-        "logo": "https://games.vanshul.com/assets/og/hub.svg"
+        "logo": "https://games.vanshul.com/assets/og/hub.png"
       },
       {
         "@type": "ItemList",
@@ -85,66 +86,69 @@
   <header class="hub-head">
     <h1 class="logo">TINY&nbsp;ARCADE</h1>
     <p class="tagline">Nine tiny games. One more round. Just one more.</p>
+    <div class="theme-switch">
+      <button type="button" id="themeBtn" class="theme-btn" aria-pressed="false">🎨 Classic colours</button>
+    </div>
   </header>
 
   <main class="grid">
-    <a class="card" href="hue-hunt/dist/index.html" style="--accent:#ff6b6b">
+    <a class="card" data-game="hue-hunt" href="hue-hunt/dist/index.html">
       <div class="card-emoji">🎯</div>
       <h2>Hue Hunt</h2>
       <p>One tile is a slightly different shade. Spot it fast to build a combo multiplier, climb the levels, and beat your high score. With sound &amp; juice.</p>
       <span class="tag">reflex · combo · arcade</span>
     </a>
 
-    <a class="card" href="echo/dist/index.html" style="--accent:#4ecdc4">
+    <a class="card" data-game="echo" href="echo/dist/index.html">
       <div class="card-emoji">🔊</div>
       <h2>Echo</h2>
       <p>Watch the pattern, then repeat it back. It speeds up as it grows. Pick Forgiving or Strict, try 6-pad hard mode, and chase your best.</p>
       <span class="tag">memory · strict · 6-pad</span>
     </a>
 
-    <a class="card" href="chromatic/dist/index.html" style="--accent:#ffd93d">
+    <a class="card" data-game="chromatic" href="chromatic/dist/index.html">
       <div class="card-emoji">🌈</div>
       <h2>Chromatic</h2>
       <p>Match the target colour with RGB sliders. Play the daily challenge for a streak, or go Endless — three lives, rising difficulty. Share your score.</p>
       <span class="tag">daily · endless · puzzle</span>
     </a>
 
-    <a class="card" href="flash/dist/index.html" style="--accent:#9b8cff">
+    <a class="card" data-game="flash" href="flash/dist/index.html">
       <div class="card-emoji">⚡</div>
       <h2>Flash</h2>
       <p>Train your reading speed. Words flash one at a time; answer a quick comprehension check and Flash adapts — get it right and it speeds you up.</p>
       <span class="tag">speed reading · adaptive</span>
     </a>
 
-    <a class="card" href="flashmath/dist/index.html" style="--accent:#ff9f43">
+    <a class="card" data-game="flashmath" href="flashmath/dist/index.html">
       <div class="card-emoji">🧮</div>
       <h2>Flashmath</h2>
       <p>Beat the clock with mental arithmetic. Every correct answer buys time and builds a combo; the sums get harder the further you go.</p>
       <span class="tag">mental math · combo</span>
     </a>
 
-    <a class="card" href="sprint/dist/index.html" style="--accent:#5fd1f9">
+    <a class="card" data-game="sprint" href="sprint/dist/index.html">
       <div class="card-emoji">⌨️</div>
       <h2>Sprint</h2>
       <p>A typing test that trains your fingers. Race the clock for 15, 30 or 60 seconds; letters you fumble come back more often. Chase your best wpm.</p>
       <span class="tag">typing · wpm</span>
     </a>
 
-    <a class="card" href="digit-span/dist/index.html" style="--accent:#26de81">
+    <a class="card" data-game="digit-span" href="digit-span/dist/index.html">
       <div class="card-emoji">🔢</div>
       <h2>Digit Span</h2>
       <p>A sequence of digits flashes — type it back. It grows one digit each round. Try Reverse mode to really stretch your working memory.</p>
       <span class="tag">memory · forward/reverse</span>
     </a>
 
-    <a class="card" href="interval/dist/index.html" style="--accent:#c56cf0">
+    <a class="card" data-game="interval" href="interval/dist/index.html">
       <div class="card-emoji">🎹</div>
       <h2>Interval</h2>
       <p>Ear training as a game. Hear two notes and name the interval. Miss one and it comes back sooner, so your weak spots get the most practice.</p>
       <span class="tag">ear training · audio</span>
     </a>
 
-    <a class="card" href="where/dist/index.html" style="--accent:#54a0ff">
+    <a class="card" data-game="where" href="where/dist/index.html">
       <div class="card-emoji">🗺️</div>
       <h2>Where</h2>
       <p>Learn the world. Name the country from its flag or capital, pick from four. Countries you miss resurface until they stick.</p>
@@ -154,6 +158,25 @@
 
   <footer class="hub-foot">
     <p>Made for fun. Your scores are saved locally on this device.</p>
+    <p class="hub-home"><a href="https://vanshul.com">← vanshul.com</a></p>
   </footer>
+  <script>
+    (function () {
+      var KEY = 'arcade.theme', root = document.documentElement, btn = document.getElementById('themeBtn');
+      function get() { try { return localStorage.getItem(KEY) === 'classic' ? 'classic' : 'refined'; } catch (e) { return 'refined'; } }
+      function apply() {
+        var c = get();
+        if (c === 'classic') root.setAttribute('data-theme', 'classic'); else root.removeAttribute('data-theme');
+        btn.textContent = c === 'classic' ? '🎨 New colours' : '🎨 Classic colours';
+        btn.setAttribute('aria-pressed', String(c === 'classic'));
+      }
+      btn.addEventListener('click', function () {
+        var next = get() === 'classic' ? 'refined' : 'classic';
+        try { localStorage.setItem(KEY, next); } catch (e) {}
+        apply();
+      });
+      apply();
+    })();
+  </script>
 </body>
 </html>
