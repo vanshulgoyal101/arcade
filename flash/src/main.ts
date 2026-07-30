@@ -239,7 +239,7 @@ function showQuiz(): void {
       const b = document.createElement('button');
       b.className = 'option';
       b.textContent = opt;
-      b.addEventListener('click', () => {
+      b.addEventListener('pointerdown', () => {
         sfx.select();
         answers[qi] = oi;
         opts.querySelectorAll('.option').forEach((el) => el.classList.remove('selected'));

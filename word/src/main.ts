@@ -166,7 +166,7 @@ function renderToday(): void {
 
   const optionsEl = view.querySelector<HTMLDivElement>('#options')!;
   optionsEl.querySelectorAll<HTMLButtonElement>('.option').forEach((btn) => {
-    btn.addEventListener('click', () => answerToday(Number(btn.dataset.i), opts, w, optionsEl));
+    btn.addEventListener('pointerdown', () => answerToday(Number(btn.dataset.i), opts, w, optionsEl));
   });
 }
 
@@ -253,7 +253,7 @@ function renderPractice(): void {
 
   const optionsEl = view.querySelector<HTMLDivElement>('#options')!;
   optionsEl.querySelectorAll<HTMLButtonElement>('.option').forEach((btn) => {
-    btn.addEventListener('click', () => answerPractice(Number(btn.dataset.i), optionsEl));
+    btn.addEventListener('pointerdown', () => answerPractice(Number(btn.dataset.i), optionsEl));
   });
 }
 

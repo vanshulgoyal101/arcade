@@ -86,7 +86,7 @@ function renderOptions(): void {
     .map((c) => `<button class="opt" data-name="${c.name}">${c.name}</button>`)
     .join('');
   optionsEl.querySelectorAll<HTMLButtonElement>('.opt').forEach((btn) => {
-    btn.addEventListener('click', () => onAnswer(btn.dataset.name!, btn));
+    btn.addEventListener('pointerdown', () => onAnswer(btn.dataset.name!, btn));
   });
 }
 

@@ -162,7 +162,7 @@ function startGame(): void {
 }
 
 optionsEl.querySelectorAll<HTMLButtonElement>('.opt').forEach((btn) => {
-  btn.addEventListener('click', () => onAnswer(Number(btn.dataset.semis), btn));
+  btn.addEventListener('pointerdown', () => onAnswer(Number(btn.dataset.semis), btn));
 });
 playBtn.addEventListener('click', playCurrent);
 replayBtn.addEventListener('click', playCurrent);
