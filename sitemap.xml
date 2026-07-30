@@ -52,4 +52,54 @@
       <image:title>Flash — Speed Reading Trainer</image:title>
     </image:image>
   </url>
+  <url>
+    <loc>https://games.vanshul.com/flashmath/dist/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/flashmath.svg</image:loc>
+      <image:title>Flashmath — Mental Arithmetic Game</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/sprint/dist/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/sprint.svg</image:loc>
+      <image:title>Sprint — Typing Speed Test</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/digit-span/dist/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/digit-span.svg</image:loc>
+      <image:title>Digit Span — Working-Memory Test</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/interval/dist/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/interval.svg</image:loc>
+      <image:title>Interval — Ear Training Game</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/where/dist/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/where.svg</image:loc>
+      <image:title>Where — Geography Quiz</image:title>
+    </image:image>
+  </url>
 </urlset>
