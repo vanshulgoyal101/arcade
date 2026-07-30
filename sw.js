@@ -3,7 +3,7 @@
 // Strategy: network-first for documents (always fresh when online, bypassing
 // the HTTP cache), cache-first for content-hashed assets (immutable).
 
-const CACHE = 'arcade-v1';
+const CACHE = 'arcade-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 

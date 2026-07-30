@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <script>try{if(localStorage.getItem('arcade.theme')==='classic')document.documentElement.setAttribute('data-theme','classic')}catch(e){}</script>
-  <script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(function(){})})}</script>
+  <script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(function(r){r.update();setInterval(function(){r.update()},60000);document.addEventListener('visibilitychange',function(){document.hidden||r.update()});r.addEventListener('updatefound',function(){var n=r.installing;n&&n.addEventListener('statechange',function(){n.state==='installed'&&navigator.serviceWorker.controller&&location.reload()})})}).catch(function(){})})}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0c0d12" />
   <meta name="color-scheme" content="dark" />
