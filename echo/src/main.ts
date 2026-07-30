@@ -3,7 +3,8 @@ import { makeDismissable } from '../../shared/overlay';
 import { EchoGame } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
-import { echoShareText, copyToClipboard } from './share';
+import { echoShareText, echoShareCard, shareResult, shareToast } from './share';
+import { canvasToBlob } from '../../shared/card';
 
 const game = new EchoGame();
 sfx.setMuted(game.store.muted);
@@ -218,10 +219,15 @@ function gameOver(): void {
   `;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(
-      echoShareText(reached, game.strict, game.pads, game.best, newBest)
-    );
-    showToast(ok ? 'Result copied!' : 'Could not copy');
+    const blob = await canvasToBlob(echoShareCard(reached, game.strict, game.pads, game.best));
+    const outcome = await shareResult({
+      title: 'Echo',
+      text: echoShareText(reached, game.strict, game.pads, game.best, newBest),
+      url: 'https://games.vanshul.com/echo/dist/',
+      blob,
+      filename: 'echo.png',
+    });
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = () => {
     overlay.classList.remove('show');

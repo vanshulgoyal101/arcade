@@ -1,11 +1,15 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
+import * as sfx from '../../shared/sfx';
 import { FlashGame, type RoundResult } from './game';
 import { RsvpPlayer, type Token } from './rsvp';
 import type { Passage } from './content';
-import { flashShareText, copyToClipboard } from './share';
+import { flashShareText, flashShareCard, shareResult, shareToast } from './share';
+import { canvasToBlob } from '../../shared/card';
 
 const game = new FlashGame();
+const MUTE_KEY = 'flash.muted';
+sfx.setMuted(sfx.loadMuted(MUTE_KEY));
 
 // Starting-speed presets (wpm). Adaptation takes over once you're reading.
 const PRESETS = [200, 300, 450];
@@ -15,7 +19,7 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">⚡ Flash</h1>
-    <span style="width:64px"></span>
+    <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
   <div class="hud">
@@ -99,10 +103,21 @@ const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
 makeDismissable(overlay, () => void startReading());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
+const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 
 let player: RsvpPlayer | null = null;
 let activePassage: Passage | null = null;
 let answers: number[] = [];
+
+function renderMute(): void {
+  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+}
+muteBtn.addEventListener('click', () => {
+  const next = !sfx.isMuted();
+  sfx.setMuted(next);
+  sfx.saveMuted(MUTE_KEY, next);
+  renderMute();
+});
 
 function showToast(msg: string): void {
   toast.textContent = msg;
@@ -143,6 +158,7 @@ function renderPicker(): void {
 }
 diffPicker.querySelectorAll<HTMLButtonElement>('.diff-card').forEach((c) => {
   c.addEventListener('click', () => {
+    sfx.click();
     game.setWpm(Number(c.dataset.wpm));
     renderPicker();
     hudWpm.textContent = String(game.wpm);
@@ -162,6 +178,7 @@ async function countdown(): Promise<void> {
   readerEl.style.visibility = 'hidden';
   for (const n of ['3', '2', '1']) {
     countdownEl.textContent = n;
+    sfx.tick();
     await new Promise((r) => setTimeout(r, 550));
   }
   countdownEl.classList.add('hidden');
@@ -185,6 +202,7 @@ function onReadingDone(): void {
 
 pauseBtn.addEventListener('click', () => {
   if (!player) return;
+  sfx.click();
   if (player.isRunning) {
     player.pause();
     pauseBtn.textContent = 'Resume';
@@ -195,6 +213,7 @@ pauseBtn.addEventListener('click', () => {
 });
 
 stopBtn.addEventListener('click', () => {
+  sfx.click();
   player?.stop();
   player = null;
   showPanel('ready');
@@ -221,6 +240,7 @@ function showQuiz(): void {
       b.className = 'option';
       b.textContent = opt;
       b.addEventListener('click', () => {
+        sfx.select();
         answers[qi] = oi;
         opts.querySelectorAll('.option').forEach((el) => el.classList.remove('selected'));
         b.classList.add('selected');
@@ -238,6 +258,7 @@ function showQuiz(): void {
 
 submitBtn.addEventListener('click', () => {
   if (!activePassage || answers.includes(-1)) return;
+  sfx.click();
   const result = game.finishRound(activePassage, answers);
   renderHud();
   showResult(result);
@@ -248,6 +269,7 @@ function showResult(r: RoundResult): void {
   const pct = Math.round(r.comprehension * 100);
   const up = r.newWpm > r.wpm;
   const down = r.newWpm < r.wpm;
+  window.setTimeout(() => (r.newBest ? sfx.levelUp() : pct >= 60 ? sfx.correct() : sfx.wrong()), 60);
   const changeText = up
     ? `▲ Speeding up to ${r.newWpm} wpm`
     : down
@@ -272,8 +294,15 @@ function showResult(r: RoundResult): void {
   `;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(flashShareText(r, game.store.bestWpm));
-    showToast(ok ? 'Result copied!' : 'Could not copy');
+    const blob = await canvasToBlob(flashShareCard(r, game.store.bestWpm));
+    const outcome = await shareResult({
+      title: 'Flash',
+      text: flashShareText(r, game.store.bestWpm),
+      url: 'https://games.vanshul.com/flash/dist/',
+      blob,
+      filename: 'flash.png',
+    });
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-next')!.onclick = () => {
     overlay.classList.remove('show');
@@ -284,6 +313,7 @@ function showResult(r: RoundResult): void {
 startBtn.addEventListener('click', () => void startReading());
 
 // ---- boot ----
+renderMute();
 renderPicker();
 renderHud();
 renderLifetime();

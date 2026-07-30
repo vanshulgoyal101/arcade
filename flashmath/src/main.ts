@@ -3,7 +3,8 @@ import { makeDismissable } from '../../shared/overlay';
 import { MathGame, ROUND_TIME, type Op } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
-import { mathShareText, copyToClipboard } from './share';
+import { mathShareText, mathShareCard, shareResult, shareToast } from './share';
+import { canvasToBlob } from '../../shared/card';
 
 const game = new MathGame();
 sfx.setMuted(game.store.muted);
@@ -191,8 +192,15 @@ function endGame(): void {
   `;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(mathShareText(game.score, game.solved, game.store.bestScore, newBest));
-    showToast(ok ? 'Result copied!' : 'Could not copy');
+    const blob = await canvasToBlob(mathShareCard(game.score, game.solved, game.level, game.store.bestScore));
+    const outcome = await shareResult({
+      title: 'Flashmath',
+      text: mathShareText(game.score, game.solved, game.store.bestScore, newBest),
+      url: 'https://games.vanshul.com/flashmath/dist/',
+      blob,
+      filename: 'flashmath.png',
+    });
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = start;
 }

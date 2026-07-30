@@ -1,16 +1,20 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
+import * as sfx from '../../shared/sfx';
 import { SprintGame, DURATIONS, type Duration } from './game';
-import { sprintShareText, copyToClipboard } from './share';
+import { sprintShareText, sprintShareCard, shareResult, shareToast } from './share';
+import { canvasToBlob } from '../../shared/card';
 
 const game = new SprintGame();
+const MUTE_KEY = 'sprint.muted';
+sfx.setMuted(sfx.loadMuted(MUTE_KEY));
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">⌨️ Sprint</h1>
-    <span style="width:64px"></span>
+    <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
   <div class="controls">
@@ -49,9 +53,14 @@ const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
 makeDismissable(overlay, () => resetRun());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
+const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 
 const VISIBLE = 18;
 let rafId = 0;
+
+function renderMute(): void {
+  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+}
 
 function showToast(msg: string): void {
   toast.textContent = msg;
@@ -120,6 +129,7 @@ function endRun(now: number): void {
   const { stats, newBest } = game.finish(now);
   field.blur();
   renderBest();
+  window.setTimeout(() => (newBest ? sfx.levelUp() : sfx.reveal()), 60);
   const weak = game.weakLetters();
   const weakHtml = weak.length
     ? `<p class="hint" style="margin:8px 0 0">Trouble keys: ${weak
@@ -143,8 +153,15 @@ function endRun(now: number): void {
   `;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(sprintShareText(stats, game.duration, game.best, newBest));
-    showToast(ok ? 'Result copied!' : 'Could not copy');
+    const blob = await canvasToBlob(sprintShareCard(stats, game.duration, game.best));
+    const outcome = await shareResult({
+      title: 'Sprint',
+      text: sprintShareText(stats, game.duration, game.best, newBest),
+      url: 'https://games.vanshul.com/sprint/dist/',
+      blob,
+      filename: 'sprint.png',
+    });
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = resetRun;
 }
@@ -174,7 +191,10 @@ field.addEventListener('keydown', (e) => {
   if (e.key === ' ') {
     e.preventDefault();
     if (field.value.length === 0) return;
+    const hit = field.value === game.current;
     game.submitWord(field.value);
+    if (hit) sfx.tick();
+    else sfx.wrong();
     field.value = '';
     renderStream('');
   }
@@ -187,6 +207,7 @@ field.addEventListener('input', () => {
 durToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
   b.addEventListener('click', () => {
     if (game.started && !game.finished) return;
+    sfx.click();
     durToggle.querySelectorAll('button').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
     game.setDuration(Number(b.dataset.dur) as Duration);
@@ -207,6 +228,14 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+muteBtn.addEventListener('click', () => {
+  const next = !sfx.isMuted();
+  sfx.setMuted(next);
+  sfx.saveMuted(MUTE_KEY, next);
+  renderMute();
+});
+
 // ---- boot ----
+renderMute();
 renderBest();
 resetRun();

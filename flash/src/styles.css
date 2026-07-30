@@ -84,6 +84,9 @@ button { font-family: inherit; }
   transition: background .15s;
 }
 .back:hover { background: var(--bg-soft); }
+.icon-btn { background: var(--bg-soft); border: 1px solid var(--line); color: var(--text); width: 42px; height: 42px; border-radius: 10px; font-size: 1.1rem; cursor: pointer; transition: transform .08s, filter .12s, border-color .12s; }
+.icon-btn:hover { border-color: var(--accent); }
+.icon-btn:active { transform: scale(.9); }
 .title { font-size: 1.4rem; font-weight: 900; margin: 0; }
 
 .hud { display: flex; gap: 10px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
@@ -192,8 +195,9 @@ button { font-family: inherit; }
   border-radius: 12px;
   cursor: pointer;
   font-size: 1rem;
-  transition: border-color .12s, background .12s;
+  transition: border-color .12s, background .12s, transform .08s;
 }
+.option:active { transform: scale(.98); }
 .option.selected { border-color: var(--accent); background: #2a2740; }
 @media (hover: hover) {
   .option:hover { border-color: var(--accent); }

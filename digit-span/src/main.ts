@@ -3,7 +3,8 @@ import { makeDismissable } from '../../shared/overlay';
 import { DigitGame, type Mode } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
-import { digitShareText, copyToClipboard } from './share';
+import { digitShareText, digitShareCard, shareResult, shareToast } from './share';
+import { canvasToBlob } from '../../shared/card';
 
 const game = new DigitGame();
 sfx.setMuted(game.store.muted);
@@ -172,8 +173,15 @@ function gameOver(): void {
   `;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(digitShareText(reached, game.mode, game.best, newBest));
-    showToast(ok ? 'Result copied!' : 'Could not copy');
+    const blob = await canvasToBlob(digitShareCard(game.expected(), reached, game.mode, game.best));
+    const outcome = await shareResult({
+      title: 'Digit Span',
+      text: digitShareText(reached, game.mode, game.best, newBest),
+      url: 'https://games.vanshul.com/digit-span/dist/',
+      blob,
+      filename: 'digit-span.png',
+    });
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = () => {
     overlay.classList.remove('show');

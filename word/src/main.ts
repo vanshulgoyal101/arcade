@@ -12,7 +12,8 @@ import {
 } from './game';
 import type { Word } from './content';
 import { loadStore, saveStore } from './storage';
-import { dailyShareText, practiceShareText, copyToClipboard } from './share';
+import { dailyShareText, practiceShareText, dailyShareCard, practiceShareCard, shareResult, shareToast } from './share';
+import { canvasToBlob } from '../../shared/card';
 
 const store = loadStore();
 const MUTE_KEY = 'word.muted';
@@ -218,10 +219,15 @@ function completeDaily(correct: boolean): void {
 }
 
 async function shareDaily(): Promise<void> {
-  const ok = await copyToClipboard(
-    dailyShareText(dailyWord().word, store.daily.lastCorrect, store.daily.streak)
-  );
-  showToast(ok ? 'Copied to clipboard!' : 'Could not copy');
+  const blob = await canvasToBlob(dailyShareCard(dailyWord(), store.daily.streak));
+  const outcome = await shareResult({
+    title: 'Word of the Day',
+    text: dailyShareText(dailyWord().word, store.daily.lastCorrect, store.daily.streak),
+    url: 'https://games.vanshul.com/word/dist/',
+    blob,
+    filename: 'word.png',
+  });
+  showToast(shareToast(outcome));
 }
 
 // ---- Practice ----
@@ -292,8 +298,15 @@ function practiceOver(newBest: boolean): void {
     </div>`;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(practiceShareText(practice.score, practice.best, newBest));
-    showToast(ok ? 'Copied to clipboard!' : 'Could not copy');
+    const blob = await canvasToBlob(practiceShareCard(practice.round.word, practice.score, practice.best));
+    const outcome = await shareResult({
+      title: 'Word · Practice',
+      text: practiceShareText(practice.score, practice.best, newBest),
+      url: 'https://games.vanshul.com/word/dist/',
+      blob,
+      filename: 'word.png',
+    });
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = startPractice;
 }

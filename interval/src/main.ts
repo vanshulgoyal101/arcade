@@ -3,7 +3,8 @@ import { makeDismissable } from '../../shared/overlay';
 import { IntervalGame, INTERVALS } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
-import { intervalShareText, copyToClipboard } from './share';
+import { intervalShareText, intervalShareCard, shareResult, shareToast } from './share';
+import { canvasToBlob } from '../../shared/card';
 
 const game = new IntervalGame();
 sfx.setMuted(game.store.muted);
@@ -135,8 +136,17 @@ function endGame(newBest: boolean): void {
   `;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(intervalShareText(game.score, best, newBest));
-    showToast(ok ? 'Result copied!' : 'Could not copy');
+    const blob = await canvasToBlob(
+      intervalShareCard(game.score, best, game.rootMidi, game.current.semis, game.current.name)
+    );
+    const outcome = await shareResult({
+      title: 'Interval',
+      text: intervalShareText(game.score, best, newBest),
+      url: 'https://games.vanshul.com/interval/dist/',
+      blob,
+      filename: 'interval.png',
+    });
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = () => {
     overlay.classList.remove('show');

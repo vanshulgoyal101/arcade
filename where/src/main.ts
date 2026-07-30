@@ -1,17 +1,21 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
+import * as sfx from '../../shared/sfx';
 import { WhereGame, type Mode } from './game';
 import { flagEmoji } from './content';
-import { whereShareText, copyToClipboard } from './share';
+import { whereShareText, whereShareCard, shareResult, shareToast } from './share';
+import { canvasToBlob } from '../../shared/card';
 
 const game = new WhereGame();
+const MUTE_KEY = 'where.muted';
+sfx.setMuted(sfx.loadMuted(MUTE_KEY));
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🗺️ Where</h1>
-    <span style="width:64px"></span>
+    <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
   <div class="controls">
@@ -49,9 +53,13 @@ const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
 makeDismissable(overlay, () => startGame());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
+const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 
 let answered = false;
 
+function renderMute(): void {
+  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+}
 function showToast(m: string): void {
   toast.textContent = m;
   toast.classList.add('show');
@@ -92,15 +100,17 @@ function newRound(): void {
 function onAnswer(name: string, btn: HTMLButtonElement): void {
   if (answered) return;
   answered = true;
+  sfx.select();
   optionsEl.classList.add('locked');
   const res = game.answer(name);
 
   const correctBtn = optionsEl.querySelector<HTMLButtonElement>(`.opt[data-name="${CSS.escape(game.target.name)}"]`)!;
   correctBtn.classList.add('correct');
   if (!res.correct) btn.classList.add('wrong');
+  window.setTimeout(() => (res.correct ? sfx.correct(game.streak) : sfx.wrong()), 120);
   renderHud();
 
-  if (res.gameOver) window.setTimeout(() => endGame(res.newBest), 750);
+  if (res.gameOver) window.setTimeout(() => { sfx.gameOver(); endGame(res.newBest); }, 750);
   else window.setTimeout(newRound, 850);
 }
 
@@ -119,8 +129,15 @@ function endGame(newBest: boolean): void {
   `;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(whereShareText(game.score, game.mode, best, newBest));
-    showToast(ok ? 'Result copied!' : 'Could not copy');
+    const blob = await canvasToBlob(whereShareCard(game.score, game.mode, best, game.target));
+    const outcome = await shareResult({
+      title: 'Where',
+      text: whereShareText(game.score, game.mode, best, newBest),
+      url: 'https://games.vanshul.com/where/dist/',
+      blob,
+      filename: 'where.png',
+    });
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = () => {
     overlay.classList.remove('show');
@@ -138,6 +155,7 @@ function startGame(): void {
 
 modeToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
   b.addEventListener('click', () => {
+    sfx.click();
     game.setMode(b.dataset.mode as Mode);
     modeToggle.querySelectorAll('button').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
@@ -146,5 +164,13 @@ modeToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
   });
 });
 
+muteBtn.addEventListener('click', () => {
+  const next = !sfx.isMuted();
+  sfx.setMuted(next);
+  sfx.saveMuted(MUTE_KEY, next);
+  renderMute();
+});
+
 // ---- boot ----
+renderMute();
 startGame();

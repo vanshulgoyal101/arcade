@@ -2,7 +2,8 @@ import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
 import { toCss, contrastText, toHex, type RGB } from './color';
 import { Game, type Difficulty } from './game';
-import { endlessShareText, copyToClipboard } from './share';
+import { endlessShareText, chromaticShareCard, shareResult, shareToast } from './share';
+import { canvasToBlob } from '../../shared/card';
 import { saveStore } from './storage';
 import * as sfx from './audio';
 
@@ -167,8 +168,17 @@ function openEndlessModal(): void {
   `;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(endlessShareText(game.score, game.level, best));
-    showToast(ok ? 'Result copied to clipboard!' : 'Could not copy');
+    const blob = await canvasToBlob(
+      chromaticShareCard(game.score, game.level, best, game.target, game.guess, game.lastResult?.accuracy ?? 0)
+    );
+    const outcome = await shareResult({
+      title: 'Chromatic',
+      text: endlessShareText(game.score, game.level, best),
+      url: 'https://games.vanshul.com/chromatic/dist/',
+      blob,
+      filename: 'chromatic.png',
+    });
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-retry')!.onclick = () => {
     closeModal();
