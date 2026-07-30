@@ -8,15 +8,15 @@
     </filter>
   </defs>
   <rect width="400" height="260" fill="url(#bg)"/>
-  <!-- connecting path -->
-  <polyline points="80,120 152,120 224,120 296,120" fill="none" stroke="#2b3446" stroke-width="2"/>
+  <!-- connecting path, centred -->
+  <polyline points="98,130 166,130 234,130 302,130" fill="none" stroke="#2b3446" stroke-width="2"/>
   <!-- memory nodes: some recalled (glowing), some pending -->
   <g>
-    <circle cx="80"  cy="120" r="15" fill="#34d399" filter="url(#glow)"/>
-    <circle cx="152" cy="120" r="15" fill="#34d399" filter="url(#glow)"/>
-    <circle cx="224" cy="120" r="15" fill="#34d399" filter="url(#glow)"/>
-    <circle cx="296" cy="120" r="15" fill="none" stroke="#33465e" stroke-width="2.5"/>
+    <circle cx="98"  cy="130" r="15" fill="#34d399" filter="url(#glow)"/>
+    <circle cx="166" cy="130" r="15" fill="#34d399" filter="url(#glow)"/>
+    <circle cx="234" cy="130" r="15" fill="#34d399" filter="url(#glow)"/>
+    <circle cx="302" cy="130" r="15" fill="none" stroke="#33465e" stroke-width="2.5"/>
   </g>
   <!-- next-in-sequence pulse -->
-  <circle cx="296" cy="120" r="24" fill="none" stroke="#34d399" stroke-opacity="0.3" stroke-width="2"/>
+  <circle cx="302" cy="130" r="24" fill="none" stroke="#34d399" stroke-opacity="0.3" stroke-width="2"/>
 </svg>

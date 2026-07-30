@@ -11,21 +11,18 @@
   </defs>
   <rect width="400" height="260" fill="url(#bg)"/>
   <g>
-    <!-- muted tile grid -->
+    <!-- muted 3x3 tile grid, centred -->
     <g fill="#2b3446">
-      <rect x="70"  y="55"  width="46" height="46" rx="10"/>
-      <rect x="128" y="55"  width="46" height="46" rx="10"/>
-      <rect x="186" y="55"  width="46" height="46" rx="10"/>
-      <rect x="244" y="55"  width="46" height="46" rx="10"/>
-      <rect x="70"  y="113" width="46" height="46" rx="10"/>
-      <rect x="128" y="113" width="46" height="46" rx="10"/>
-      <rect x="244" y="113" width="46" height="46" rx="10"/>
-      <rect x="70"  y="171" width="46" height="46" rx="10"/>
-      <rect x="128" y="171" width="46" height="46" rx="10"/>
-      <rect x="186" y="171" width="46" height="46" rx="10"/>
-      <rect x="244" y="171" width="46" height="46" rx="10"/>
+      <rect x="102" y="32"  width="56" height="56" rx="12"/>
+      <rect x="172" y="32"  width="56" height="56" rx="12"/>
+      <rect x="242" y="32"  width="56" height="56" rx="12"/>
+      <rect x="102" y="102" width="56" height="56" rx="12"/>
+      <rect x="242" y="102" width="56" height="56" rx="12"/>
+      <rect x="102" y="172" width="56" height="56" rx="12"/>
+      <rect x="172" y="172" width="56" height="56" rx="12"/>
+      <rect x="242" y="172" width="56" height="56" rx="12"/>
     </g>
-    <!-- the odd tile, glowing -->
-    <rect x="186" y="113" width="46" height="46" rx="10" fill="#fb7185" filter="url(#glow)"/>
+    <!-- the odd tile, glowing, dead centre -->
+    <rect x="172" y="102" width="56" height="56" rx="12" fill="#fb7185" filter="url(#glow)"/>
   </g>
 </svg>
