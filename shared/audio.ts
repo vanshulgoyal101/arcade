@@ -33,9 +33,7 @@ export interface ToneOpts {
   attack?: number;
 }
 
-export function tone(freq: number, dur = 0.14, opts: ToneOpts = {}): void {
-  const c = ac();
-  if (!c) return;
+function emit(c: AudioContext, freq: number, dur: number, opts: ToneOpts): void {
   const { type = 'sine', vol = 0.22, attack = 0.01 } = opts;
   const osc = c.createOscillator();
   const gain = c.createGain();
@@ -48,4 +46,28 @@ export function tone(freq: number, dur = 0.14, opts: ToneOpts = {}): void {
   osc.connect(gain).connect(c.destination);
   osc.start(t);
   osc.stop(t + dur + 0.02);
+}
+
+export function tone(freq: number, dur = 0.14, opts: ToneOpts = {}): void {
+  const c = ac();
+  if (!c) return;
+  // First gesture: the context is still 'suspended' and resume() is async, so
+  // scheduling now would drop the note. Defer until it's actually running.
+  if (c.state === 'suspended') {
+    void c.resume().then(() => emit(c, freq, dur, opts)).catch(() => {});
+    return;
+  }
+  emit(c, freq, dur, opts);
+}
+
+// Warm the context up on the very first user gesture so gameplay sounds are
+// already running by the time the player taps.
+if (typeof window !== 'undefined') {
+  const events = ['pointerdown', 'mousedown', 'touchstart', 'keydown'];
+  const prime = (): void => {
+    const c = ac();
+    if (c && c.state === 'suspended') void c.resume();
+    for (const e of events) window.removeEventListener(e, prime, true);
+  };
+  for (const e of events) window.addEventListener(e, prime, true);
 }

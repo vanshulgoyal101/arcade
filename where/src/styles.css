@@ -104,6 +104,9 @@ button { font-family: inherit; }
   font-weight: 700;
   font-size: 1rem;
   transition: border-color .12s, background .12s, transform .06s;
+}
+@media (hover: hover) { .opt:hover { border-color: var(--accent); } }
+.opt:active { transform: scale(.96); }
 .opt.correct { border-color: var(--good); background: rgba(78,205,196,.16); }
 .opt.wrong { border-color: var(--bad); background: rgba(255,107,107,.16); }
 .options.locked { pointer-events: none; }

@@ -25,9 +25,7 @@ export function isMuted(): boolean {
   return muted;
 }
 
-function tone(freq: number, dur: number, type: OscillatorType, vol: number): void {
-  const c = ac();
-  if (!c) return;
+function emit(c: AudioContext, freq: number, dur: number, type: OscillatorType, vol: number): void {
   const osc = c.createOscillator();
   const gain = c.createGain();
   osc.type = type;
@@ -39,6 +37,16 @@ function tone(freq: number, dur: number, type: OscillatorType, vol: number): voi
   osc.connect(gain).connect(c.destination);
   osc.start(t);
   osc.stop(t + dur + 0.02);
+}
+
+function tone(freq: number, dur: number, type: OscillatorType, vol: number): void {
+  const c = ac();
+  if (!c) return;
+  if (c.state === 'suspended') {
+    void c.resume().then(() => emit(c, freq, dur, type, vol)).catch(() => {});
+    return;
+  }
+  emit(c, freq, dur, type, vol);
 }
 
 export function correct(combo: number): void {

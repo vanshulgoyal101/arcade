@@ -30,9 +30,7 @@ export function midiToFreq(midi: number): number {
 }
 
 /** A soft plucked note starting at `when` seconds from now. */
-function note(freq: number, when: number, dur: number, vol = 0.28): void {
-  const c = ac();
-  if (!c) return;
+function emit(freq: number, when: number, dur: number, vol: number, c: AudioContext): void {
   const t = c.currentTime + when;
   const osc = c.createOscillator();
   const osc2 = c.createOscillator();
@@ -51,6 +49,17 @@ function note(freq: number, when: number, dur: number, vol = 0.28): void {
   osc2.start(t);
   osc.stop(t + dur + 0.03);
   osc2.stop(t + dur + 0.03);
+}
+
+function note(freq: number, when: number, dur: number, vol = 0.28): void {
+  const c = ac();
+  if (!c) return;
+  // Defer the first note until the context is actually running.
+  if (c.state === 'suspended') {
+    void c.resume().then(() => emit(freq, when, dur, vol, c)).catch(() => {});
+    return;
+  }
+  emit(freq, when, dur, vol, c);
 }
 
 /** Play the root then the interval note, ascending. */
