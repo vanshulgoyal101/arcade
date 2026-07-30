@@ -1,16 +1,6 @@
-// Persistent state: daily streaks + endless best score.
-
-export interface DailyRecord {
-  day: string; // todayKey when last played
-  bestAccuracy: number; // 0..100 for that day
-  done: boolean;
-  streak: number;
-  lastPlayed: string; // day of last completed daily
-  maxStreak: number;
-}
+// Persistent state: endless best score.
 
 export interface Store {
-  daily: DailyRecord;
   endlessBest: number;
   muted: boolean;
 }
@@ -18,14 +8,6 @@ export interface Store {
 const KEY = 'chromatic.v2';
 
 const DEFAULT: Store = {
-  daily: {
-    day: '',
-    bestAccuracy: 0,
-    done: false,
-    streak: 0,
-    lastPlayed: '',
-    maxStreak: 0,
-  },
   endlessBest: 0,
   muted: false,
 };
@@ -36,7 +18,6 @@ export function loadStore(): Store {
     if (!raw) return structuredClone(DEFAULT);
     const parsed = JSON.parse(raw) as Partial<Store>;
     return {
-      daily: { ...DEFAULT.daily, ...parsed.daily },
       endlessBest: parsed.endlessBest ?? 0,
       muted: parsed.muted ?? false,
     };

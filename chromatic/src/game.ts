@@ -1,16 +1,8 @@
-// Game state machine: daily + endless modes, difficulty, scoring.
+// Game state machine: endless mode, difficulty, scoring.
 
-import {
-  accuracy,
-  randomTarget,
-  targetFromSeed,
-  todayKey,
-  yesterdayKey,
-  type RGB,
-} from './color';
+import { accuracy, randomTarget, type RGB } from './color';
 import { loadStore, saveStore, type Store } from './storage';
 
-export type Mode = 'daily' | 'endless';
 export type Difficulty = 'easy' | 'normal' | 'hard';
 
 export interface DifficultyConfig {
@@ -30,11 +22,9 @@ export interface SubmitResult {
   accuracy: number;
   passed: boolean;
   gameOver: boolean;
-  gainedStreak?: boolean;
 }
 
 export class Game {
-  mode: Mode = 'daily';
   difficulty: Difficulty = 'normal';
   target: RGB;
   guess: RGB = { r: 128, g: 128, b: 128 };
@@ -52,31 +42,15 @@ export class Game {
   constructor() {
     this.store = loadStore();
     this.target = randomTarget();
-    this.startDaily();
+    this.startEndless();
   }
 
   get threshold(): number {
     return DIFFICULTY[this.difficulty].threshold;
   }
 
-  get dailyAlreadyDone(): boolean {
-    return this.store.daily.day === todayKey() && this.store.daily.done;
-  }
-
-  // ---- Daily ----
-  startDaily(): void {
-    this.mode = 'daily';
-    this.finished = this.dailyAlreadyDone;
-    this.target = targetFromSeed('chromatic-' + todayKey());
-    this.guess = { r: 128, g: 128, b: 128 };
-    this.lastResult = this.finished
-      ? { accuracy: this.store.daily.bestAccuracy, passed: true, gameOver: true }
-      : null;
-  }
-
   // ---- Endless ----
   startEndless(): void {
-    this.mode = 'endless';
     this.finished = false;
     this.level = 1;
     this.lives = ENDLESS_START_LIVES;
@@ -100,43 +74,9 @@ export class Game {
   submit(): SubmitResult {
     const acc = Math.round(accuracy(this.guess, this.target) * 10) / 10;
     const passed = acc >= this.threshold;
-
-    let result: SubmitResult;
-    if (this.mode === 'daily') {
-      result = this.commitDaily(acc);
-    } else {
-      result = this.commitEndless(acc, passed);
-    }
+    const result = this.commitEndless(acc, passed);
     this.lastResult = result;
     return result;
-  }
-
-  private commitDaily(acc: number): SubmitResult {
-    const key = todayKey();
-    const d = this.store.daily;
-
-    // New day resets today's record.
-    if (d.day !== key) {
-      d.day = key;
-      d.bestAccuracy = 0;
-      d.done = false;
-    }
-    d.bestAccuracy = Math.max(d.bestAccuracy, acc);
-    d.done = true;
-
-    const continued = d.lastPlayed === yesterdayKey();
-    const alreadyToday = d.lastPlayed === key;
-    let gainedStreak = false;
-    if (!alreadyToday) {
-      d.streak = continued ? d.streak + 1 : 1;
-      d.lastPlayed = key;
-      d.maxStreak = Math.max(d.maxStreak, d.streak);
-      gainedStreak = true;
-    }
-
-    saveStore(this.store);
-    this.finished = true;
-    return { accuracy: acc, passed: true, gameOver: true, gainedStreak };
   }
 
   private commitEndless(acc: number, passed: boolean): SubmitResult {

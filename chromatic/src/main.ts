@@ -1,12 +1,8 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
 import { toCss, contrastText, toHex, type RGB } from './color';
-import { Game, type Difficulty, type Mode } from './game';
-import {
-  dailyShareText,
-  endlessShareText,
-  copyToClipboard,
-} from './share';
+import { Game, type Difficulty } from './game';
+import { endlessShareText, copyToClipboard } from './share';
 import { saveStore } from './storage';
 import * as sfx from './audio';
 
@@ -24,11 +20,7 @@ app.innerHTML = `
   </div>
 
   <div class="controls">
-    <div class="tabs" id="tabs">
-      <button class="tab active" data-mode="daily">Daily</button>
-      <button class="tab" data-mode="endless">Endless</button>
-    </div>
-    <div class="diff disabled" id="diff">
+    <div class="diff" id="diff">
       <button class="diff-btn" data-diff="easy">Easy</button>
       <button class="diff-btn active" data-diff="normal">Normal</button>
       <button class="diff-btn" data-diff="hard">Hard</button>
@@ -73,7 +65,6 @@ app.innerHTML = `
 `;
 
 // ---- Element refs ----
-const tabs = app.querySelector<HTMLDivElement>('#tabs')!;
 const diff = app.querySelector<HTMLDivElement>('#diff')!;
 const hud = app.querySelector<HTMLDivElement>('#hud')!;
 const targetSwatch = app.querySelector<HTMLDivElement>('#targetSwatch')!;
@@ -82,7 +73,7 @@ const youHex = app.querySelector<HTMLSpanElement>('#youHex')!;
 const submitBtn = app.querySelector<HTMLButtonElement>('#submit')!;
 const hint = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay, () => switchMode('endless'));
+makeDismissable(overlay, restartEndless);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
@@ -110,21 +101,12 @@ function renderMute(): void {
 }
 
 function renderHud(): void {
-  if (game.mode === 'daily') {
-    const d = game.store.daily;
-    hud.innerHTML = `
-      <div class="pill"><span class="k">Streak</span><span class="v">${d.streak} 🔥</span></div>
-      <div class="pill"><span class="k">Best day</span><span class="v">${d.maxStreak}</span></div>
-      <div class="pill"><span class="k">Today</span><span class="v">${d.done ? d.bestAccuracy.toFixed(0) + '%' : '—'}</span></div>
-    `;
-  } else {
-    hud.innerHTML = `
-      <div class="pill"><span class="k">Level</span><span class="v">${game.level}</span></div>
-      <div class="pill"><span class="k">Score</span><span class="v">${game.score}</span></div>
-      <div class="pill"><span class="k">Lives</span><span class="v hearts">${'❤️'.repeat(game.lives)}${'🖤'.repeat(Math.max(0, 3 - game.lives))}</span></div>
-      <div class="pill"><span class="k">Best</span><span class="v">${game.store.endlessBest}</span></div>
-    `;
-  }
+  hud.innerHTML = `
+    <div class="pill"><span class="k">Level</span><span class="v">${game.level}</span></div>
+    <div class="pill"><span class="k">Score</span><span class="v">${game.score}</span></div>
+    <div class="pill"><span class="k">Lives</span><span class="v hearts">${'❤️'.repeat(game.lives)}${'🖤'.repeat(Math.max(0, 3 - game.lives))}</span></div>
+    <div class="pill"><span class="k">Best</span><span class="v">${game.store.endlessBest}</span></div>
+  `;
 }
 
 function renderTarget(): void {
@@ -149,23 +131,13 @@ function renderGuess(): void {
 }
 
 function renderControls(): void {
-  tabs.querySelectorAll<HTMLButtonElement>('.tab').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.mode === game.mode);
-  });
-  diff.classList.toggle('disabled', game.mode === 'daily');
   diff.querySelectorAll<HTMLButtonElement>('.diff-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.diff === game.difficulty);
   });
 }
 
 function renderHint(): void {
-  if (game.mode === 'daily') {
-    hint.textContent = game.finished
-      ? 'You already played today. Come back tomorrow, or try Endless!'
-      : 'Match today’s colour as closely as you can — you get one shot. (Difficulty applies to Endless.)';
-  } else {
-    hint.textContent = `Reach ${game.threshold}% to clear the round. Miss and you lose a life.`;
-  }
+  hint.textContent = `Reach ${game.threshold}% to clear the round. Miss and you lose a life.`;
 }
 
 function renderAll(): void {
@@ -180,38 +152,6 @@ function renderAll(): void {
 // ---- Modal ----
 function closeModal(): void {
   overlay.classList.remove('show');
-}
-
-function openDailyModal(acc: number): void {
-  const d = game.store.daily;
-  modal.innerHTML = `
-    <h2>${acc >= 97 ? 'Incredible! 🎯' : acc >= 90 ? 'So close! 🌈' : 'Nice try!'}</h2>
-    <div class="ring" style="--p:${acc}"><span>${acc.toFixed(0)}%</span></div>
-    <div class="reveal">
-      <div>
-        <div class="box" style="background:${toCss(game.target)}"></div>
-        <div class="lab">Target ${toHex(game.target)}</div>
-      </div>
-      <div>
-        <div class="box" style="background:${toCss(game.guess)}"></div>
-        <div class="lab">You ${toHex(game.guess)}</div>
-      </div>
-    </div>
-    <p class="hint" style="margin:0">Streak ${d.streak} 🔥 · Best streak ${d.maxStreak}</p>
-    <div class="row">
-      <button class="btn ghost" id="m-share">Share</button>
-      <button class="btn" id="m-endless">Play Endless</button>
-    </div>
-  `;
-  overlay.classList.add('show');
-  modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(dailyShareText(acc, d.streak));
-    showToast(ok ? 'Result copied to clipboard!' : 'Could not copy');
-  };
-  modal.querySelector<HTMLButtonElement>('#m-endless')!.onclick = () => {
-    closeModal();
-    switchMode('endless');
-  };
 }
 
 function openEndlessModal(): void {
@@ -255,14 +195,6 @@ function handleSubmit(): void {
   if (game.finished) return;
   const result = game.submit();
 
-  if (game.mode === 'daily') {
-    renderAll();
-    sfx.result(result.accuracy);
-    window.setTimeout(() => openDailyModal(result.accuracy), 350);
-    return;
-  }
-
-  // Endless
   if (result.gameOver) {
     sfx.gameOver();
     renderAll();
@@ -284,10 +216,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !game.finished) handleSubmit();
 });
 
-tabs.querySelectorAll<HTMLButtonElement>('.tab').forEach((btn) => {
-  btn.addEventListener('click', () => switchMode(btn.dataset.mode as Mode));
-});
-
 diff.querySelectorAll<HTMLButtonElement>('.diff-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
     game.setDifficulty(btn.dataset.diff as Difficulty);
@@ -296,10 +224,9 @@ diff.querySelectorAll<HTMLButtonElement>('.diff-btn').forEach((btn) => {
   });
 });
 
-function switchMode(mode: Mode): void {
+function restartEndless(): void {
   closeModal();
-  if (mode === 'daily') game.startDaily();
-  else game.startEndless();
+  game.startEndless();
   renderAll();
 }
 

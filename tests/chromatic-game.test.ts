@@ -4,25 +4,6 @@ import { Game } from '../chromatic/src/game';
 beforeEach(() => localStorage.clear());
 
 describe('chromatic/game', () => {
-  it('a perfect daily guess scores 100 and finishes the day', () => {
-    const g = new Game();
-    g.startDaily();
-    g.setGuess(g.target);
-    const r = g.submit();
-    expect(r.accuracy).toBe(100);
-    expect(r.gameOver).toBe(true);
-    expect(g.finished).toBe(true);
-  });
-
-  it('daily can only be played once per day (persisted)', () => {
-    const g = new Game();
-    g.startDaily();
-    g.setGuess(g.target);
-    g.submit();
-    const reloaded = new Game(); // reads the same localStorage
-    expect(reloaded.dailyAlreadyDone).toBe(true);
-  });
-
   it('endless: a perfect guess passes and advances the level', () => {
     const g = new Game();
     g.startEndless();
