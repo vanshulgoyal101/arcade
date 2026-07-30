@@ -1,4 +1,5 @@
 import './styles.css';
+import { makeDismissable } from '../../shared/overlay';
 import { WhereGame, type Mode } from './game';
 import { flagEmoji } from './content';
 import { whereShareText, copyToClipboard } from './share';
@@ -45,6 +46,7 @@ const promptEl = app.querySelector<HTMLDivElement>('#prompt')!;
 const optionsEl = app.querySelector<HTMLDivElement>('#options')!;
 const hint = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
+makeDismissable(overlay);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 

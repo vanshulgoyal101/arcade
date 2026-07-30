@@ -1,4 +1,5 @@
 import './styles.css';
+import { makeDismissable } from '../../shared/overlay';
 import { MathGame, ROUND_TIME, type Op } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
@@ -51,6 +52,7 @@ const problemEl = app.querySelector<HTMLDivElement>('#problem')!;
 const answerEl = app.querySelector<HTMLDivElement>('#answer')!;
 const keypad = app.querySelector<HTMLDivElement>('#keypad')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
+makeDismissable(overlay);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;

@@ -1,4 +1,5 @@
 import './styles.css';
+import { makeDismissable } from '../../shared/overlay';
 import { SprintGame, DURATIONS, type Duration } from './game';
 import { sprintShareText, copyToClipboard } from './share';
 
@@ -45,6 +46,7 @@ const timerEl = app.querySelector<HTMLSpanElement>('#timer')!;
 const streamEl = app.querySelector<HTMLDivElement>('#stream')!;
 const field = app.querySelector<HTMLInputElement>('#field')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
+makeDismissable(overlay);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 

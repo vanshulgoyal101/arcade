@@ -1,4 +1,5 @@
 import './styles.css';
+import { makeDismissable } from '../../shared/overlay';
 import { FlashGame, type RoundResult } from './game';
 import { RsvpPlayer, type Token } from './rsvp';
 import type { Passage } from './content';
@@ -95,6 +96,7 @@ const questionsEl = app.querySelector<HTMLDivElement>('#questions')!;
 const submitBtn = app.querySelector<HTMLButtonElement>('#submitBtn')!;
 
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
+makeDismissable(overlay);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 

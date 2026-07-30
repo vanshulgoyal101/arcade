@@ -1,4 +1,5 @@
 import './styles.css';
+import { makeDismissable } from '../../shared/overlay';
 import { EchoGame } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
@@ -56,6 +57,7 @@ const statusEl = app.querySelector<HTMLParagraphElement>('#status')!;
 const hintEl = app.querySelector<HTMLParagraphElement>('#hint')!;
 const startBtn = app.querySelector<HTMLButtonElement>('#startBtn')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
+makeDismissable(overlay);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;

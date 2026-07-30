@@ -1,4 +1,5 @@
 import './styles.css';
+import { makeDismissable } from '../../shared/overlay';
 import { toCss, contrastText, toHex, type RGB } from './color';
 import { Game, type Difficulty, type Mode } from './game';
 import {
@@ -81,6 +82,7 @@ const youHex = app.querySelector<HTMLSpanElement>('#youHex')!;
 const submitBtn = app.querySelector<HTMLButtonElement>('#submit')!;
 const hint = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
+makeDismissable(overlay);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;

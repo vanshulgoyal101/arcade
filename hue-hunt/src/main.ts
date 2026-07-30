@@ -1,4 +1,5 @@
 import './styles.css';
+import { makeDismissable } from '../../shared/overlay';
 import { HueGame, ROUND_TIME, hslCss } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
@@ -44,6 +45,7 @@ const timerEl = app.querySelector<HTMLSpanElement>('#timer')!;
 const hintEl = app.querySelector<HTMLParagraphElement>('#hint')!;
 const comboFlash = app.querySelector<HTMLDivElement>('#comboFlash')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
+makeDismissable(overlay);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;

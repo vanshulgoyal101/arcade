@@ -1,4 +1,5 @@
 import './styles.css';
+import { makeDismissable } from '../../shared/overlay';
 import { IntervalGame, INTERVALS } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
@@ -48,6 +49,7 @@ const replayBtn = app.querySelector<HTMLButtonElement>('#replay')!;
 const optionsEl = app.querySelector<HTMLDivElement>('#options')!;
 const hint = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
+makeDismissable(overlay);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
