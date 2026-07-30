@@ -172,6 +172,7 @@
       function apply() {
         var c = get();
         if (c === 'classic') root.setAttribute('data-theme', 'classic'); else root.removeAttribute('data-theme');
+        var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', c === 'classic' ? '#12141c' : '#0c0d12');
         btn.textContent = c === 'classic' ? '🎨 New colours' : '🎨 Classic colours';
         btn.setAttribute('aria-pressed', String(c === 'classic'));
       }
