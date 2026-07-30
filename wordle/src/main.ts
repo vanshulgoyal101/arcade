@@ -282,6 +282,7 @@ function openStats(): void {
 
 function newGame(): void {
   overlay.classList.remove('show');
+  statsOverlay.classList.remove('show');
   locked = false;
   game.newGame();
   for (const row of tiles) {

@@ -238,6 +238,7 @@ function gameOver(): void {
 function startGame(): void {
   overlay.classList.remove('show');
   playing = true;
+  acceptingInput = false;
   game.reset();
   buildPads();
   renderToggles();
