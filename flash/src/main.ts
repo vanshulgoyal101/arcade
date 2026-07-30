@@ -96,7 +96,7 @@ const questionsEl = app.querySelector<HTMLDivElement>('#questions')!;
 const submitBtn = app.querySelector<HTMLButtonElement>('#submitBtn')!;
 
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay);
+makeDismissable(overlay, () => void startReading());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 

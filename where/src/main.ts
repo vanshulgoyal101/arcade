@@ -46,7 +46,7 @@ const promptEl = app.querySelector<HTMLDivElement>('#prompt')!;
 const optionsEl = app.querySelector<HTMLDivElement>('#options')!;
 const hint = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay);
+makeDismissable(overlay, () => startGame());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 

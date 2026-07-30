@@ -46,7 +46,7 @@ const timerEl = app.querySelector<HTMLSpanElement>('#timer')!;
 const streamEl = app.querySelector<HTMLDivElement>('#stream')!;
 const field = app.querySelector<HTMLInputElement>('#field')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay);
+makeDismissable(overlay, () => resetRun());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 

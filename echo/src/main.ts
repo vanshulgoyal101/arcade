@@ -57,7 +57,7 @@ const statusEl = app.querySelector<HTMLParagraphElement>('#status')!;
 const hintEl = app.querySelector<HTMLParagraphElement>('#hint')!;
 const startBtn = app.querySelector<HTMLButtonElement>('#startBtn')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay);
+makeDismissable(overlay, () => startGame());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;

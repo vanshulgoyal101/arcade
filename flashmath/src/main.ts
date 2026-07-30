@@ -52,7 +52,7 @@ const problemEl = app.querySelector<HTMLDivElement>('#problem')!;
 const answerEl = app.querySelector<HTMLDivElement>('#answer')!;
 const keypad = app.querySelector<HTMLDivElement>('#keypad')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay);
+makeDismissable(overlay, () => start());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;

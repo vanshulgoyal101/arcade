@@ -45,7 +45,7 @@ const timerEl = app.querySelector<HTMLSpanElement>('#timer')!;
 const hintEl = app.querySelector<HTMLParagraphElement>('#hint')!;
 const comboFlash = app.querySelector<HTMLDivElement>('#comboFlash')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay);
+makeDismissable(overlay, () => start());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;

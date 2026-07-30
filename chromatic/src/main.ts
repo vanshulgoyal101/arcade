@@ -82,7 +82,7 @@ const youHex = app.querySelector<HTMLSpanElement>('#youHex')!;
 const submitBtn = app.querySelector<HTMLButtonElement>('#submit')!;
 const hint = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay);
+makeDismissable(overlay, () => switchMode('endless'));
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;

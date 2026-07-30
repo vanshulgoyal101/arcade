@@ -59,7 +59,7 @@ const startBtn = app.querySelector<HTMLButtonElement>('#startBtn')!;
 const keypad = app.querySelector<HTMLDivElement>('#keypad')!;
 const hint = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay);
+makeDismissable(overlay, () => startRun());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
