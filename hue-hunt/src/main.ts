@@ -3,7 +3,8 @@ import { makeDismissable } from '../../shared/overlay';
 import { HueGame, ROUND_TIME, hslCss } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
-import { hueShareText, copyToClipboard } from './share';
+import { hueShareText, hueShareCard, shareResult, shareToast } from './share';
+import { canvasToBlob } from '../../shared/card';
 
 const game = new HueGame();
 sfx.setMuted(game.store.muted);
@@ -174,8 +175,15 @@ function endGame(): void {
   `;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const ok = await copyToClipboard(hueShareText(game.score, reached, game.store.bestScore));
-    showToast(ok ? 'Result copied!' : 'Could not copy');
+    const blob = await canvasToBlob(hueShareCard(game.round, game.score, reached, game.store.bestScore));
+    const outcome = await shareResult({
+      title: 'Hue Hunt',
+      text: hueShareText(game.score, reached, game.store.bestScore),
+      url: 'https://games.vanshul.com/hue-hunt/dist/',
+      blob,
+      filename: 'hue-hunt.png',
+    });
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = start;
 }
