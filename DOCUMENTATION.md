@@ -374,14 +374,18 @@ effective / best wpm.
 
 ---
 
-## 8. Skill-trainer games (Flashmath, Sprint, Digit Span, Interval, Where)
+## 8. Skill / knowledge games (Flashmath, Sprint, Digit Span, Interval, Where, Word, Wordle)
 
-Five more games in the same Model/View + Vite + TS shape, each built to *train a skill*
-and keep a rising personal best. They share every convention in §2, including the full
-mobile/touch layer (viewport + web-app metas, `touch-action`, safe-area padding,
-hover-guarded effects). They are **not** yet wired into the SEO layer of §10 (no
-Open Graph / Twitter / JSON-LD / sitemap entries). Their pure logic (`game.ts`) is
+Seven more games in the same Model/View + Vite + TS shape, each built to *train a skill*
+or *teach something* and keep a rising personal best. They share every convention in §2,
+including the full mobile/touch layer (viewport + web-app metas, `touch-action`, safe-area
+padding, hover-guarded effects), audio + a mute toggle, and — like the original four — a
+complete SEO layer (title/description/canonical, Open Graph, Twitter card, JSON-LD, a
+`<noscript>` fallback) plus a `sitemap.xml` `<loc>`. Their pure logic (`game.ts`) is
 covered by unit tests in [`tests/`](tests) alongside the original games.
+
+> `interval` is fully built, tested, SEO'd and reachable, but is **not** currently featured
+> as a card on the hub, so the hub presents ten of the eleven games.
 
 ### 8.1 Flashmath (`flashmath/`) 🧮 — mental arithmetic
 
@@ -417,6 +421,35 @@ covered by unit tests in [`tests/`](tests) alongside the original games.
 - `content.ts` holds ~80 countries (`name`, `capital`, ISO `code`); `flagEmoji()` derives
   the flag from the code. **Flags** or **Capitals** mode; pick from four options. 3 lives,
   score + streak; missed countries resurface. Best score in `where.v1`.
+
+### 8.6 Word of the Day (`word/`) 📖 — vocabulary
+
+- `content.ts` is a curated list of `Word` records (`word`, `say`, `pos`, `definition`,
+  `examples`, `synonyms`, `origin`). `game.ts` derives a stable **daily word** from the date
+  via a seeded RNG (`hashSeed` FNV-1a → `mulberry32`), so everyone sees the same word each
+  day and it never reshuffles on reload (`dailyWord`, `dailyOptions`).
+- Two tabs. **Today** shows the daily word, asks you to guess its meaning from four options
+  (`meaningOptions` — the real definition plus three distractors), then reveals the full
+  card (definition, examples, synonyms, origin) and keeps a **daily streak** (`todayKey` /
+  `yesterdayKey`). **Practice** is an endless meaning-quiz (`PracticeGame`): +10 points and a
+  growing streak per correct answer, a life lost per miss (3 lives), missed words resurface,
+  and each answer reveals the full definition before you tap *Next word*.
+- Persisted in `word.v1` (`daily` streak state, `practiceBest`, `learned`). Logic covered by
+  [`tests/word-game.test.ts`](tests/word-game.test.ts).
+
+### 8.7 Wordle (`wordle/`) 🟩 — word puzzle
+
+- An unlimited version of the classic five-letter guessing game (`WORD_LENGTH = 5`,
+  `MAX_GUESSES = 6`) — no once-a-day wait. `words.ts` supplies the answer list, guess
+  validation (`isValidGuess`), and `randomAnswer()`.
+- `game.ts` is pure and DOM-free. `evaluateGuess()` matches the **official duplicate-letter
+  rules**: a first pass marks exact-position `correct` tiles and consumes those letters from a
+  count pool, then a second pass marks `present` only while an unconsumed copy remains — so
+  surplus copies correctly show `absent`. `mergeKeyState()` updates the on-screen keyboard
+  without ever downgrading a key (correct > present > absent).
+- `storage.ts` tracks lifetime stats in `wordle.v1` (`played`, `wins`, `currentStreak`,
+  `maxStreak`, a 7-slot guess `distribution`), shown in the 📊 stats panel. `best` surfaces
+  `maxStreak`. Logic covered by [`tests/wordle-game.test.ts`](tests/wordle-game.test.ts).
 
 ---
 
@@ -536,9 +569,90 @@ Site-wide:
   directly via `file://` will fail to load the module.
 - **Per-config bests in Echo.** Changing Strict/Forgiving or 4/6 pads switches to a
   different best-score bucket — expected, not a bug.
-- **Daily is once per day.** Chromatic's daily target is seeded by the date; replay is
-  blocked until the next day. Try Endless to keep playing.
+- **Word's daily word is once per day.** Word of the Day seeds the featured word (and its
+  meaning quiz) from the date, so it's the same all day and only changes at midnight; use
+  the **Practice** tab to keep playing. Wordle, by contrast, is unlimited.
 - **Audio needs a gesture.** Browsers suspend `AudioContext` until a user interaction;
-  the first tap resumes it (handled in `audio.ts`). Flash is silent by design.
+  the first tap resumes it (handled in `audio.ts` / `shared/audio.ts`). The RSVP word
+  flashing in Flash stays silent by design.
 - **Flash timers in background tabs.** The reader uses `setTimeout`; browsers throttle
   timers in hidden/backgrounded tabs, so keep the Flash tab focused while reading.
+
+---
+
+## 13. Theme system (refined vs. classic)
+
+The whole arcade shares one theme, chosen on the hub and remembered across every game.
+
+- **Two palettes.** `:root` defines the **refined** tokens (the default) — neutral
+  backgrounds (`--bg`, `--bg-soft`, …), text/muted colours, borders, `--glow`, `--shadow`,
+  and a refined `--accent` per game. `:root[data-theme="classic"]` overrides them with the
+  original, punchier colours. Secondary tokens (good/warn/bad and the RGB channel colours)
+  are identical in both themes.
+- **Per-game accents.** Each game sets its own `--accent`; on the hub, cards carry a
+  `data-game="<slug>"` attribute and `assets/style.css` maps that to the accent (plus a
+  `[data-theme="classic"]` override), so no inline styles are needed.
+- **Persistence.** The choice lives in `localStorage` under `arcade.theme` (`'classic'` or
+  else refined) and is shared arcade-wide.
+- **No flash of the wrong theme.** A tiny inline `<script>` in every `index.html` `<head>`
+  (right after `<meta charset>`) sets `data-theme` **before paint**. The same script keeps
+  the `theme-color` meta in sync with `--bg` (`#0c0d12` refined / `#12141c` classic) so the
+  mobile status bar matches; `color-scheme: dark` prevents a white iOS overscroll band.
+- **Toggle.** Only the hub shows the toggle (`#themeBtn`, `.theme-btn`); games inherit the
+  stored choice through the head script. Switching persists and re-applies live.
+
+---
+
+## 14. Offline support & caching (service worker)
+
+GitHub Pages serves HTML with `Cache-Control: max-age=600`, which could otherwise show a
+ten-minute-stale page after a deploy. A root service worker fixes that and adds basic
+offline support.
+
+- **`sw.js`** lives at the arcade root and is served at `/sw.js` with **scope `/`**, so one
+  worker covers the hub and every game.
+- **Strategy.** Documents (HTML) are **network-first** (`fetch` with `cache: 'no-store'`,
+  falling back to the cache only when offline), so a refresh always gets the freshest page
+  when online. Content-hashed build assets (JS/CSS under `dist/assets/…`) are **cache-first**
+  since their names change on every build.
+- **Lifecycle.** `CACHE = 'arcade-v1'`; `activate` deletes any other caches; `skipWaiting()`
+  + `clients.claim()` apply a new worker immediately.
+- **Registration.** A one-line inline `<script>` in every source `index.html` registers
+  `/sw.js` with `{ updateViaCache: 'none' }` (so the worker file itself is never cached).
+  Rebuild a game after editing its `index.html` so the `dist` copy carries the registration.
+- **Killing a bad worker.** Ship a `sw.js` that calls `self.registration.unregister()` and
+  `caches.delete(...)` for all caches, then let clients reload.
+
+---
+
+## 15. Sharing (native share sheet + image cards)
+
+Every game's Share button opens the Web Share sheet with a **generated PNG** of the run,
+not just text, and degrades gracefully everywhere.
+
+- **`shared/share.ts`** — `shareResult({ title, text, url, blob, filename })` tries, in
+  order: `navigator.share({ files })` → `navigator.share({ text, url })` → clipboard image
+  write → `copyToClipboard(text)`. It returns a `ShareOutcome` and `shareToast(outcome)`
+  maps that to a user-facing message.
+- **`shared/card.ts`** — `renderShareCard({ title, emoji, stat, statLabel, tagline, slug,
+  draw })` paints a 1080×1080 canvas. It reads the live theme via `getComputedStyle`
+  (`--accent`, `--bg`, `--text`, …) so the card matches refined/classic, lays out a header,
+  a central panel drawn by the game's own `draw(ctx, rect)` callback, a big stat, and a
+  `games.vanshul.com/<slug>` footer. Helpers: `roundRect`, `withAlpha`, `currentAccent`,
+  `wrapText`, `canvasToBlob`. Emoji **do** render on a real Canvas2D (unlike the sharp OG
+  pipeline).
+- **Per game.** Each `share.ts` exposes a small `xShareCard(...)` that draws that game's
+  visual (Hue Hunt's grid with the ringed odd tile, Chromatic's target-vs-guess swatches,
+  Wordle's coloured tile grid, Where's flag + country, …); `main.ts` builds the card →
+  `canvasToBlob` → `shareResult` → `showToast`.
+
+---
+
+## 16. Related sites
+
+Tiny Arcade is one of a small family of sites under `vanshul.com`, cross-linked from the
+hub footer:
+
+- **[vanshul.com](https://vanshul.com)** — the portfolio + blog (React SPA, its own repo).
+- **[blog.vanshul.com](https://blog.vanshul.com)** — redirect to the portfolio's blog section.
+- **[links.vanshul.com](https://links.vanshul.com)** — a single-page linktree.
