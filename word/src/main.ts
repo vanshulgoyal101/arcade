@@ -262,6 +262,7 @@ function answerPractice(i: number, optionsEl: HTMLDivElement): void {
   if (practiceLock) return;
   practiceLock = true;
   sfx.select();
+  const answered = practice.round.word;
   const res = practice.answer(i);
   const buttons = optionsEl.querySelectorAll<HTMLButtonElement>('.option');
   buttons.forEach((b, idx) => {
@@ -272,16 +273,37 @@ function answerPractice(i: number, optionsEl: HTMLDivElement): void {
   window.setTimeout(() => (res.correct ? sfx.correct(practice.streak) : sfx.wrong()), 120);
   renderHud();
 
-  window.setTimeout(() => {
-    if (res.over) {
+  // Reveal the word's full meaning so every round teaches something.
+  const card = view.querySelector<HTMLDivElement>('.card')!;
+  const extra = document.createElement('div');
+  extra.className = 'reveal-anim';
+  extra.innerHTML = details(answered);
+  card.appendChild(extra);
+  window.setTimeout(() => sfx.reveal(), 220);
+
+  const hint = view.querySelector<HTMLParagraphElement>('.hint');
+  if (hint) hint.textContent = res.correct ? 'Correct! 🎉' : 'Not quite — now you know it.';
+
+  if (res.over) {
+    window.setTimeout(() => {
       sfx.gameOver();
       practiceOver(res.newBest);
-    } else {
-      practice.next();
-      practiceLock = false;
-      renderPractice();
-    }
-  }, res.correct ? 650 : 1050);
+    }, 900);
+    return;
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  actions.innerHTML = `<button class="btn" id="p-next">Next word →</button>`;
+  view.appendChild(actions);
+  const nextBtn = actions.querySelector<HTMLButtonElement>('#p-next')!;
+  nextBtn.onclick = () => {
+    sfx.click();
+    practice.next();
+    practiceLock = false;
+    renderPractice();
+  };
+  nextBtn.focus();
 }
 
 function practiceOver(newBest: boolean): void {
