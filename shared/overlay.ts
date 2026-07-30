@@ -59,24 +59,42 @@ export function makeDismissable(overlay: HTMLElement, onReplay?: () => void): vo
   btn.setAttribute('aria-label', 'Close');
   btn.textContent = '✕';
   Object.assign(btn.style, {
-    position: 'fixed',
-    top: 'max(14px, env(safe-area-inset-top))',
-    right: 'max(14px, env(safe-area-inset-right))',
-    width: '40px',
-    height: '40px',
+    position: 'absolute',
+    top: '10px',
+    right: '10px',
+    width: '34px',
+    height: '34px',
     display: 'grid',
     placeItems: 'center',
-    borderRadius: '10px',
+    borderRadius: '9px',
     border: '1px solid var(--line)',
     background: 'var(--bg-soft)',
-    color: 'var(--text)',
+    color: 'var(--muted)',
     font: 'inherit',
-    fontSize: '1.05rem',
+    fontSize: '.95rem',
     lineHeight: '1',
     cursor: 'pointer',
+    zIndex: '2',
     touchAction: 'manipulation',
     WebkitTapHighlightColor: 'transparent',
   });
   btn.addEventListener('click', close);
-  overlay.appendChild(btn);
+
+  // Anchor the ✕ to the modal card's corner (not the screen corner, where it
+  // would collide with a game's topbar buttons). Games reset modal.innerHTML
+  // each time they open the result, wiping the button, so re-attach on show.
+  const modal = overlay.querySelector<HTMLElement>('.modal');
+  if (modal) {
+    modal.style.position = 'relative';
+    const attach = (): void => {
+      if (overlay.classList.contains('show') && !modal.contains(btn)) modal.appendChild(btn);
+    };
+    new MutationObserver(attach).observe(overlay, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    attach();
+  } else {
+    overlay.appendChild(btn);
+  }
 }

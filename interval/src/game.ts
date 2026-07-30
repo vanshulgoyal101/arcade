@@ -33,6 +33,7 @@ export class IntervalGame {
   current: Interval = INTERVALS[0];
   finished = false;
   private weak: Record<number, number> = {};
+  private recent: number[] = [];
   store: IntervalStore;
 
   constructor() {
@@ -48,15 +49,20 @@ export class IntervalGame {
     this.lives = START_LIVES;
     this.streak = 0;
     this.finished = false;
+    this.recent = [];
     this.nextRound();
   }
 
   nextRound(): void {
-    // Weight toward intervals the player has missed.
-    let best = INTERVALS[0];
+    // Weight toward intervals the player has missed, skipping the last few
+    // so the same interval doesn't come up several times in a row.
+    const avoid = new Set(this.recent);
+    const pool = INTERVALS.filter((iv) => !avoid.has(iv.semis));
+    const source = pool.length ? pool : INTERVALS;
+    let best = source[0];
     let bestScore = -1;
     for (let i = 0; i < 4; i++) {
-      const iv = INTERVALS[Math.floor(Math.random() * INTERVALS.length)];
+      const iv = source[Math.floor(Math.random() * source.length)];
       const s = Math.random() + (this.weak[iv.semis] ?? 0) * 0.7;
       if (s > bestScore) {
         bestScore = s;
@@ -64,6 +70,8 @@ export class IntervalGame {
       }
     }
     this.current = best;
+    this.recent.push(best.semis);
+    if (this.recent.length > 3) this.recent.shift();
     this.rootMidi = Math.floor(Math.random() * (ROOT_MAX - ROOT_MIN + 1)) + ROOT_MIN;
   }
 

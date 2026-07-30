@@ -27,6 +27,7 @@ export class WhereGame {
   target: Country = COUNTRIES[0];
   options: Country[] = [];
   private miss: Record<string, number> = {};
+  private recent: string[] = [];
   store: WhereStore;
 
   constructor() {
@@ -46,14 +47,19 @@ export class WhereGame {
     this.lives = START_LIVES;
     this.streak = 0;
     this.finished = false;
+    this.recent = [];
     this.nextRound();
   }
 
   private weightedTarget(): Country {
-    let best = COUNTRIES[0];
+    // Skip recently shown countries so questions don't repeat back-to-back.
+    const avoid = new Set(this.recent);
+    const pool = COUNTRIES.filter((c) => !avoid.has(c.name));
+    const source = pool.length >= OPTION_COUNT ? pool : COUNTRIES;
+    let best = source[0];
     let bestScore = -1;
-    for (let i = 0; i < 5; i++) {
-      const c = COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)];
+    for (let i = 0; i < 6; i++) {
+      const c = source[Math.floor(Math.random() * source.length)];
       const s = Math.random() + (this.miss[c.name] ?? 0) * 0.8;
       if (s > bestScore) {
         bestScore = s;
@@ -65,6 +71,9 @@ export class WhereGame {
 
   nextRound(): void {
     this.target = this.weightedTarget();
+    this.recent.push(this.target.name);
+    const cap = Math.min(12, Math.floor(COUNTRIES.length / 2));
+    while (this.recent.length > cap) this.recent.shift();
     const opts: Country[] = [this.target];
     while (opts.length < OPTION_COUNT) {
       const c = COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)];

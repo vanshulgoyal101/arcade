@@ -161,7 +161,7 @@ function endRun(now: number): void {
       blob,
       filename: 'sprint.png',
     });
-    showToast(shareToast(outcome));
+    { const msg = shareToast(outcome); if (msg) showToast(msg); }
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = resetRun;
 }

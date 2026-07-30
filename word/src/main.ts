@@ -227,7 +227,8 @@ async function shareDaily(): Promise<void> {
     blob,
     filename: 'word.png',
   });
-  showToast(shareToast(outcome));
+  const msg = shareToast(outcome);
+  if (msg) showToast(msg);
 }
 
 // ---- Practice ----
@@ -306,7 +307,8 @@ function practiceOver(newBest: boolean): void {
       blob,
       filename: 'word.png',
     });
-    showToast(shareToast(outcome));
+    const msg = shareToast(outcome);
+    if (msg) showToast(msg);
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = startPractice;
 }

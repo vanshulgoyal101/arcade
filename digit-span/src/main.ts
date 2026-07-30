@@ -181,7 +181,7 @@ function gameOver(): void {
       blob,
       filename: 'digit-span.png',
     });
-    showToast(shareToast(outcome));
+    { const msg = shareToast(outcome); if (msg) showToast(msg); }
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = () => {
     overlay.classList.remove('show');

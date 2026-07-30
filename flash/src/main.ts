@@ -302,7 +302,7 @@ function showResult(r: RoundResult): void {
       blob,
       filename: 'flash.png',
     });
-    showToast(shareToast(outcome));
+    { const msg = shareToast(outcome); if (msg) showToast(msg); }
   };
   modal.querySelector<HTMLButtonElement>('#m-next')!.onclick = () => {
     overlay.classList.remove('show');

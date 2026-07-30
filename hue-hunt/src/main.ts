@@ -183,7 +183,7 @@ function endGame(): void {
       blob,
       filename: 'hue-hunt.png',
     });
-    showToast(shareToast(outcome));
+    { const msg = shareToast(outcome); if (msg) showToast(msg); }
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = start;
 }

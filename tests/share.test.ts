@@ -54,11 +54,11 @@ describe('shared/share', () => {
     expect(share.mock.calls[0][0].files).toHaveLength(1);
   });
 
-  it('treats a user-cancelled share sheet as shared', async () => {
+  it('reports a user-cancelled share sheet as cancelled, not shared', async () => {
     const share = vi.fn().mockRejectedValue(new DOMException('cancelled', 'AbortError'));
     Object.assign(navigator, { share, canShare: () => true });
     const blob = new Blob(['img'], { type: 'image/png' });
-    expect(await shareResult({ title: 'T', text: 'hi', blob })).toBe('shared');
+    expect(await shareResult({ title: 'T', text: 'hi', blob })).toBe('cancelled');
   });
 
   it('falls back to copying the caption text when nothing else is available', async () => {

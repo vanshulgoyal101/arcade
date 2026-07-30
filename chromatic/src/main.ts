@@ -178,7 +178,7 @@ function openEndlessModal(): void {
       blob,
       filename: 'chromatic.png',
     });
-    showToast(shareToast(outcome));
+    { const msg = shareToast(outcome); if (msg) showToast(msg); }
   };
   modal.querySelector<HTMLButtonElement>('#m-retry')!.onclick = () => {
     closeModal();
