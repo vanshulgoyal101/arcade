@@ -1,0 +1,31 @@
+<svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hue Hunt art">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2130"/>
+      <stop offset="100%" stop-color="#12141c"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="400" height="260" fill="url(#bg)"/>
+  <g>
+    <!-- muted tile grid -->
+    <g fill="#2b3446">
+      <rect x="70"  y="55"  width="46" height="46" rx="10"/>
+      <rect x="128" y="55"  width="46" height="46" rx="10"/>
+      <rect x="186" y="55"  width="46" height="46" rx="10"/>
+      <rect x="244" y="55"  width="46" height="46" rx="10"/>
+      <rect x="70"  y="113" width="46" height="46" rx="10"/>
+      <rect x="128" y="113" width="46" height="46" rx="10"/>
+      <rect x="244" y="113" width="46" height="46" rx="10"/>
+      <rect x="70"  y="171" width="46" height="46" rx="10"/>
+      <rect x="128" y="171" width="46" height="46" rx="10"/>
+      <rect x="186" y="171" width="46" height="46" rx="10"/>
+      <rect x="244" y="171" width="46" height="46" rx="10"/>
+    </g>
+    <!-- the odd tile, glowing -->
+    <rect x="186" y="113" width="46" height="46" rx="10" fill="#ff6b6b" filter="url(#glow)"/>
+  </g>
+</svg>

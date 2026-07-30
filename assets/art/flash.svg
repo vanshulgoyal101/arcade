@@ -1,0 +1,28 @@
+<svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flash art">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2130"/><stop offset="100%" stop-color="#12141c"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="400" height="260" fill="url(#bg)"/>
+  <!-- motion streaks -->
+  <g stroke="#a78bfa" stroke-linecap="round">
+    <line x1="70"  y1="120" x2="120" y2="120" stroke-width="3" stroke-opacity="0.15"/>
+    <line x1="86"  y1="104" x2="126" y2="104" stroke-width="2.5" stroke-opacity="0.1"/>
+    <line x1="86"  y1="136" x2="126" y2="136" stroke-width="2.5" stroke-opacity="0.1"/>
+  </g>
+  <!-- word bars, middle pivot highlighted -->
+  <g>
+    <rect x="150" y="104" width="14" height="32" rx="4" fill="#2b3446"/>
+    <rect x="172" y="104" width="14" height="32" rx="4" fill="#2b3446"/>
+    <rect x="196" y="100" width="12" height="40" rx="4" fill="#a78bfa" filter="url(#glow)"/>
+    <rect x="218" y="104" width="14" height="32" rx="4" fill="#2b3446"/>
+    <rect x="240" y="104" width="14" height="32" rx="4" fill="#2b3446"/>
+  </g>
+  <!-- optimal recognition point tick -->
+  <circle cx="202" cy="86" r="4" fill="#f472b6"/>
+  <line x1="202" y1="150" x2="202" y2="158" stroke="#f472b6" stroke-width="2" stroke-linecap="round"/>
+</svg>

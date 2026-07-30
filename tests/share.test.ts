@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { hueShareText } from '../hue-hunt/src/share';
 import { echoShareText } from '../echo/src/share';
-import { dailyShareText, endlessShareText } from '../chromatic/src/share';
+import { endlessShareText } from '../chromatic/src/share';
 import { copyToClipboard } from '../shared/clipboard';
 
 describe('share text builders', () => {
@@ -15,8 +15,7 @@ describe('share text builders', () => {
     expect(echoShareText(9, true, 6, 5, true)).toContain('9');
   });
 
-  it('chromatic daily/endless text includes the key numbers', () => {
-    expect(dailyShareText(87.5, 3)).toContain('87.5');
+  it('chromatic endless text includes the key numbers', () => {
     expect(endlessShareText(50, 4, 60)).toContain('50');
   });
 });

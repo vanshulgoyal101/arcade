@@ -1,0 +1,24 @@
+<svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Where art">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2130"/><stop offset="100%" stop-color="#12141c"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="400" height="260" fill="url(#bg)"/>
+  <g fill="none" stroke="#33405a" stroke-width="1.6">
+    <circle cx="200" cy="120" r="80"/>
+    <ellipse cx="200" cy="120" rx="30" ry="80"/>
+    <ellipse cx="200" cy="120" rx="61" ry="80"/>
+    <line x1="120" y1="120" x2="280" y2="120"/>
+    <path d="M128 88 A80 80 0 0 0 272 88"/>
+    <path d="M128 152 A80 80 0 0 1 272 152"/>
+  </g>
+  <!-- location pin -->
+  <g filter="url(#glow)">
+    <path d="M236 84 a13 13 0 1 0 -0.1 0 l0.05 0 -0 0 z M236 84 l-9 15 a10.5 10.5 0 0 0 18 0 z" fill="#60a5fa"/>
+    <circle cx="236" cy="72" r="4.5" fill="#12141c"/>
+  </g>
+</svg>

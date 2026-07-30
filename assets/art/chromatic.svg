@@ -1,0 +1,20 @@
+<svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Chromatic art">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2130"/>
+      <stop offset="100%" stop-color="#12141c"/>
+    </linearGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
+  </defs>
+  <rect width="400" height="260" fill="url(#bg)"/>
+  <!-- additive RGB circles -->
+  <g style="mix-blend-mode:screen" filter="url(#soft)">
+    <circle cx="170" cy="112" r="70" fill="#ff4d5e"/>
+    <circle cx="230" cy="112" r="70" fill="#3ddc84"/>
+    <circle cx="200" cy="162" r="70" fill="#4d8cff"/>
+  </g>
+  <!-- crisp outline ring in accent -->
+  <circle cx="200" cy="130" r="96" fill="none" stroke="#ffd93d" stroke-opacity="0.55" stroke-width="2"/>
+</svg>
