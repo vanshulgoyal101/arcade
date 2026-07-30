@@ -26,6 +26,6 @@
       <rect x="244" y="171" width="46" height="46" rx="10"/>
     </g>
     <!-- the odd tile, glowing -->
-    <rect x="186" y="113" width="46" height="46" rx="10" fill="#ff6b6b" filter="url(#glow)"/>
+    <rect x="186" y="113" width="46" height="46" rx="10" fill="#fb7185" filter="url(#glow)"/>
   </g>
 </svg>

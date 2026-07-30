@@ -154,7 +154,31 @@ a { color: inherit; text-decoration: none; }
   border-color: var(--accent);
   box-shadow: var(--shadow);
 }
-.card-emoji { font-size: 2.6rem; }
+.card-art {
+  position: relative;
+  margin: -26px -26px 20px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: #12141c;
+  line-height: 0;
+}
+.card-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform .4s ease;
+}
+@media (hover: hover) {
+  .card:hover .card-art img { transform: scale(1.05); }
+}
+.card-emoji {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-size: 1.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .55));
+}
 .card h2 { margin: 12px 0 8px; font-size: 1.5rem; }
 .card p { color: var(--muted); line-height: 1.5; margin: 0 0 16px; }
 .tag {

@@ -1,0 +1,29 @@
+<svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Word of the Day art">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1a2130"/><stop offset="100%" stop-color="#12141c"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="400" height="260" fill="url(#bg)"/>
+  <!-- open book -->
+  <g>
+    <path d="M200 74 C170 60 132 60 108 70 L108 176 C132 166 170 166 200 180 Z" fill="#212a3c" stroke="#33405a" stroke-width="1.6"/>
+    <path d="M200 74 C230 60 268 60 292 70 L292 176 C268 166 230 166 200 180 Z" fill="#1c2434" stroke="#33405a" stroke-width="1.6"/>
+    <line x1="200" y1="74" x2="200" y2="180" stroke="#33405a" stroke-width="1.6"/>
+    <!-- abstract text lines -->
+    <g stroke="#33465e" stroke-width="3" stroke-linecap="round">
+      <line x1="124" y1="92"  x2="182" y2="88"/>
+      <line x1="124" y1="108" x2="176" y2="105"/>
+      <line x1="124" y1="124" x2="182" y2="121"/>
+      <line x1="218" y1="88"  x2="276" y2="92"/>
+      <line x1="224" y1="105" x2="276" y2="108"/>
+    </g>
+    <!-- highlighted "word of the day" line -->
+    <line x1="218" y1="122" x2="270" y2="125" stroke="#f472b6" stroke-width="4" stroke-linecap="round" filter="url(#glow)"/>
+  </g>
+  <!-- bookmark ribbon -->
+  <path d="M244 60 l0 40 -9 -8 -9 8 0 -40 z" fill="#f472b6" filter="url(#glow)"/>
+</svg>
