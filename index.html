@@ -15,7 +15,7 @@
   <meta name="application-name" content="Tiny Arcade" />
 
   <title>Tiny Arcade — 9 Free Browser Brain &amp; Skill Games, No Download</title>
-  <meta name="description" content="Play nine free, instant browser games — no download, no signup. Reflex, memory and colour puzzles plus brain trainers: mental maths, typing speed, digit span, ear training and a geography quiz. Works on mobile; scores saved locally." />
+  <meta name="description" content="Play ten free, instant browser games — no download, no signup. Reflex, memory and colour puzzles plus brain trainers: mental maths, typing speed, digit span, ear training, a geography quiz and an unlimited Wordle. Works on mobile; scores saved locally." />
   <meta name="keywords" content="free browser games, online games no download, brain training games, reflex game, memory game, colour matching puzzle, speed reading trainer, mental maths game, typing test, ear training game, geography quiz, html5 games, mini games" />
   <meta name="author" content="Tiny Arcade" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -24,8 +24,8 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Tiny Arcade" />
-  <meta property="og:title" content="Tiny Arcade — 9 Free Browser Games" />
-  <meta property="og:description" content="Nine free, instant browser games — reflex, memory, colour puzzles, mental maths, typing, memory span, ear training and geography. No download. Plays on any device." />
+  <meta property="og:title" content="Tiny Arcade — 10 Free Browser Games" />
+  <meta property="og:description" content="Ten free, instant browser games — reflex, memory, colour puzzles, mental maths, typing, memory span, ear training, geography and unlimited Wordle. No download. Plays on any device." />
   <meta property="og:url" content="https://games.vanshul.com/" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:image" content="https://games.vanshul.com/assets/og/hub.png" />
@@ -36,8 +36,8 @@
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Tiny Arcade — 9 Free Browser Games" />
-  <meta name="twitter:description" content="Nine free, instant browser games — reflex, memory, colour puzzles, mental maths, typing, memory span, ear training and geography. No download." />
+  <meta name="twitter:title" content="Tiny Arcade — 10 Free Browser Games" />
+  <meta name="twitter:description" content="Ten free, instant browser games — reflex, memory, colour puzzles, mental maths, typing, memory span, ear training, geography and unlimited Wordle. No download." />
   <meta name="twitter:image" content="https://games.vanshul.com/assets/og/hub.png" />
   <meta name="twitter:image:alt" content="Tiny Arcade — four tiny browser games" />
 
@@ -54,7 +54,7 @@
         "@id": "https://games.vanshul.com/#website",
         "name": "Tiny Arcade",
         "url": "https://games.vanshul.com/",
-        "description": "Nine free, instant browser games — no download, no signup.",
+        "description": "Ten free, instant browser games — no download, no signup.",
         "inLanguage": "en",
         "publisher": { "@id": "https://games.vanshul.com/#org" }
       },
@@ -77,7 +77,9 @@
           { "@type": "ListItem", "position": 6, "name": "Sprint", "url": "https://games.vanshul.com/sprint/dist/" },
           { "@type": "ListItem", "position": 7, "name": "Digit Span", "url": "https://games.vanshul.com/digit-span/dist/" },
           { "@type": "ListItem", "position": 8, "name": "Interval", "url": "https://games.vanshul.com/interval/dist/" },
-          { "@type": "ListItem", "position": 9, "name": "Where", "url": "https://games.vanshul.com/where/dist/" }
+          { "@type": "ListItem", "position": 9, "name": "Where", "url": "https://games.vanshul.com/where/dist/" },
+          { "@type": "ListItem", "position": 10, "name": "Word of the Day", "url": "https://games.vanshul.com/word/dist/" },
+          { "@type": "ListItem", "position": 11, "name": "Wordle", "url": "https://games.vanshul.com/wordle/dist/" }
         ]
       }
     ]
@@ -87,7 +89,7 @@
 <body class="hub">
   <header class="hub-head">
     <h1 class="logo">TINY&nbsp;ARCADE</h1>
-    <p class="tagline">Nine tiny games. One more round. Just one more.</p>
+    <p class="tagline">Ten tiny games. One more round. Just one more.</p>
     <div class="theme-switch">
       <button type="button" id="themeBtn" class="theme-btn" aria-pressed="false">🎨 Classic colours</button>
     </div>
@@ -155,6 +157,13 @@
       <h2>Word of the Day</h2>
       <p>Grow your vocabulary. Meet an interesting new word each day — meaning, examples, synonyms and origin — then guess the meaning or take the endless quiz.</p>
       <span class="tag">vocabulary · daily · quiz</span>
+    </a>
+
+    <a class="card" data-game="wordle" href="wordle/dist/index.html">
+      <div class="card-art"><img src="assets/art/wordle.svg" alt="" loading="lazy" width="400" height="220" /><span class="card-emoji">🟩</span></div>
+      <h2>Wordle</h2>
+      <p>Guess the hidden five-letter word in six tries. Green is the right spot, yellow is the right letter in the wrong spot. Unlimited rounds — no once-a-day wait.</p>
+      <span class="tag">word · puzzle · unlimited</span>
     </a>
   </main>
 

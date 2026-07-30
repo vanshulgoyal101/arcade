@@ -1,0 +1,38 @@
+<svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wordle art">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#141b17"/><stop offset="100%" stop-color="#0c0d12"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="400" height="260" fill="url(#bg)"/>
+  <!-- a partially-solved Wordle row grid -->
+  <g transform="translate(104 66)">
+    <!-- row 1: correct / present / absent pattern -->
+    <g>
+      <rect x="0"   y="0" width="34" height="34" rx="5" fill="#6aaa64" filter="url(#glow)"/>
+      <rect x="40"  y="0" width="34" height="34" rx="5" fill="#c9b458"/>
+      <rect x="80"  y="0" width="34" height="34" rx="5" fill="#3a3f4b"/>
+      <rect x="120" y="0" width="34" height="34" rx="5" fill="#6aaa64" filter="url(#glow)"/>
+      <rect x="160" y="0" width="34" height="34" rx="5" fill="#3a3f4b"/>
+    </g>
+    <!-- row 2: mixed -->
+    <g transform="translate(0 44)">
+      <rect x="0"   y="0" width="34" height="34" rx="5" fill="#3a3f4b"/>
+      <rect x="40"  y="0" width="34" height="34" rx="5" fill="#6aaa64" filter="url(#glow)"/>
+      <rect x="80"  y="0" width="34" height="34" rx="5" fill="#c9b458"/>
+      <rect x="120" y="0" width="34" height="34" rx="5" fill="#6aaa64" filter="url(#glow)"/>
+      <rect x="160" y="0" width="34" height="34" rx="5" fill="#6aaa64" filter="url(#glow)"/>
+    </g>
+    <!-- row 3: empty (in progress) -->
+    <g transform="translate(0 88)" fill="none" stroke="#2b3038" stroke-width="2">
+      <rect x="0"   y="0" width="34" height="34" rx="5"/>
+      <rect x="40"  y="0" width="34" height="34" rx="5"/>
+      <rect x="80"  y="0" width="34" height="34" rx="5"/>
+      <rect x="120" y="0" width="34" height="34" rx="5"/>
+      <rect x="160" y="0" width="34" height="34" rx="5"/>
+    </g>
+  </g>
+</svg>

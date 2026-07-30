@@ -102,4 +102,24 @@
       <image:title>Where — Geography Quiz</image:title>
     </image:image>
   </url>
+  <url>
+    <loc>https://games.vanshul.com/word/dist/</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/word.png</image:loc>
+      <image:title>Word of the Day — Vocabulary Game</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/wordle/dist/</loc>
+    <lastmod>2026-07-31</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/wordle.png</image:loc>
+      <image:title>Wordle — Unlimited Word Guessing Game</image:title>
+    </image:image>
+  </url>
 </urlset>

@@ -143,6 +143,16 @@ button { font-family: inherit; }
 .tile:active { transform: scale(.93); }
 .tile.correct { animation: pop .35s ease; }
 .tile.wrong { animation: shake .3s ease; }
+.tile.reveal {
+  z-index: 2;
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+  animation: revealPulse 1s ease-in-out infinite;
+}
+@keyframes revealPulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(255,255,255,.28), 0 0 16px rgba(255,255,255,.4); transform: scale(1); }
+  50% { box-shadow: 0 0 0 5px rgba(255,255,255,.5), 0 0 30px rgba(255,255,255,.7); transform: scale(1.06); }
+}
 @keyframes pop {
   0% { transform: scale(1); }
   45% { transform: scale(1.18); box-shadow: 0 0 30px rgba(255,255,255,.6); }

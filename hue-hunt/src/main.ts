@@ -162,6 +162,13 @@ function endGame(): void {
   const newBest = game.end();
   sfx.gameOver();
   const reached = game.level - 1;
+  // Point out the odd tile of the final set before the results cover the board.
+  const oddTile = boardEl.children[game.round.oddIndex] as HTMLElement | undefined;
+  oddTile?.classList.add('reveal');
+  window.setTimeout(() => showResults(newBest, reached), 900);
+}
+
+function showResults(newBest: boolean, reached: number): void {
   modal.innerHTML = `
     <h2>Time!</h2>
     <p class="sub">Score</p>
@@ -183,7 +190,8 @@ function endGame(): void {
       blob,
       filename: 'hue-hunt.png',
     });
-    { const msg = shareToast(outcome); if (msg) showToast(msg); }
+    const msg = shareToast(outcome);
+    if (msg) showToast(msg);
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = start;
 }
