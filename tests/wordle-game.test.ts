@@ -22,6 +22,19 @@ describe('wordle/words', () => {
     expect(ANSWER_WORDS.length).toBeGreaterThan(300);
     expect(new Set(ANSWER_WORDS).size).toBe(ANSWER_WORDS.length);
   });
+
+  it('bundles a dictionary of real, common words', () => {
+    expect(VALID_GUESSES.size).toBeGreaterThan(5000);
+    for (const w of ['trams', 'stare', 'gauze', 'adieu', 'slate', 'crane', 'about', 'wryly', 'crony']) {
+      expect(isValidGuess(w)).toBe(true);
+    }
+  });
+
+  it('rejects obscure Scrabble-only words', () => {
+    for (const w of ['aahed', 'crwth', 'zizit', 'soare']) {
+      expect(isValidGuess(w)).toBe(false);
+    }
+  });
 });
 
 describe('wordle/evaluateGuess', () => {
@@ -104,7 +117,7 @@ describe('wordle/game flow', () => {
   it('loses after six wrong valid guesses and resets the streak', () => {
     const g = new WordleGame('crane');
     g.store.currentStreak = 3;
-    const wrong = ['about', 'blimp', 'ghost', 'dusty', 'wryly', 'fjord'];
+    const wrong = ['about', 'ghost', 'world', 'plant', 'mount', 'vivid'];
     let last;
     for (const w of wrong) {
       for (const ch of w) g.addLetter(ch);

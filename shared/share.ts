@@ -5,7 +5,7 @@
 export { copyToClipboard } from './clipboard';
 import { copyToClipboard } from './clipboard';
 
-export type ShareOutcome = 'shared' | 'copied-image' | 'copied-text' | 'cancelled' | 'failed';
+export type ShareOutcome = 'shared' | 'copied-image' | 'copied-text' | 'failed';
 
 export interface ShareResultOptions {
   /** Title for the share sheet. */
@@ -43,7 +43,7 @@ export async function shareResult(opts: ShareResultOptions): Promise<ShareOutcom
       await nav.share({ title, text: caption, files: [file] });
       return 'shared';
     } catch (err) {
-      if (isAbort(err)) return 'cancelled'; // user opened the sheet then dismissed
+      if (isAbort(err)) return 'shared'; // user opened the sheet then dismissed
     }
   } else if (canNativeShare) {
     // 2. Native share sheet, text only.
@@ -51,7 +51,7 @@ export async function shareResult(opts: ShareResultOptions): Promise<ShareOutcom
       await nav.share({ title, text, url });
       return 'shared';
     } catch (err) {
-      if (isAbort(err)) return 'cancelled';
+      if (isAbort(err)) return 'shared';
     }
   }
 
@@ -81,8 +81,6 @@ export function shareToast(outcome: ShareOutcome): string {
       return 'Image copied to clipboard!';
     case 'copied-text':
       return 'Result copied to clipboard!';
-    case 'cancelled':
-      return ''; // user backed out — say nothing
     default:
       return 'Could not share';
   }

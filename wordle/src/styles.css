@@ -86,7 +86,7 @@ button { font-family: inherit; }
   flex: 1;
   padding: 14px 0;
 }
-.row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; perspective: 900px; }
 .tile {
   width: 60px; height: 60px;
   display: grid; place-items: center;
@@ -99,7 +99,7 @@ button { font-family: inherit; }
 }
 .tile.filled { border-color: var(--key); }
 .tile.pop { animation: pop .12s ease; }
-.tile.reveal { animation: flip .55s ease forwards; }
+.tile.reveal { animation: flip .5s ease forwards; transform-origin: center; will-change: transform; }
 .tile.correct { background: var(--correct); border-color: var(--correct); color: #fff; }
 .tile.present { background: var(--present); border-color: var(--present); color: #fff; }
 .tile.absent  { background: var(--absent);  border-color: var(--absent);  color: #fff; }
@@ -107,9 +107,9 @@ button { font-family: inherit; }
 
 @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 @keyframes flip {
-  0% { transform: rotateX(0); }
-  50% { transform: rotateX(90deg); }
-  100% { transform: rotateX(0); }
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0deg); }
 }
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }

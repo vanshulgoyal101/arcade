@@ -12,6 +12,11 @@ sfx.setMuted(sfx.loadMuted(MUTE_KEY));
 
 const KEY_ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
 
+// Tile-flip timing (ms). FLIP_HALF must match the 50% point of the CSS flip.
+const FLIP_STAGGER = 220;
+const FLIP_HALF = 250;
+const FLIP_DURATION = 500;
+
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
@@ -122,10 +127,13 @@ function paintKeyboard(): void {
 function revealRow(row: number, result: Tile[]): void {
   for (let c = 0; c < WORD_LENGTH; c++) {
     const tile = tiles[row][c];
+    const start = c * FLIP_STAGGER;
     window.setTimeout(() => {
-      tile.classList.add('reveal', result[c]);
+      tile.classList.add('reveal');
       if (c === 0) sfx.tick();
-    }, c * 260);
+    }, start);
+    // Swap in the colour when the tile is edge-on, so it "reveals" mid-flip.
+    window.setTimeout(() => tile.classList.add(result[c]), start + FLIP_HALF);
   }
 }
 
@@ -172,7 +180,7 @@ function onSubmit(): void {
   }
   locked = true;
   revealRow(res.row, res.result);
-  const revealMs = (WORD_LENGTH - 1) * 260 + 340;
+  const revealMs = (WORD_LENGTH - 1) * FLIP_STAGGER + FLIP_DURATION + 40;
   window.setTimeout(() => {
     paintKeyboard();
     locked = false;
