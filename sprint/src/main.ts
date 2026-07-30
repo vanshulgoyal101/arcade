@@ -34,7 +34,7 @@ app.innerHTML = `
 
   <div class="stream" id="stream"></div>
   <input class="field" id="field" type="text" autocomplete="off" autocapitalize="off"
-         autocorrect="off" spellcheck="false" placeholder="Start typing the words above…" />
+         autocorrect="off" spellcheck="false" placeholder="Start typing the sentence above…" />
   <p class="center hint">Type each word, press <b>space</b> to continue. The timer starts on your first keystroke.</p>
 
   <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
@@ -182,25 +182,35 @@ function resetRun(): void {
 }
 
 // ---- input ----
-field.addEventListener('keydown', (e) => {
-  if (game.finished) return;
-  if (!game.started && e.key.length === 1) {
+function startIfNeeded(): void {
+  if (!game.started) {
     game.begin(performance.now());
     rafId = requestAnimationFrame(loop);
   }
-  if (e.key === ' ') {
-    e.preventDefault();
-    if (field.value.length === 0) return;
-    const hit = field.value === game.current;
-    game.submitWord(field.value);
-    if (hit) sfx.tick();
-    else sfx.wrong();
-    field.value = '';
-    renderStream('');
-  }
-});
+}
+
+function submitWord(word: string): void {
+  const hit = word === game.current;
+  game.submitWord(word);
+  if (hit) sfx.tick();
+  else sfx.wrong();
+}
+
+// Single cross-platform source of truth. The `input` event fires on every
+// keyboard (desktop, iOS, Android) whereas `keydown` reports unreliable keys
+// on mobile. A space in the value means the word before it is complete.
 field.addEventListener('input', () => {
   if (game.finished) return;
+  if (field.value.length > 0) startIfNeeded();
+  let val = field.value;
+  let sp = val.indexOf(' ');
+  while (sp !== -1) {
+    const word = val.slice(0, sp);
+    if (word.length > 0) submitWord(word);
+    val = val.slice(sp + 1);
+    sp = val.indexOf(' ');
+  }
+  if (val !== field.value) field.value = val;
   renderStream(field.value);
 });
 

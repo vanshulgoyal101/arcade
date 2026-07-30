@@ -1,7 +1,7 @@
 // Sprint core: a timed typing test. Tracks correct/incorrect characters for
-// wpm + accuracy, and biases upcoming words toward letters you mistype.
+// wpm + accuracy, and streams words from proper sentences.
 
-import { WORDS } from './content';
+import { SENTENCES } from './content';
 import { loadStore, saveStore, type SprintStore } from './storage';
 
 export const DURATIONS = [15, 30, 60] as const;
@@ -26,6 +26,7 @@ export class SprintGame {
   started = false;
   finished = false;
   private weak: Record<string, number> = {};
+  private lastSentence = -1;
   store: SprintStore;
 
   constructor() {
@@ -45,24 +46,19 @@ export class SprintGame {
     this.duration = d;
   }
 
-  private weightedWord(): string {
-    // Words containing recently-mistyped letters are more likely to appear.
-    let bestWord = WORDS[0];
-    let bestScore = -1;
-    for (let i = 0; i < 5; i++) {
-      const w = WORDS[Math.floor(Math.random() * WORDS.length)];
-      let score = Math.random();
-      for (const ch of w) score += (this.weak[ch] ?? 0) * 0.6;
-      if (score > bestScore) {
-        bestScore = score;
-        bestWord = w;
-      }
+  private nextSentence(): string {
+    let i = Math.floor(Math.random() * SENTENCES.length);
+    if (SENTENCES.length > 1) {
+      while (i === this.lastSentence) i = Math.floor(Math.random() * SENTENCES.length);
     }
-    return bestWord;
+    this.lastSentence = i;
+    return SENTENCES[i];
   }
 
   private refill(): void {
-    while (this.upcoming.length < 24) this.upcoming.push(this.weightedWord());
+    while (this.upcoming.length < 24) {
+      for (const w of this.nextSentence().split(' ')) this.upcoming.push(w);
+    }
   }
 
   reset(): void {
@@ -73,6 +69,7 @@ export class SprintGame {
     this.finished = false;
     this.startedAt = 0;
     this.upcoming = [];
+    this.lastSentence = -1;
     this.refill();
   }
 
