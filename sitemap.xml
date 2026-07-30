@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SEO: replace https://games.vanshul.com with your real production domain, and update <lastmod> when content changes. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://games.vanshul.com/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/hub.svg</image:loc>
+      <image:title>Tiny Arcade</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/hue-hunt/dist/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/hue-hunt.svg</image:loc>
+      <image:title>Hue Hunt — Spot the Odd Colour</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/echo/dist/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/echo.svg</image:loc>
+      <image:title>Echo — Memory Pattern Game</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/chromatic/dist/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/chromatic.svg</image:loc>
+      <image:title>Chromatic — Match the Colour</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/flash/dist/</loc>
+    <lastmod>2026-07-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://games.vanshul.com/assets/og/flash.svg</image:loc>
+      <image:title>Flash — Speed Reading Trainer</image:title>
+    </image:image>
+  </url>
+</urlset>

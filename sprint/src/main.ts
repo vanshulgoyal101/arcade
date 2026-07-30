@@ -1,0 +1,210 @@
+import './styles.css';
+import { SprintGame, DURATIONS, type Duration } from './game';
+import { sprintShareText, copyToClipboard } from './share';
+
+const game = new SprintGame();
+
+const app = document.querySelector<HTMLDivElement>('#app')!;
+app.innerHTML = `
+  <div class="topbar">
+    <a class="back" href="../../index.html">← Arcade</a>
+    <h1 class="title">⌨️ Sprint</h1>
+    <span style="width:64px"></span>
+  </div>
+
+  <div class="controls">
+    <div class="toggle" id="durToggle">
+      ${DURATIONS.map((d) => `<button data-dur="${d}" class="${d === 30 ? 'active' : ''}">${d}s</button>`).join('')}
+    </div>
+  </div>
+
+  <div class="hud">
+    <div class="pill"><span class="k">WPM</span><span class="v" id="wpm">0</span></div>
+    <div class="pill"><span class="k">Accuracy</span><span class="v" id="acc">100%</span></div>
+    <div class="pill"><span class="k">Time</span><span class="v" id="time">30</span></div>
+    <div class="pill"><span class="k">Best</span><span class="v" id="best">0</span></div>
+  </div>
+
+  <div class="timerbar"><span id="timer"></span></div>
+
+  <div class="stream" id="stream"></div>
+  <input class="field" id="field" type="text" autocomplete="off" autocapitalize="off"
+         autocorrect="off" spellcheck="false" placeholder="Start typing the words above…" />
+  <p class="center hint">Type each word, press <b>space</b> to continue. The timer starts on your first keystroke.</p>
+
+  <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+  <div class="toast" id="toast"></div>
+`;
+
+const durToggle = app.querySelector<HTMLDivElement>('#durToggle')!;
+const wpmEl = app.querySelector<HTMLSpanElement>('#wpm')!;
+const accEl = app.querySelector<HTMLSpanElement>('#acc')!;
+const timeEl = app.querySelector<HTMLSpanElement>('#time')!;
+const bestEl = app.querySelector<HTMLSpanElement>('#best')!;
+const timerEl = app.querySelector<HTMLSpanElement>('#timer')!;
+const streamEl = app.querySelector<HTMLDivElement>('#stream')!;
+const field = app.querySelector<HTMLInputElement>('#field')!;
+const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
+const modal = app.querySelector<HTMLDivElement>('#modal')!;
+const toast = app.querySelector<HTMLDivElement>('#toast')!;
+
+const VISIBLE = 18;
+let rafId = 0;
+
+function showToast(msg: string): void {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+function esc(ch: string): string {
+  return ch === ' ' ? '&nbsp;' : ch.replace('<', '&lt;').replace('>', '&gt;');
+}
+
+function renderStream(typed: string): void {
+  const words = game.upcoming.slice(0, VISIBLE);
+  const html = words
+    .map((w, wi) => {
+      if (wi !== 0) return `<span class="w">${w}</span>`;
+      // Current word: colour each character against what's typed.
+      let inner = '';
+      const len = Math.max(w.length, typed.length);
+      for (let i = 0; i < len; i++) {
+        const target = w[i];
+        const got = typed[i];
+        const caret = i === typed.length ? '<span class="caret"></span>' : '';
+        if (got === undefined) {
+          inner += `${caret}<span>${esc(target)}</span>`;
+        } else if (target === undefined) {
+          inner += `<span class="c-extra">${esc(got)}</span>`;
+        } else if (got === target) {
+          inner += `${caret}<span class="c-ok">${esc(target)}</span>`;
+        } else {
+          inner += `${caret}<span class="c-bad">${esc(target)}</span>`;
+        }
+      }
+      if (typed.length >= w.length) inner += '<span class="caret"></span>';
+      return `<span class="w current">${inner}</span>`;
+    })
+    .join(' ');
+  streamEl.innerHTML = html;
+}
+
+function renderBest(): void {
+  bestEl.textContent = String(game.best);
+}
+
+function liveUpdate(now: number): void {
+  const s = game.stats(now);
+  wpmEl.textContent = String(game.started ? s.wpm : 0);
+  accEl.textContent = `${s.accuracy}%`;
+  const left = game.timeLeft(now);
+  timeEl.textContent = String(Math.ceil(left / 1000));
+  timerEl.style.transform = `scaleX(${left / (game.duration * 1000)})`;
+}
+
+function loop(ts: number): void {
+  if (game.finished) return;
+  liveUpdate(ts);
+  if (game.started && game.timeLeft(ts) <= 0) {
+    endRun(ts);
+    return;
+  }
+  rafId = requestAnimationFrame(loop);
+}
+
+function endRun(now: number): void {
+  cancelAnimationFrame(rafId);
+  const { stats, newBest } = game.finish(now);
+  field.blur();
+  renderBest();
+  const weak = game.weakLetters();
+  const weakHtml = weak.length
+    ? `<p class="hint" style="margin:8px 0 0">Trouble keys: ${weak
+        .map((w) => `<b>${w.ch}</b>\u00d7${w.count}`)
+        .join('&nbsp;&nbsp;')}</p>`
+    : '';
+  modal.innerHTML = `
+    <h2>${newBest ? 'New record! 🏆' : 'Time!'}</h2>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="n">${stats.wpm}</div><div class="l">WPM</div></div>
+      <div class="stat-box"><div class="n">${stats.accuracy}%</div><div class="l">Accuracy</div></div>
+      <div class="stat-box"><div class="n">${stats.words}</div><div class="l">Words</div></div>
+      <div class="stat-box"><div class="n">${stats.rawWpm}</div><div class="l">Raw wpm</div></div>
+    </div>
+    ${weakHtml}
+    ${newBest ? '' : `<p class="hint" style="margin:8px 0 0">Best ${game.best} wpm at ${game.duration}s</p>`}
+    <div class="row">
+      <button class="btn ghost" id="m-share">Share</button>
+      <button class="btn" id="m-again">Again</button>
+    </div>
+  `;
+  overlay.classList.add('show');
+  modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
+    const ok = await copyToClipboard(sprintShareText(stats, game.duration, game.best, newBest));
+    showToast(ok ? 'Result copied!' : 'Could not copy');
+  };
+  modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = resetRun;
+}
+
+function resetRun(): void {
+  overlay.classList.remove('show');
+  cancelAnimationFrame(rafId);
+  game.reset();
+  field.value = '';
+  field.disabled = false;
+  renderStream('');
+  liveUpdate(performance.now());
+  wpmEl.textContent = '0';
+  accEl.textContent = '100%';
+  timeEl.textContent = String(game.duration);
+  timerEl.style.transform = 'scaleX(1)';
+  field.focus();
+}
+
+// ---- input ----
+field.addEventListener('keydown', (e) => {
+  if (game.finished) return;
+  if (!game.started && e.key.length === 1) {
+    game.begin(performance.now());
+    rafId = requestAnimationFrame(loop);
+  }
+  if (e.key === ' ') {
+    e.preventDefault();
+    if (field.value.length === 0) return;
+    game.submitWord(field.value);
+    field.value = '';
+    renderStream('');
+  }
+});
+field.addEventListener('input', () => {
+  if (game.finished) return;
+  renderStream(field.value);
+});
+
+durToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
+  b.addEventListener('click', () => {
+    if (game.started && !game.finished) return;
+    durToggle.querySelectorAll('button').forEach((x) => x.classList.remove('active'));
+    b.classList.add('active');
+    game.setDuration(Number(b.dataset.dur) as Duration);
+    resetRun();
+  });
+});
+
+// keep focus on the field
+document.addEventListener('click', () => {
+  if (!game.finished) field.focus();
+});
+
+// Enter restarts from the results screen.
+document.addEventListener('keydown', (e) => {
+  if (game.finished && e.key === 'Enter') {
+    e.preventDefault();
+    resetRun();
+  }
+});
+
+// ---- boot ----
+renderBest();
+resetRun();

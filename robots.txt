@@ -1,0 +1,7 @@
+# Tiny Arcade — robots.txt
+# SEO: replace https://games.vanshul.com with your real production domain.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://games.vanshul.com/sitemap.xml

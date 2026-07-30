@@ -1,0 +1,7 @@
+# dependencies (dist/ is intentionally committed so GitHub Pages can serve it without a build step)
+node_modules/
+.npm-cache*/
+
+# OS / editor
+.DS_Store
+*.log

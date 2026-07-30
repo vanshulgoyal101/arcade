@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Tiny Arcade — four tiny browser games">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="-10%" r="95%">
+      <stop offset="0%" stop-color="#1d2233"/>
+      <stop offset="100%" stop-color="#12141c"/>
+    </radialGradient>
+    <linearGradient id="logo" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="50%" stop-color="#ffd93d"/>
+      <stop offset="100%" stop-color="#4ecdc4"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1200" height="12" fill="url(#logo)"/>
+  <text x="600" y="250" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="110" font-weight="900" letter-spacing="8" fill="url(#logo)">TINY ARCADE</text>
+  <text x="600" y="330" text-anchor="middle" font-family="Segoe UI, system-ui, sans-serif" font-size="34" fill="#9aa3b8">Four tiny games. One more round. Just one more.</text>
+  <text x="600" y="470" text-anchor="middle" font-size="96">🎯 🔊 🌈 ⚡</text>
+</svg>
