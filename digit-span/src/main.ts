@@ -14,7 +14,7 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🔢 Digit Span</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound"></button>
+    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
   </div>
 
   <div class="controls">
@@ -181,7 +181,7 @@ function gameOver(): void {
       blob,
       filename: 'digit-span.png',
     });
-    { const msg = shareToast(outcome); if (msg) showToast(msg); }
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = () => {
     overlay.classList.remove('show');

@@ -5,7 +5,7 @@ ${t}`:n,c=o?new File([o],a,{type:o.type||"image/png"}):null;if(c&&l&&s&&r.canSha
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">📖 Word</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound"></button>
+    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
   </div>
 
   <div class="tabs-wrap">

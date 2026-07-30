@@ -18,8 +18,8 @@ app.innerHTML = `
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🟩 Wordle</h1>
     <div class="topbar-btns">
-      <button class="icon-btn" id="stats" title="Statistics">📊</button>
-      <button class="icon-btn" id="mute" title="Toggle sound"></button>
+      <button class="icon-btn" id="stats" title="Statistics" aria-label="Statistics">📊</button>
+      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
     </div>
   </div>
 

@@ -14,7 +14,7 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🎹 Interval</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound"></button>
+    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
   </div>
 
   <div class="hud">
@@ -25,7 +25,7 @@ app.innerHTML = `
   </div>
 
   <div class="play-area">
-    <button class="play-btn" id="play">▶</button>
+    <button class="play-btn" id="play" aria-label="Play the two notes">▶</button>
     <div class="replay"><button id="replay">🔁 Replay</button></div>
   </div>
 
@@ -146,7 +146,7 @@ function endGame(newBest: boolean): void {
       blob,
       filename: 'interval.png',
     });
-    { const msg = shareToast(outcome); if (msg) showToast(msg); }
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = () => {
     overlay.classList.remove('show');
@@ -162,7 +162,7 @@ function startGame(): void {
 }
 
 optionsEl.querySelectorAll<HTMLButtonElement>('.opt').forEach((btn) => {
-  btn.addEventListener('pointerdown', () => onAnswer(Number(btn.dataset.semis), btn));
+  btn.addEventListener('click', () => onAnswer(Number(btn.dataset.semis), btn));
 });
 playBtn.addEventListener('click', playCurrent);
 replayBtn.addEventListener('click', playCurrent);

@@ -1,11 +1,13 @@
 # Tiny Arcade — Developer Documentation
 
-A small static "game hub" plus nine self-contained browser games. Everything runs
+A small static "game hub" plus eleven self-contained browser games. Everything runs
 client-side; there is no backend. Scores are saved in the browser's `localStorage`.
 
 - **Hub:** `index.html` + `assets/style.css`
 - **Games:** `hue-hunt/`, `echo/`, `chromatic/`, `flash/`, `flashmath/`, `sprint/`,
-  `digit-span/`, `interval/`, `where/` — each a standalone **Vite + TypeScript** app
+  `digit-span/`, `interval/`, `where/`, `word/`, `wordle/` — each a standalone
+  **Vite + TypeScript** app. (`interval` is fully built and reachable but is not
+  currently featured as a card on the hub, so the hub shows ten games.)
 
 ---
 
@@ -15,7 +17,7 @@ client-side; there is no backend. Scores are saved in the browser's `localStorag
 arcade/
 ├── index.html            # Arcade hub (landing page, links to each game's built output)
 ├── robots.txt            # SEO: allow crawling + point at the sitemap
-├── sitemap.xml           # SEO: hub + all four games, with preview images
+├── sitemap.xml           # SEO: hub + every game, with preview images
 ├── package.json          # Root TEST project (Vitest) — not a game
 ├── vitest.config.ts      # Vitest config (jsdom env, tests/**)
 ├── tests/                # Unit tests for every game's pure logic
@@ -49,17 +51,17 @@ Each game folder has an identical shape:
 
 > Per-game extras: **Flash** and **Sprint** and **Where** carry a `content.ts` (their
 > passages / word list / country data) instead of a fixed board. **Flash** also has a
-> `rsvp.ts` reader engine. Games with sound (`audio.ts`): Hue Hunt, Echo, Chromatic,
-> Flashmath, Interval. Silent games: Flash, Sprint, Digit Span, Where.
+> `rsvp.ts` reader engine. Every game now has sound via `audio.ts` (or the shared
+> `sfx.ts`) plus a mute toggle; RSVP flashing in Flash stays silent by design.
 
 > Note: earlier versions kept Hue Hunt and Echo as plain HTML/JS under `games/` and
-> `js/`. Those are gone — all nine games are now Vite + TypeScript projects.
+> `js/`. Those are gone — all eleven games are now Vite + TypeScript projects.
 
 ---
 
 ## 2. Shared conventions
 
-All nine games follow the same architecture and idioms:
+All eleven games follow the same architecture and idioms:
 
 - **Model/View split.** `game.ts` holds all rules and mutable state and has no DOM
   access. `main.ts` owns the DOM, listens for events, calls into the game, and
@@ -98,7 +100,7 @@ All nine games follow the same architecture and idioms:
 
 ### Mobile & touch support
 
-The hub and all nine games are tuned to feel native on phones and tablets:
+The hub and all games are tuned to feel native on phones and tablets:
 
 - **Viewport.** Every `index.html` uses
   `width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover`.
@@ -134,7 +136,7 @@ The hub and all nine games are tuned to feel native on phones and tablets:
 A static landing page. Key points:
 
 - `<body class="hub">` — hub styles live in `assets/style.css`.
-- Nine `.card` links, one per game, each pointing at the game's **built** output under
+- Ten `.card` links, one per featured game, each pointing at the game's **built** output under
   `<game>/dist/index.html`.
 - Each card sets an accent colour via `style="--accent:…"`.
 - The SVG favicon is inlined as a data URI (🕹️).
@@ -483,7 +485,7 @@ Coverage lives in `arcade/tests/`:
 
 ## 11. SEO & discoverability
 
-Every page (the hub + all four games) ships a full metadata layer aimed at ranking and
+Every page (the hub + every game) ships a full metadata layer aimed at ranking and
 rich social previews. It lives entirely in the **source** `index.html` files, so it is
 copied into each `dist/index.html` on build.
 
@@ -498,7 +500,7 @@ Per page:
 - **Structured data (JSON-LD)** — games use `VideoGame` (Flash uses
   `WebApplication`/`EducationalApplication`) with genre, platform, `isAccessibleForFree`,
   a `$0` `Offer`, and publisher. The hub uses a `@graph` of `WebSite` + `Organization` +
-  an `ItemList` of the four games. No fake `aggregateRating` is included (Google
+  an `ItemList` of the featured games. No fake `aggregateRating` is included (Google
   penalizes invented review data).
 - **No-JS fallback** — each game's `#app` holds a `<noscript>` block with an `<h1>`,
   description and "how to play" list so non-rendering crawlers and scrapers still get
@@ -507,7 +509,7 @@ Per page:
 Site-wide:
 
 - **`robots.txt`** — allows all crawlers and points at the sitemap.
-- **`sitemap.xml`** — lists the hub + four games with `lastmod`, `changefreq`,
+- **`sitemap.xml`** — lists the hub + every game with `lastmod`, `changefreq`,
   `priority`, and an `image:image` per URL.
 - **Preview images** — `assets/og/{hub,hue-hunt,echo,chromatic,flash}.svg`, branded
   1200×630 cards.
