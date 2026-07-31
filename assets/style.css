@@ -133,15 +133,57 @@ a { color: inherit; text-decoration: none; }
 }
 .acct-btn:active { transform: scale(.97); }
 @media (hover: hover) { .acct-btn:hover { border-color: var(--accent); } }
-.acct-chip { display: inline-flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--text); }
-.acct-chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
-.acct-name { font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.acct-out {
-  font-family: inherit; font-size: .78rem; font-weight: 600; color: var(--muted);
-  background: transparent; border: 1px solid var(--line); padding: 4px 10px;
-  border-radius: 999px; cursor: pointer;
+.acct-chip {
+  display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-size: .82rem;
+  color: var(--text); background: var(--bg-soft); border: 1px solid var(--line);
+  padding: 5px 10px 5px 6px; border-radius: 999px; cursor: pointer; transition: border-color .15s;
 }
-@media (hover: hover) { .acct-out:hover { color: var(--text); border-color: var(--accent); } }
+.acct-chip:active { transform: scale(.97); }
+@media (hover: hover) { .acct-chip:hover { border-color: var(--accent); } }
+.acct-name { font-weight: 700; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-caret { color: var(--muted); font-size: .8rem; }
+
+/* Avatars: an image or an emoji disc, sized per context */
+.av-emoji { display: inline-grid; place-items: center; background: var(--bg); border: 1px solid var(--line); border-radius: 50%; line-height: 1; }
+.acct-av { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; flex: none; }
+.acct-av.av-emoji { font-size: 15px; }
+
+/* Profile modal + avatar picker */
+.pf-modal { width: min(420px, 100%); }
+.pf-body { display: grid; gap: 8px; }
+.pf-label { font-size: .8rem; font-weight: 700; color: var(--muted); }
+.pf-label-row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+.pf-input {
+  font-family: inherit; font-size: 1rem; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%;
+}
+.pf-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+.pf-random {
+  font-family: inherit; font-size: .78rem; font-weight: 600; color: var(--muted);
+  background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer;
+}
+@media (hover: hover) { .pf-random:hover { color: var(--text); border-color: var(--accent); } }
+.pf-avatars { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 8px; }
+.pf-av {
+  aspect-ratio: 1; display: grid; place-items: center; background: var(--bg);
+  border: 2px solid var(--line); border-radius: 12px; cursor: pointer; padding: 0;
+  transition: border-color .12s, transform .08s;
+}
+.pf-av:active { transform: scale(.92); }
+.pf-av.sel { border-color: var(--accent); }
+.pf-av-inner { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+.pf-av-inner.av-emoji { border: none; background: transparent; font-size: 24px; }
+.pf-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+.pf-save {
+  font-family: inherit; font-size: .9rem; font-weight: 800; color: #10131c;
+  background: var(--accent); border: none; border-radius: 999px; padding: 9px 22px; cursor: pointer;
+}
+.pf-save:disabled { opacity: .6; cursor: default; }
+.pf-signout {
+  font-family: inherit; font-size: .82rem; font-weight: 600; color: var(--muted);
+  background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; cursor: pointer;
+}
+@media (hover: hover) { .pf-signout:hover { color: var(--text); border-color: var(--accent); } }
 
 /* ---- Leaderboard modal ---- */
 .lb-overlay {
@@ -170,8 +212,8 @@ a { color: inherit; text-decoration: none; }
 .lb-game li { display: flex; align-items: center; gap: 10px; font-size: .85rem; padding: 5px 8px; border-radius: 8px; background: var(--bg); }
 .lb-game li.lb-empty { background: transparent; }
 .lb-rank { width: 18px; color: var(--muted); font-weight: 700; text-align: center; }
-.lb-av { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
-.lb-av-x { background: var(--line); }
+.lb-av { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex: none; }
+.lb-av.av-emoji { font-size: 13px; }
 .lb-who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-score { font-weight: 800; color: var(--accent); }
 .lb-empty, .lb-loading { color: var(--muted); font-size: .85rem; }

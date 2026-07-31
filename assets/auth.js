@@ -27,6 +27,17 @@ function maxVal(o) { return o && typeof o === 'object' ? Math.max(0, ...Object.v
 function readLocal(key) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; } catch { return null; } }
 function localBest(g) { const s = readLocal(g.key); return s ? num(g.best(s)) : 0; }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function isUrl(a) { return typeof a === 'string' && /^https?:/.test(a); }
+function avatarHtml(a, cls) {
+  return isUrl(a)
+    ? `<img class="${cls}" src="${esc(a)}" alt="" referrerpolicy="no-referrer" />`
+    : `<span class="${cls} av-emoji">${esc(a || '🎮')}</span>`;
+}
+
+// Avatars a player can pick (emoji rendered in a coloured disc). Their Google
+// photo is offered too, when available.
+const PRESET_AVATARS = ['🐼','🦊','🐙','🐸','🦖','👾','🚀','🎮','🎧','🕹️','🌟','⚡','🔥','🍀','🌈','🦄','🐝','🐳'];
+function pickRandomAvatar() { return PRESET_AVATARS[Math.floor(Math.random() * PRESET_AVATARS.length)]; }
 
 // ---- load the Supabase client (graceful if the CDN is unreachable) ----
 let supabase;
@@ -45,12 +56,52 @@ const accountEl = document.getElementById('account');
 const lbBtn = document.getElementById('lbBtn');
 const lbOverlay = document.getElementById('lbOverlay');
 const lbBody = document.getElementById('lbBody');
+const pfOverlay = document.getElementById('pfOverlay');
+const pfBody = document.getElementById('pfBody');
 
-// ---- score sync ----
-function displayName(user) {
+// ---- profile ----
+let currentUser = null;
+let profile = null; // { display_name, avatar }
+
+function googleName(user) {
   const m = user.user_metadata || {};
   return m.full_name || m.name || (user.email ? user.email.split('@')[0] : 'Player');
 }
+function googleAvatar(user) { return user.user_metadata?.avatar_url || null; }
+function pName() { return profile?.display_name || (currentUser ? googleName(currentUser) : 'Player'); }
+function pAvatar() { return profile?.avatar || (currentUser ? googleAvatar(currentUser) : null) || '🎮'; }
+
+async function loadProfile(user) {
+  const { data } = await supabase
+    .from('arcade_profiles')
+    .select('display_name,avatar')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (data && (data.display_name || data.avatar)) {
+    profile = { display_name: data.display_name || googleName(user), avatar: data.avatar || googleAvatar(user) || '🎮' };
+  } else {
+    // First sign-in: seed a profile from the Google identity.
+    profile = { display_name: googleName(user), avatar: googleAvatar(user) || pickRandomAvatar() };
+    await supabase.from('arcade_profiles').upsert(
+      { user_id: user.id, display_name: profile.display_name, avatar: profile.avatar },
+      { onConflict: 'user_id' }
+    );
+  }
+}
+
+async function saveProfile(name, avatar) {
+  profile = { display_name: (name || '').trim().slice(0, 24) || googleName(currentUser), avatar: avatar || '🎮' };
+  await supabase.from('arcade_profiles').upsert(
+    { user_id: currentUser.id, display_name: profile.display_name, avatar: profile.avatar, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' }
+  );
+  // Re-stamp the player's score rows so the leaderboard shows the new identity.
+  await supabase.from('arcade_scores')
+    .update({ display_name: profile.display_name, avatar_url: profile.avatar })
+    .eq('user_id', currentUser.id);
+}
+
+// ---- score sync ----
 
 async function uploadScores(user) {
   const rows = [];
@@ -61,23 +112,29 @@ async function uploadScores(user) {
     if (best <= 0) continue;
     rows.push({
       user_id: user.id, game: g.slug, best, data: s,
-      display_name: displayName(user), avatar_url: user.user_metadata?.avatar_url || null,
+      display_name: pName(), avatar_url: pAvatar(),
     });
   }
   if (rows.length) await supabase.from('arcade_scores').upsert(rows, { onConflict: 'user_id,game' });
 }
 
-async function restoreScores(user) {
+async function restoreScores(user, overwrite = false) {
   const { data } = await supabase.from('arcade_scores').select('game,best,data').eq('user_id', user.id);
   if (!data) return;
   for (const row of data) {
     const g = GAMES.find((x) => x.slug === row.game);
     if (!g || !row.data) continue;
-    // Cloud wins only when it's strictly better; then take its whole blob.
-    if (num(row.best) > localBest(g)) {
+    // On an account switch we overwrite; otherwise cloud wins only when better.
+    if (overwrite || num(row.best) > localBest(g)) {
       try { localStorage.setItem(g.key, JSON.stringify(row.data)); } catch { /* ignore */ }
     }
   }
+}
+
+// Which signed-in account the local scores currently belong to.
+const OWNER_KEY = 'arcade.sync.owner';
+function clearLocalScores() {
+  for (const g of GAMES) { try { localStorage.removeItem(g.key); } catch { /* ignore */ } }
 }
 
 // ---- account UI ----
@@ -91,22 +148,75 @@ function renderAccount(user) {
     document.getElementById('signin').addEventListener('click', signIn);
     return;
   }
-  const name = displayName(user);
-  const avatar = user.user_metadata?.avatar_url;
   accountEl.innerHTML =
-    `<span class="acct-chip">${avatar ? `<img src="${esc(avatar)}" alt="" referrerpolicy="no-referrer" />` : ''}` +
-    `<span class="acct-name">${esc(name)}</span>` +
-    `<button type="button" id="signout" class="acct-out" title="Sign out" aria-label="Sign out">Sign out</button></span>`;
-  document.getElementById('signout').addEventListener('click', signOut);
+    `<button type="button" id="profileBtn" class="acct-chip" aria-label="Your profile">` +
+    `${avatarHtml(pAvatar(), 'acct-av')}<span class="acct-name">${esc(pName())}</span>` +
+    `<span class="acct-caret">▾</span></button>`;
+  document.getElementById('profileBtn').addEventListener('click', openProfile);
 }
 
+// ---- profile editor ----
+function openProfile() {
+  if (!pfOverlay || !currentUser) return;
+  const current = pAvatar();
+  const options = [];
+  const gPhoto = googleAvatar(currentUser);
+  if (gPhoto) options.push(gPhoto);
+  for (const e of PRESET_AVATARS) options.push(e);
+
+  pfBody.innerHTML =
+    `<label class="pf-label" for="pfName">Display name</label>` +
+    `<input id="pfName" class="pf-input" type="text" maxlength="24" value="${esc(pName())}" placeholder="Your name" />` +
+    `<div class="pf-label-row"><span class="pf-label">Avatar</span>` +
+    `<button type="button" id="pfRandom" class="pf-random">🎲 Random</button></div>` +
+    `<div class="pf-avatars" id="pfAvatars">` +
+    options.map((o) => `<button type="button" class="pf-av${o === current ? ' sel' : ''}" data-av="${esc(o)}">${avatarHtml(o, 'pf-av-inner')}</button>`).join('') +
+    `</div>` +
+    `<div class="pf-actions">` +
+    `<button type="button" id="pfSignout" class="pf-signout">Sign out</button>` +
+    `<button type="button" id="pfSave" class="pf-save">Save</button>` +
+    `</div>`;
+
+  let selected = current;
+  const marks = () => pfBody.querySelectorAll('.pf-av').forEach((x) => x.classList.toggle('sel', x.dataset.av === selected));
+  pfBody.querySelectorAll('.pf-av').forEach((b) => b.addEventListener('click', () => { selected = b.dataset.av; marks(); }));
+  document.getElementById('pfRandom').addEventListener('click', () => { selected = pickRandomAvatar(); marks(); });
+  document.getElementById('pfSignout').addEventListener('click', signOut);
+  document.getElementById('pfSave').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try { await saveProfile(document.getElementById('pfName').value, selected); } catch { /* ignore */ }
+    closeProfile();
+    renderAccount(currentUser);
+  });
+  pfOverlay.classList.add('show');
+}
+function closeProfile() { pfOverlay?.classList.remove('show'); }
+
 async function onUser(user) {
-  renderAccount(user);
-  if (user && syncedFor !== user.id) {
+  currentUser = user;
+  if (!user) { profile = null; syncedFor = null; renderAccount(null); return; }
+  if (syncedFor !== user.id) {
     syncedFor = user.id;
-    try { await restoreScores(user); await uploadScores(user); } catch { /* ignore */ }
+    try { await loadProfile(user); } catch { /* ignore */ }
+    renderAccount(user);
+    const owner = localStorage.getItem(OWNER_KEY);
+    try {
+      if (owner && owner !== user.id) {
+        // A different account signed in on this browser — don't carry over the
+        // previous account's scores; this account's cloud data is authoritative.
+        clearLocalScores();
+        await restoreScores(user, true);
+      } else {
+        // Same account, or a guest claiming their local scores for the first time.
+        await restoreScores(user);
+        await uploadScores(user);
+      }
+      localStorage.setItem(OWNER_KEY, user.id);
+    } catch { /* ignore */ }
+  } else {
+    renderAccount(user);
   }
-  if (!user) syncedFor = null;
 }
 
 async function signIn() {
@@ -117,6 +227,11 @@ async function signIn() {
 }
 
 async function signOut() {
+  if (!confirm('Sign out of Tiny Arcade on this device?')) return;
+  // Clear this account's scores from the browser so the next person (or a
+  // different account) doesn't see them; they stay safe in the cloud.
+  clearLocalScores();
+  try { localStorage.removeItem(OWNER_KEY); } catch { /* ignore */ }
   await supabase.auth.signOut();
 }
 
@@ -143,7 +258,7 @@ async function loadLeaderboard() {
               .map(
                 (r, i) =>
                   `<li><span class="lb-rank">${i + 1}</span>` +
-                  `${r.avatar_url ? `<img class="lb-av" src="${esc(r.avatar_url)}" alt="" referrerpolicy="no-referrer" />` : '<span class="lb-av lb-av-x"></span>'}` +
+                  `${avatarHtml(r.avatar_url || '🎮', 'lb-av')}` +
                   `<span class="lb-who">${esc(r.display_name || 'Player')}</span>` +
                   `<span class="lb-score">${esc(r.best)} ${esc(g.unit)}</span></li>`
               )
@@ -169,7 +284,9 @@ function closeLeaderboard() {
 lbBtn?.addEventListener('click', openLeaderboard);
 lbOverlay?.addEventListener('pointerdown', (e) => { if (e.target === lbOverlay) closeLeaderboard(); });
 document.getElementById('lbClose')?.addEventListener('click', closeLeaderboard);
-window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLeaderboard(); });
+pfOverlay?.addEventListener('pointerdown', (e) => { if (e.target === pfOverlay) closeProfile(); });
+document.getElementById('pfClose')?.addEventListener('click', closeProfile);
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeLeaderboard(); closeProfile(); } });
 
 // ---- boot ----
 supabase.auth.onAuthStateChange((_event, session) => onUser(session?.user ?? null));

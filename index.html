@@ -42,7 +42,7 @@
   <meta name="twitter:image:alt" content="Tiny Arcade — ten tiny browser games" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="stylesheet" href="assets/style.css?v=2" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>" />
 
   <script type="application/ld+json">
@@ -90,7 +90,6 @@
     <h1 class="logo">TINY&nbsp;ARCADE</h1>
     <p class="tagline">Ten tiny games. One more round. Just one more.</p>
     <div class="theme-switch">
-      <button type="button" id="themeBtn" class="theme-btn" aria-pressed="false">🎨 Classic colours</button>
       <button type="button" id="lbBtn" class="theme-btn">🏆 Leaderboard</button>
       <span id="account" class="account"></span>
     </div>
@@ -185,9 +184,19 @@
       <div class="lb-body" id="lbBody"></div>
     </div>
   </div>
+
+  <div class="lb-overlay" id="pfOverlay" role="dialog" aria-modal="true" aria-label="Your profile">
+    <div class="lb-modal pf-modal">
+      <button type="button" id="pfClose" class="lb-close" aria-label="Close">✕</button>
+      <h2 class="lb-title">Your profile</h2>
+      <p class="lb-sub">Pick a name and avatar for the leaderboard.</p>
+      <div class="pf-body" id="pfBody"></div>
+    </div>
+  </div>
   <script>
     (function () {
       var KEY = 'arcade.theme', root = document.documentElement, btn = document.getElementById('themeBtn');
+      if (!btn) return;
       function get() { try { return localStorage.getItem(KEY) === 'classic' ? 'classic' : 'refined'; } catch (e) { return 'refined'; } }
       function apply() {
         var c = get();
@@ -204,6 +213,6 @@
       apply();
     })();
   </script>
-  <script type="module" src="assets/auth.js"></script>
+  <script type="module" src="assets/auth.js?v=2"></script>
 </body>
 </html>
