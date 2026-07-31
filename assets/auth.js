@@ -58,6 +58,27 @@ const PRESET_AVATARS = AVATAR_IDS.map((id) => 'a:' + id);
 function pickRandomAvatar() { return PRESET_AVATARS[Math.floor(Math.random() * PRESET_AVATARS.length)]; }
 
 // ---- load the Supabase client (graceful if the CDN is unreachable) ----
+// Show the sign-in button instantly for signed-out visitors, before the (network)
+// SDK import resolves, so the account UI doesn't pop in a few seconds later.
+// Skip when a Supabase session token already exists (a returning user) to avoid
+// a flash of "Sign in" before their profile chip loads.
+let pendingSignIn = false;
+(() => {
+  try {
+    const hasSession = Object.keys(localStorage).some((k) => /^sb-.*-auth-token$/.test(k));
+    const el = document.getElementById('account');
+    if (el && !hasSession && !el.querySelector('button')) {
+      el.innerHTML =
+        '<button type="button" id="signin" class="acct-btn"><span class="g">G</span> Sign in with Google</button>';
+      el.querySelector('#signin').addEventListener('click', () => {
+        pendingSignIn = true;
+        const b = el.querySelector('#signin');
+        if (b) b.textContent = 'Loading…';
+      });
+    }
+  } catch { /* ignore */ }
+})();
+
 let supabase;
 try {
   const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
@@ -230,7 +251,12 @@ function closeProfile() { pfOverlay?.classList.remove('show'); }
 
 async function onUser(user) {
   currentUser = user;
-  if (!user) { profile = null; syncedFor = null; renderAccount(null); return; }
+  if (!user) {
+    profile = null; syncedFor = null; renderAccount(null);
+    // If the visitor clicked "Sign in" while the SDK was still loading, go now.
+    if (pendingSignIn) { pendingSignIn = false; signIn(); }
+    return;
+  }
   if (syncedFor !== user.id) {
     syncedFor = user.id;
     try { await loadProfile(user); } catch { /* ignore */ }
