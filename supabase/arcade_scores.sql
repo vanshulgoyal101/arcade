@@ -68,13 +68,27 @@ create policy arcade_profiles_update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- Per-account UI preference (e.g. colour theme), synced across devices.
-alter table public.arcade_profiles add column if not exists theme text;
-
 -- ---------------------------------------------------------------------------
+-- Per-game upper bounds. Shared by the submit_score RPC and the write-guard
+-- trigger below so the caps are defined in exactly one place.
+create or replace function public.arcade_score_cap(p_game text)
+returns integer
+language sql
+immutable
+as $$
+  select case p_game
+    when 'echo'       then 200
+    when 'digit-span' then 200
+    when 'flash'      then 500
+    when 'sprint'     then 500
+    when 'wordle'     then 100000
+    else 10000000
+  end;
+$$;
+
 -- Validated score submission. Prefer this RPC over a direct upsert so the
 -- server clamps obviously-forged values and always keeps the player's max.
--- (Direct upsert still works for backward compatibility via the RLS policies.)
+-- (Direct upsert still works via RLS; the guard trigger below caps it too.)
 create or replace function public.submit_score(p_game text, p_best integer, p_data jsonb)
 returns void
 language plpgsql
@@ -93,15 +107,7 @@ begin
   if p_best is null or p_best < 0 then
     return;
   end if;
-  -- Loose per-game upper bounds to blunt the most obvious forgery.
-  v_cap := case p_game
-    when 'echo'       then 200
-    when 'digit-span' then 200
-    when 'flash'      then 500
-    when 'sprint'     then 500
-    when 'wordle'     then 100000
-    else 10000000
-  end;
+  v_cap := public.arcade_score_cap(p_game);
   if p_best > v_cap then
     p_best := v_cap;
   end if;
@@ -121,6 +127,32 @@ end;
 $$;
 
 grant execute on function public.submit_score(text, integer, jsonb) to authenticated;
+
+-- Enforce the per-game caps and a blob-size limit on EVERY write path — the
+-- RPC above AND any direct upsert a client makes (RLS lets a user write their
+-- own rows, so without this a forged `best` or an oversized `data` blob would
+-- persist). Runs on both insert and update.
+create or replace function public.arcade_scores_guard()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.best is null or new.best < 0 then
+    new.best := 0;
+  end if;
+  new.best := least(new.best, public.arcade_score_cap(new.game));
+  -- `data` is just the game's localStorage blob; cap it to blunt storage abuse.
+  if new.data is not null and octet_length(new.data::text) > 65536 then
+    new.data := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists arcade_scores_guard on public.arcade_scores;
+create trigger arcade_scores_guard
+  before insert or update on public.arcade_scores
+  for each row execute function public.arcade_scores_guard();
 
 -- ---------------------------------------------------------------------------
 -- Daily challenge boards: one best row per player, per game, per day.
