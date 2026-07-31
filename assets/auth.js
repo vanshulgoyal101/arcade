@@ -240,31 +240,65 @@ async function loadLeaderboard() {
   if (!lbBody) return;
   lbBody.innerHTML = '<p class="lb-loading">Loading…</p>';
   try {
+    const uid = currentUser?.id || null;
+    // My best per game (one query) so I can show my own rank when I'm outside
+    // the shown top 5.
+    const myBest = {};
+    if (uid) {
+      const { data } = await supabase.from('arcade_scores').select('game,best').eq('user_id', uid);
+      for (const r of data || []) myBest[r.game] = num(r.best);
+    }
     const results = await Promise.all(
       GAMES.map((g) =>
         supabase
           .from('arcade_scores')
-          .select('display_name,avatar_url,best')
+          .select('user_id,display_name,avatar_url,best')
           .eq('game', g.slug)
           .order('best', { ascending: false })
           .limit(5)
           .then((r) => ({ g, rows: r.data || [] }))
       )
     );
+    // Rank lookup only for games where I have a score but I'm not in the top 5.
+    const ranks = {};
+    if (uid) {
+      const need = results.filter(
+        ({ g, rows }) => myBest[g.slug] != null && !rows.some((r) => r.user_id === uid)
+      );
+      await Promise.all(
+        need.map(async ({ g }) => {
+          const { count } = await supabase
+            .from('arcade_scores')
+            .select('user_id', { count: 'exact', head: true })
+            .eq('game', g.slug)
+            .gt('best', myBest[g.slug]);
+          ranks[g.slug] = (count || 0) + 1;
+        })
+      );
+    }
     lbBody.innerHTML = results
       .map(({ g, rows }) => {
         const list = rows.length
           ? rows
-              .map(
-                (r, i) =>
-                  `<li><span class="lb-rank">${i + 1}</span>` +
+              .map((r, i) => {
+                const you = uid && r.user_id === uid;
+                return (
+                  `<li class="${you ? 'lb-you' : ''}"><span class="lb-rank">${i + 1}</span>` +
                   `${avatarHtml(r.avatar_url || '🎮', 'lb-av')}` +
-                  `<span class="lb-who">${esc(r.display_name || 'Player')}</span>` +
+                  `<span class="lb-who">${esc(r.display_name || 'Player')}${you ? '<span class="lb-tag">You</span>' : ''}</span>` +
                   `<span class="lb-score">${esc(r.best)} ${esc(g.unit)}</span></li>`
-              )
+                );
+              })
               .join('')
           : '<li class="lb-empty">No scores yet — be the first!</li>';
-        return `<section class="lb-game"><h3>${g.emoji} ${esc(g.name)}</h3><ol>${list}</ol></section>`;
+        // My own row when I'm not already in the shown list.
+        const mine = ranks[g.slug]
+          ? `<li class="lb-you lb-mine"><span class="lb-rank">${ranks[g.slug]}</span>` +
+            `${avatarHtml(pAvatar(), 'lb-av')}` +
+            `<span class="lb-who">${esc(pName())}<span class="lb-tag">You</span></span>` +
+            `<span class="lb-score">${esc(myBest[g.slug])} ${esc(g.unit)}</span></li>`
+          : '';
+        return `<section class="lb-game"><h3>${g.emoji} ${esc(g.name)}</h3><ol>${list}${mine}</ol></section>`;
       })
       .join('');
   } catch {
