@@ -74,18 +74,35 @@ function pAvatar() { return profile?.avatar || (currentUser ? googleAvatar(curre
 async function loadProfile(user) {
   const { data } = await supabase
     .from('arcade_profiles')
-    .select('display_name,avatar')
+    .select('display_name,avatar,theme')
     .eq('user_id', user.id)
     .maybeSingle();
   if (data && (data.display_name || data.avatar)) {
-    profile = { display_name: data.display_name || googleName(user), avatar: data.avatar || googleAvatar(user) || '🎮' };
+    profile = { display_name: data.display_name || googleName(user), avatar: data.avatar || googleAvatar(user) || '🎮', theme: data.theme || null };
   } else {
     // First sign-in: seed a profile from the Google identity.
-    profile = { display_name: googleName(user), avatar: googleAvatar(user) || pickRandomAvatar() };
+    profile = { display_name: googleName(user), avatar: googleAvatar(user) || pickRandomAvatar(), theme: null };
     await supabase.from('arcade_profiles').upsert(
       { user_id: user.id, display_name: profile.display_name, avatar: profile.avatar },
       { onConflict: 'user_id' }
     );
+  }
+}
+
+// Apply an account's saved colour theme to this device (mirrors the inline
+// theme script in index.html).
+function applyTheme(theme) {
+  if (theme !== 'classic' && theme !== 'refined') return;
+  try { localStorage.setItem('arcade.theme', theme); } catch { /* ignore */ }
+  const root = document.documentElement;
+  if (theme === 'classic') root.setAttribute('data-theme', 'classic');
+  else root.removeAttribute('data-theme');
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute('content', theme === 'classic' ? '#12141c' : '#0c0d12');
+  const btn = document.getElementById('themeBtn');
+  if (btn) {
+    btn.textContent = theme === 'classic' ? '🎨 New colours' : '🎨 Classic colours';
+    btn.setAttribute('aria-pressed', String(theme === 'classic'));
   }
 }
 
@@ -199,6 +216,7 @@ async function onUser(user) {
   if (syncedFor !== user.id) {
     syncedFor = user.id;
     try { await loadProfile(user); } catch { /* ignore */ }
+    applyTheme(profile?.theme);
     renderAccount(user);
     const owner = localStorage.getItem(OWNER_KEY);
     try {
@@ -282,8 +300,11 @@ async function loadLeaderboard() {
           ? rows
               .map((r, i) => {
                 const you = uid && r.user_id === uid;
+                const rank = i < 3
+                  ? `<span class="lb-rank lb-medal">${['🥇', '🥈', '🥉'][i]}</span>`
+                  : `<span class="lb-rank">${i + 1}</span>`;
                 return (
-                  `<li class="${you ? 'lb-you' : ''}"><span class="lb-rank">${i + 1}</span>` +
+                  `<li class="${you ? 'lb-you' : ''}">${rank}` +
                   `${avatarHtml(r.avatar_url || '🎮', 'lb-av')}` +
                   `<span class="lb-who">${esc(r.display_name || 'Player')}${you ? '<span class="lb-tag">You</span>' : ''}</span>` +
                   `<span class="lb-score">${esc(r.best)} ${esc(g.unit)}</span></li>`
@@ -298,7 +319,7 @@ async function loadLeaderboard() {
             `<span class="lb-who">${esc(pName())}<span class="lb-tag">You</span></span>` +
             `<span class="lb-score">${esc(myBest[g.slug])} ${esc(g.unit)}</span></li>`
           : '';
-        return `<section class="lb-game"><h3>${g.emoji} ${esc(g.name)}</h3><ol>${list}${mine}</ol></section>`;
+        return `<section class="lb-game" data-game="${esc(g.slug)}"><h3>${g.emoji} ${esc(g.name)}</h3><ol>${list}${mine}</ol></section>`;
       })
       .join('');
   } catch {
@@ -314,6 +335,19 @@ function openLeaderboard() {
 function closeLeaderboard() {
   lbOverlay?.classList.remove('show');
 }
+
+// Persist the colour theme to the signed-in account when it's toggled.
+document.getElementById('themeBtn')?.addEventListener('click', () => {
+  if (!currentUser) return;
+  // Read the value the inline toggle just wrote, then mirror it to the cloud.
+  setTimeout(() => {
+    const theme = localStorage.getItem('arcade.theme') === 'classic' ? 'classic' : 'refined';
+    if (profile) profile.theme = theme;
+    supabase.from('arcade_profiles')
+      .upsert({ user_id: currentUser.id, theme, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      .then(() => {}, () => {});
+  }, 0);
+});
 
 lbBtn?.addEventListener('click', openLeaderboard);
 lbOverlay?.addEventListener('pointerdown', (e) => { if (e.target === lbOverlay) closeLeaderboard(); });

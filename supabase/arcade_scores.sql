@@ -64,3 +64,92 @@ create policy arcade_profiles_update
   on public.arcade_profiles for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Per-account UI preference (e.g. colour theme), synced across devices.
+alter table public.arcade_profiles add column if not exists theme text;
+
+-- ---------------------------------------------------------------------------
+-- Validated score submission. Prefer this RPC over a direct upsert so the
+-- server clamps obviously-forged values and always keeps the player's max.
+-- (Direct upsert still works for backward compatibility via the RLS policies.)
+create or replace function public.submit_score(p_game text, p_best integer, p_data jsonb)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_uid    uuid := auth.uid();
+  v_cap    integer;
+  v_name   text;
+  v_avatar text;
+begin
+  if v_uid is null then
+    raise exception 'not authenticated';
+  end if;
+  if p_best is null or p_best < 0 then
+    return;
+  end if;
+  -- Loose per-game upper bounds to blunt the most obvious forgery.
+  v_cap := case p_game
+    when 'echo'       then 200
+    when 'digit-span' then 200
+    when 'flash'      then 500
+    when 'sprint'     then 500
+    when 'wordle'     then 100000
+    else 10000000
+  end;
+  if p_best > v_cap then
+    p_best := v_cap;
+  end if;
+
+  select display_name, avatar into v_name, v_avatar
+    from public.arcade_profiles where user_id = v_uid;
+
+  insert into public.arcade_scores (user_id, game, best, data, display_name, avatar_url, updated_at)
+  values (v_uid, p_game, p_best, p_data, v_name, v_avatar, now())
+  on conflict (user_id, game) do update
+    set best         = greatest(public.arcade_scores.best, excluded.best),
+        data         = excluded.data,
+        display_name = excluded.display_name,
+        avatar_url   = excluded.avatar_url,
+        updated_at   = now();
+end;
+$$;
+
+grant execute on function public.submit_score(text, integer, jsonb) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Daily challenge boards: one best row per player, per game, per day.
+create table if not exists public.arcade_daily (
+  user_id      uuid        not null references auth.users (id) on delete cascade,
+  game         text        not null,
+  day          date        not null,
+  score        integer     not null default 0,
+  display_name text,
+  avatar_url   text,
+  updated_at   timestamptz not null default now(),
+  primary key (user_id, game, day)
+);
+
+create index if not exists arcade_daily_board_idx
+  on public.arcade_daily (game, day, score desc);
+
+alter table public.arcade_daily enable row level security;
+
+drop policy if exists arcade_daily_read on public.arcade_daily;
+create policy arcade_daily_read
+  on public.arcade_daily for select
+  using (true);
+
+drop policy if exists arcade_daily_insert on public.arcade_daily;
+create policy arcade_daily_insert
+  on public.arcade_daily for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists arcade_daily_update on public.arcade_daily;
+create policy arcade_daily_update
+  on public.arcade_daily for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
