@@ -86,11 +86,21 @@ button { font-family: inherit; }
   flex: 1;
   padding: 14px 0;
 }
-.row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; perspective: 900px; }
+/* Fluid board: tiles fill five equal columns, capped so it stays tidy on
+   large screens and shrinks to fit the smallest phones without overflowing. */
+.row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 330px;
+  perspective: 900px;
+}
 .tile {
-  width: 60px; height: 60px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   display: grid; place-items: center;
-  font-size: 2rem; font-weight: 800; text-transform: uppercase;
+  font-size: clamp(1.4rem, 8.5vw, 2rem); font-weight: 800; text-transform: uppercase;
   color: var(--text);
   border: 2px solid var(--line);
   background: transparent;
@@ -125,7 +135,7 @@ button { font-family: inherit; }
 }
 
 /* ---- keyboard ---- */
-.keyboard { display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
+.keyboard { display: flex; flex-direction: column; gap: 7px; margin: 4px auto 0; width: 100%; max-width: 400px; }
 .krow { display: flex; gap: 5px; justify-content: center; }
 .key {
   flex: 1 1 0;
@@ -198,6 +208,5 @@ button { font-family: inherit; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 @media (max-width: 380px) {
-  .tile { width: 52px; height: 52px; font-size: 1.7rem; }
   .key { height: 50px; }
 }
