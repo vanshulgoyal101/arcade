@@ -60,9 +60,29 @@ function readBlob(game: string): unknown {
   }
 }
 
+import { codedAvatarSvg } from './avatars';
+
 function googleName(u: any): string {
   const m = u?.user_metadata || {};
   return m.full_name || m.name || (u?.email ? String(u.email).split('@')[0] : 'Player');
+}
+
+// Preload the signed-in player's coded (a:<id>) avatar as an image so the share
+// card can draw it synchronously. Self-contained SVG data URL — no canvas taint.
+let avatarImg: HTMLImageElement | null = null;
+function preloadAvatar(av: string | undefined): void {
+  avatarImg = null;
+  const svg = codedAvatarSvg(av);
+  if (!svg || typeof Image === 'undefined') return;
+  const img = new Image();
+  img.decoding = 'async';
+  img.onload = () => { avatarImg = img; };
+  img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+/** The loaded coded-avatar image, or null (emoji/URL/not-ready). */
+export function cloudAvatarImage(): HTMLImageElement | null {
+  return avatarImg && avatarImg.complete && avatarImg.naturalWidth > 0 ? avatarImg : null;
 }
 
 async function init(): Promise<void> {
@@ -85,6 +105,7 @@ async function init(): Promise<void> {
           name: p?.display_name || googleName(user),
           avatar: p?.avatar || user.user_metadata?.avatar_url || '🎮',
         };
+        preloadAvatar(profile.avatar);
       }
     } catch {
       client = null;

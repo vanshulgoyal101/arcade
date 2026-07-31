@@ -2,7 +2,7 @@
 // visual into the central panel; the frame (title, stat, footer) is common so
 // every shared image reads as part of the same arcade.
 
-import { cloudProfile } from './cloud';
+import { cloudProfile, cloudAvatarImage } from './cloud';
 
 export interface Rect {
   x: number;
@@ -110,18 +110,25 @@ export function renderShareCard(opts: ShareCardOptions): HTMLCanvasElement {
   ctx.fillStyle = muted;
   ctx.fillText('TINY ARCADE', W - PAD, 104);
 
-  // Signed-in player's identity, so a shared card reads as "theirs". Only real
-  // emoji avatars are drawn next to the name; coded "a:" SVG avatars and image
-  // URLs can't be rasterised synchronously (and images taint the canvas), so
-  // those fall back to the name alone.
+  // Signed-in player's identity, so a shared card reads as "theirs". Coded
+  // "a:" avatars are drawn from a preloaded SVG image; real emoji avatars are
+  // drawn as text; image-URL avatars fall back to the name alone (canvas taint).
   const prof = cloudProfile();
   if (prof && prof.name) {
+    const img = cloudAvatarImage();
     const av = prof.avatar || '';
     const isEmoji = !!av && !/^https?:/i.test(av) && !av.startsWith('a:');
-    const label = isEmoji ? `${av}  ${prof.name}` : prof.name;
+    const label = isEmoji && !img ? `${av}  ${prof.name}` : prof.name;
     ctx.font = '600 30px system-ui, -apple-system, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
     ctx.fillStyle = text;
+    ctx.textAlign = 'right';
     ctx.fillText(label, W - PAD, 150);
+    if (img) {
+      const size = 38;
+      const gap = 12;
+      const nameW = ctx.measureText(prof.name).width;
+      ctx.drawImage(img, W - PAD - nameW - gap - size, 150 - size / 2, size, size);
+    }
   }
 
   // Visual panel.
