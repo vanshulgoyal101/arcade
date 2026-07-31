@@ -91,6 +91,8 @@
     <p class="tagline">Ten tiny games. One more round. Just one more.</p>
     <div class="theme-switch">
       <button type="button" id="themeBtn" class="theme-btn" aria-pressed="false">🎨 Classic colours</button>
+      <button type="button" id="lbBtn" class="theme-btn">🏆 Leaderboard</button>
+      <span id="account" class="account"></span>
     </div>
   </header>
 
@@ -167,13 +169,22 @@
   </main>
 
   <footer class="hub-foot">
-    <p>Made for fun. Your scores are saved locally on this device.</p>
+    <p>Made for fun. Your scores are saved on this device — sign in to save &amp; sync them.</p>
     <p class="hub-home">
       <a href="https://vanshul.com">vanshul.com</a> ·
       <a href="https://blog.vanshul.com">Blog</a> ·
       <a href="https://links.vanshul.com">Links</a>
     </p>
   </footer>
+
+  <div class="lb-overlay" id="lbOverlay" role="dialog" aria-modal="true" aria-label="Leaderboard">
+    <div class="lb-modal">
+      <button type="button" id="lbClose" class="lb-close" aria-label="Close">✕</button>
+      <h2 class="lb-title">🏆 Leaderboard</h2>
+      <p class="lb-sub">Top scores from signed-in players.</p>
+      <div class="lb-body" id="lbBody"></div>
+    </div>
+  </div>
   <script>
     (function () {
       var KEY = 'arcade.theme', root = document.documentElement, btn = document.getElementById('themeBtn');
@@ -193,5 +204,6 @@
       apply();
     })();
   </script>
+  <script type="module" src="assets/auth.js"></script>
 </body>
 </html>
