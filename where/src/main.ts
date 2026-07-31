@@ -152,6 +152,7 @@ function endGame(newBest: boolean): void {
 
 function startGame(): void {
   overlay.classList.remove('show');
+  answered = false;
   game.start();
   renderHud();
   renderPrompt();
