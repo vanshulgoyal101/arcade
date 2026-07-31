@@ -110,12 +110,15 @@ export function renderShareCard(opts: ShareCardOptions): HTMLCanvasElement {
   ctx.fillStyle = muted;
   ctx.fillText('TINY ARCADE', W - PAD, 104);
 
-  // Signed-in player's identity, so a shared card reads as "theirs". Only emoji
-  // avatars are drawn (image URLs would taint the canvas and break the export).
+  // Signed-in player's identity, so a shared card reads as "theirs". Only real
+  // emoji avatars are drawn next to the name; coded "a:" SVG avatars and image
+  // URLs can't be rasterised synchronously (and images taint the canvas), so
+  // those fall back to the name alone.
   const prof = cloudProfile();
   if (prof && prof.name) {
-    const isEmoji = !!prof.avatar && !/^https?:/i.test(prof.avatar);
-    const label = isEmoji ? `${prof.avatar}  ${prof.name}` : prof.name;
+    const av = prof.avatar || '';
+    const isEmoji = !!av && !/^https?:/i.test(av) && !av.startsWith('a:');
+    const label = isEmoji ? `${av}  ${prof.name}` : prof.name;
     ctx.font = '600 30px system-ui, -apple-system, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
     ctx.fillStyle = text;
     ctx.fillText(label, W - PAD, 150);
