@@ -34,6 +34,7 @@ app.innerHTML = `
 
   <div class="match">
     <div class="swatch target" id="targetSwatch">
+      <canvas class="swatch-fill" id="targetCanvas" width="24" height="18" aria-hidden="true"></canvas>
       <span class="caption">Target</span>
     </div>
     <div class="swatch you" id="youSwatch">
@@ -71,6 +72,7 @@ app.innerHTML = `
 const diff = app.querySelector<HTMLDivElement>('#diff')!;
 const hud = app.querySelector<HTMLDivElement>('#hud')!;
 const targetSwatch = app.querySelector<HTMLDivElement>('#targetSwatch')!;
+const targetCanvas = app.querySelector<HTMLCanvasElement>('#targetCanvas')!;
 const youSwatch = app.querySelector<HTMLDivElement>('#youSwatch')!;
 const youHex = app.querySelector<HTMLSpanElement>('#youHex')!;
 const submitBtn = app.querySelector<HTMLButtonElement>('#submit')!;
@@ -113,7 +115,13 @@ function renderHud(): void {
 }
 
 function renderTarget(): void {
-  targetSwatch.style.background = toCss(game.target);
+  // Paint the target into a canvas instead of a CSS background so the answer
+  // colour isn't readable via DevTools / computed styles.
+  const ctx = targetCanvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = toCss(game.target);
+    ctx.fillRect(0, 0, targetCanvas.width, targetCanvas.height);
+  }
   const cap = targetSwatch.querySelector<HTMLSpanElement>('.caption')!;
   cap.style.color = contrastText(game.target);
 }

@@ -175,6 +175,8 @@ button { font-family: inherit; }
   overflow: hidden;
 }
 .swatch .caption {
+  position: relative;
+  z-index: 1;
   font-size: .72rem;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -184,6 +186,8 @@ button { font-family: inherit; }
   background: rgba(0, 0, 0, .28);
   color: #fff;
 }
+/* Canvas fill hides the target colour from DevTools (no CSS colour value). */
+.swatch-fill { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
 .swatch.you .hexlabel {
   margin-left: auto;
   font-variant-numeric: tabular-nums;
