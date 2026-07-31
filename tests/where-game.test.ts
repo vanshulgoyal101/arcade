@@ -58,6 +58,18 @@ describe('where/difficulty', () => {
     g.setDifficulty('hard');
     expect(g.best).toBe(999);
   });
+
+  it('shows every country once before repeating (deck-based, no early repeats)', () => {
+    const g = new WhereGame();
+    g.setDifficulty('easy');
+    g.start();
+    const seen = [g.target.code];
+    for (let i = 1; i < EASY_COUNTRIES.length; i++) {
+      g.nextRound(); // all "answered correctly" → nothing re-queued
+      seen.push(g.target.code);
+    }
+    expect(new Set(seen).size).toBe(EASY_COUNTRIES.length); // a full pass is all-distinct
+  });
 });
 
 describe('where/rounds', () => {
