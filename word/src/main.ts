@@ -12,7 +12,7 @@ import {
 } from './game';
 import type { Word } from './content';
 import { loadStore, saveStore } from './storage';
-import { dailyShareText, practiceShareText, dailyShareCard, practiceShareCard, shareResult, shareToast } from './share';
+import { dailyShareCard, practiceShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 
 const store = loadStore();
@@ -222,8 +222,7 @@ async function shareDaily(): Promise<void> {
   const blob = await canvasToBlob(dailyShareCard(dailyWord(), store.daily.streak));
   const outcome = await shareResult({
     title: 'Word of the Day',
-    text: dailyShareText(dailyWord().word, store.daily.lastCorrect, store.daily.streak),
-    url: 'https://games.vanshul.com/word/dist/',
+    url: 'https://games.vanshul.com/word/',
     blob,
     filename: 'word.png',
   });
@@ -323,9 +322,8 @@ function practiceOver(newBest: boolean): void {
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(practiceShareCard(practice.round.word, practice.score, practice.best));
     const outcome = await shareResult({
-      title: 'Word · Practice',
-      text: practiceShareText(practice.score, practice.best, newBest),
-      url: 'https://games.vanshul.com/word/dist/',
+      title: 'Word of the Day',
+      url: 'https://games.vanshul.com/word/',
       blob,
       filename: 'word.png',
     });

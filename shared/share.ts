@@ -8,11 +8,11 @@ import { copyToClipboard } from './clipboard';
 export type ShareOutcome = 'shared' | 'copied-image' | 'copied-text' | 'failed';
 
 export interface ShareResultOptions {
-  /** Title for the share sheet. */
+  /** Title for the share sheet, and the name used in the default caption. */
   title: string;
-  /** Caption text (already includes the score summary). */
-  text: string;
-  /** Canonical URL of the game. */
+  /** Optional caption override. Defaults to a clean, spoiler-free invitation. */
+  text?: string;
+  /** Clean URL of the game. */
   url?: string;
   /** Generated snippet image; when present it is the primary payload. */
   blob?: Blob | null;
@@ -34,7 +34,10 @@ export async function shareResult(opts: ShareResultOptions): Promise<ShareOutcom
   const nav = navigator as ShareCapableNavigator;
   const canShare = typeof nav.canShare === 'function';
   const canNativeShare = typeof nav.share === 'function';
-  const caption = url ? `${text}\n${url}` : text;
+  // Keep the caption short and clean — the image carries the result, and the
+  // URL is the only link we add.
+  const message = text ?? `Play ${title} on Tiny Arcade`;
+  const caption = url ? `${message}\n${url}` : message;
   const file = blob ? new File([blob], filename, { type: blob.type || 'image/png' }) : null;
 
   // 1. Native share sheet with the image attached.
@@ -48,7 +51,7 @@ export async function shareResult(opts: ShareResultOptions): Promise<ShareOutcom
   } else if (canNativeShare) {
     // 2. Native share sheet, text only.
     try {
-      await nav.share({ title, text, url });
+      await nav.share({ title, text: message, url });
       return 'shared';
     } catch (err) {
       if (isAbort(err)) return 'shared';
