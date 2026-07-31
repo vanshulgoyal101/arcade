@@ -12,7 +12,7 @@ export function rankText(info: RankInfo | null | undefined): string {
     const medal = info.rank === 2 ? '🥈' : '🥉';
     return `${medal} #${info.rank} of ${info.total}`;
   }
-  const pct = Math.max(1, Math.round((info.rank / info.total) * 100));
+  const pct = Math.min(100, Math.max(1, Math.round((info.rank / info.total) * 100)));
   return `#${info.rank} of ${info.total} · top ${pct}%`;
 }
 

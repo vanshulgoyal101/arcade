@@ -165,13 +165,17 @@ export async function submitScore(game: string, best: number): Promise<void> {
 /** Where `score` would place on `game`'s all-time board, plus the field size. */
 export async function getRank(game: string, score: number): Promise<RankInfo | null> {
   await init();
-  if (!client || !(score > 0)) return null;
+  // No board placement for signed-out players — their score isn't submitted.
+  if (!client || !user || !(score > 0)) return null;
   try {
     const [ahead, total] = await Promise.all([
       client.from('arcade_scores').select('user_id', { count: 'exact', head: true }).eq('game', game).gt('best', score),
       client.from('arcade_scores').select('user_id', { count: 'exact', head: true }).eq('game', game),
     ]);
-    return { rank: (ahead.count || 0) + 1, total: total.count || 0 };
+    const rank = (ahead.count || 0) + 1;
+    // The player's own row may not be counted yet (submit in flight), so make
+    // sure the field always includes them — rank can never exceed total.
+    return { rank, total: Math.max(total.count || 0, rank) };
   } catch {
     return null;
   }
@@ -268,13 +272,14 @@ export async function getDailyBoard(game: string, key: string = dailyKey(), limi
 /** Where `score` places on today's daily board for `game`. */
 export async function getDailyRank(game: string, score: number, key: string = dailyKey()): Promise<RankInfo | null> {
   await init();
-  if (!client || !(score > 0)) return null;
+  if (!client || !user || !(score > 0)) return null;
   try {
     const [ahead, total] = await Promise.all([
       client.from('arcade_daily').select('user_id', { count: 'exact', head: true }).eq('game', game).eq('day', key).gt('score', score),
       client.from('arcade_daily').select('user_id', { count: 'exact', head: true }).eq('game', game).eq('day', key),
     ]);
-    return { rank: (ahead.count || 0) + 1, total: total.count || 0 };
+    const rank = (ahead.count || 0) + 1;
+    return { rank, total: Math.max(total.count || 0, rank) };
   } catch {
     return null;
   }
