@@ -110,6 +110,21 @@ function googleAvatar(user) { return user.user_metadata?.avatar_url || null; }
 function pName() { return profile?.display_name || (currentUser ? googleName(currentUser) : 'Player'); }
 function pAvatar() { return profile?.avatar || (currentUser ? googleAvatar(currentUser) : null) || '🎮'; }
 
+// Remember the profile per-device so the chip paints the right name/avatar
+// instantly on the next load, instead of flashing the Google identity while the
+// DB fetch is in flight.
+const PROFILE_CACHE = 'arcade.profile';
+function cacheProfile(id) {
+  try { localStorage.setItem(PROFILE_CACHE, JSON.stringify({ id, display_name: profile?.display_name ?? null, avatar: profile?.avatar ?? null })); } catch { /* ignore */ }
+}
+function hydrateProfileFromCache(id) {
+  try {
+    const c = JSON.parse(localStorage.getItem(PROFILE_CACHE) || 'null');
+    if (c && c.id === id && (c.display_name || c.avatar)) { profile = { display_name: c.display_name, avatar: c.avatar }; return true; }
+  } catch { /* ignore */ }
+  return false;
+}
+
 async function loadProfile(user) {
   const { data } = await supabase
     .from('arcade_profiles')
@@ -147,6 +162,7 @@ function applyTheme(theme) {
 
 async function saveProfile(name, avatar) {
   profile = { display_name: (name || '').trim().slice(0, 24) || googleName(currentUser), avatar: avatar || '🎮' };
+  cacheProfile(currentUser.id);
   await supabase.from('arcade_profiles').upsert(
     { user_id: currentUser.id, display_name: profile.display_name, avatar: profile.avatar, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
@@ -259,11 +275,13 @@ async function onUser(user) {
   }
   if (syncedFor !== user.id) {
     syncedFor = user.id;
+    if (hydrateProfileFromCache(user.id)) renderAccount(user); // instant, no flash
     try { await loadProfile(user); } catch { /* ignore */ }
+    cacheProfile(user.id);
     applyTheme(profile?.theme);
     renderAccount(user);
-    const owner = localStorage.getItem(OWNER_KEY);
     try {
+      const owner = localStorage.getItem(OWNER_KEY);
       if (owner && owner !== user.id) {
         // A different account signed in on this browser — don't carry over the
         // previous account's scores; this account's cloud data is authoritative.
@@ -276,7 +294,7 @@ async function onUser(user) {
       }
       localStorage.setItem(OWNER_KEY, user.id);
     } catch { /* ignore */ }
-  } else {
+  } else if (profile) {
     renderAccount(user);
   }
 }
