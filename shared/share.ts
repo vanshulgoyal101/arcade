@@ -29,6 +29,16 @@ function isAbort(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError';
 }
 
+// Desktop browsers (notably Brave/Chromium) "support" sharing files but many
+// share targets paste the image's local temp path into the message body
+// instead of attaching it — so only attach the image on mobile, where Web Share
+// renders it as a real image. Desktop shares clean text + URL.
+function isMobileLike(): boolean {
+  const uaData = (navigator as Navigator & { userAgentData?: { mobile?: boolean } }).userAgentData;
+  if (uaData && typeof uaData.mobile === 'boolean') return uaData.mobile;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
 export async function shareResult(opts: ShareResultOptions): Promise<ShareOutcome> {
   const { title, text, url, blob, filename = 'result.png' } = opts;
   const nav = navigator as ShareCapableNavigator;
@@ -40,8 +50,8 @@ export async function shareResult(opts: ShareResultOptions): Promise<ShareOutcom
   const caption = url ? `${message}\n${url}` : message;
   const file = blob ? new File([blob], filename, { type: blob.type || 'image/png' }) : null;
 
-  // 1. Native share sheet with the image attached.
-  if (file && canNativeShare && canShare && nav.canShare({ files: [file] })) {
+  // 1. Mobile: native share sheet with the image attached.
+  if (file && isMobileLike() && canNativeShare && canShare && nav.canShare({ files: [file] })) {
     try {
       await nav.share({ title, text: caption, files: [file] });
       return 'shared';
@@ -49,7 +59,7 @@ export async function shareResult(opts: ShareResultOptions): Promise<ShareOutcom
       if (isAbort(err)) return 'shared'; // user opened the sheet then dismissed
     }
   } else if (canNativeShare) {
-    // 2. Native share sheet, text only.
+    // 2. Native share sheet, clean text + link (no file — avoids the path leak).
     try {
       await nav.share({ title, text: message, url });
       return 'shared';

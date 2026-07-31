@@ -41,17 +41,30 @@ describe('shared/clipboard', () => {
 
 describe('shared/share', () => {
   afterEach(() => {
-    Object.assign(navigator, { share: undefined, canShare: undefined });
+    Object.assign(navigator, { share: undefined, canShare: undefined, userAgentData: undefined });
   });
 
-  it('opens the native share sheet with the image when supported', async () => {
+  it('opens the native share sheet with the image on mobile', async () => {
     const share = vi.fn().mockResolvedValue(undefined);
     const canShare = vi.fn().mockReturnValue(true);
-    Object.assign(navigator, { share, canShare });
+    Object.assign(navigator, { share, canShare, userAgentData: { mobile: true } });
     const blob = new Blob(['img'], { type: 'image/png' });
     const outcome = await shareResult({ title: 'T', text: 'hi', url: 'u', blob });
     expect(outcome).toBe('shared');
     expect(share.mock.calls[0][0].files).toHaveLength(1);
+  });
+
+  it('shares clean text + url without the file on desktop', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    const canShare = vi.fn().mockReturnValue(true);
+    Object.assign(navigator, { share, canShare, userAgentData: { mobile: false } });
+    const blob = new Blob(['img'], { type: 'image/png' });
+    const outcome = await shareResult({ title: 'T', text: 'hi', url: 'u', blob });
+    expect(outcome).toBe('shared');
+    const arg = share.mock.calls[0][0];
+    expect(arg.files).toBeUndefined();
+    expect(arg.url).toBe('u');
+    expect(arg.text).toBe('hi');
   });
 
   it('treats a user-cancelled share sheet as shared', async () => {
