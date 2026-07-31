@@ -44,8 +44,11 @@ create table if not exists public.arcade_profiles (
   user_id      uuid        primary key references auth.users (id) on delete cascade,
   display_name text,
   avatar       text,                        -- an emoji like "🐼" or an https photo URL
+  theme        text,                        -- 'classic' | 'refined' (synced colour theme)
   updated_at   timestamptz not null default now()
 );
+-- Add theme to pre-existing installs (loadProfile selects it, so it must exist).
+alter table public.arcade_profiles add column if not exists theme text;
 
 alter table public.arcade_profiles enable row level security;
 
