@@ -2,6 +2,8 @@
 // visual into the central panel; the frame (title, stat, footer) is common so
 // every shared image reads as part of the same arcade.
 
+import { cloudProfile } from './cloud';
+
 export interface Rect {
   x: number;
   y: number;
@@ -107,6 +109,17 @@ export function renderShareCard(opts: ShareCardOptions): HTMLCanvasElement {
   ctx.font = '600 26px system-ui, -apple-system, "Segoe UI", sans-serif';
   ctx.fillStyle = muted;
   ctx.fillText('TINY ARCADE', W - PAD, 104);
+
+  // Signed-in player's identity, so a shared card reads as "theirs". Only emoji
+  // avatars are drawn (image URLs would taint the canvas and break the export).
+  const prof = cloudProfile();
+  if (prof && prof.name) {
+    const isEmoji = !!prof.avatar && !/^https?:/i.test(prof.avatar);
+    const label = isEmoji ? `${prof.avatar}  ${prof.name}` : prof.name;
+    ctx.font = '600 30px system-ui, -apple-system, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+    ctx.fillStyle = text;
+    ctx.fillText(label, W - PAD, 150);
+  }
 
   // Visual panel.
   const panelRect: Rect = { x: PAD, y: 196, w: W - 2 * PAD, h: 560 };

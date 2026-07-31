@@ -16,8 +16,17 @@ export function rankText(info: RankInfo | null | undefined): string {
   return `#${info.rank} of ${info.total} · top ${pct}%`;
 }
 
-/** A ready-to-insert badge (or empty string). Style with `.cloud-rank`. */
+/** A ready-to-insert badge (or empty string). Self-styled via theme vars. */
 export function rankBadgeHtml(info: RankInfo | null | undefined, label = 'Global rank'): string {
   const t = rankText(info);
-  return t ? `<div class="cloud-rank"><span class="cloud-rank-k">${label}</span><span class="cloud-rank-v">${t}</span></div>` : '';
+  if (!t) return '';
+  const pill =
+    'display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;' +
+    'background:var(--bg,#0c0d12);border:1px solid var(--line,#2a2d3a);font-size:.9rem';
+  return (
+    `<div class="cloud-rank" style="text-align:center;margin:12px 0 0">` +
+    `<span style="${pill}">` +
+    `<span style="color:var(--muted,#949cb0);font-weight:600">${label}</span>` +
+    `<span style="color:var(--accent,#fb7185);font-weight:800">${t}</span></span></div>`
+  );
 }

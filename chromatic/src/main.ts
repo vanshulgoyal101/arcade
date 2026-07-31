@@ -4,6 +4,8 @@ import { toCss, contrastText, toHex, type RGB } from './color';
 import { Game, type Difficulty } from './game';
 import { endlessShareText, chromaticShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
+import { submitScore, getRank } from '../../shared/cloud';
+import { rankBadgeHtml } from '../../shared/rank';
 import { saveStore } from './storage';
 import * as sfx from './audio';
 
@@ -167,6 +169,11 @@ function openEndlessModal(): void {
     </div>
   `;
   overlay.classList.add('show');
+  void submitScore('chromatic', best);
+  getRank('chromatic', best).then((r) => {
+    const badge = rankBadgeHtml(r);
+    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
+  });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(
       chromaticShareCard(game.score, game.level, best, game.target, game.guess, game.lastResult?.accuracy ?? 0)

@@ -2,6 +2,8 @@ import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
 import * as sfx from '../../shared/sfx';
 import { canvasToBlob } from '../../shared/card';
+import { submitScore, getRank } from '../../shared/cloud';
+import { rankBadgeHtml } from '../../shared/rank';
 import { WordleGame, WORD_LENGTH, MAX_GUESSES, type Tile } from './game';
 import { winPercent } from './storage';
 import { wordleShareCard, shareResult, shareToast } from './share';
@@ -228,6 +230,11 @@ function endGame(won: boolean, newRecord: boolean): void {
     </div>
   `;
   overlay.classList.add('show');
+  void submitScore('wordle', s.maxStreak);
+  getRank('wordle', s.maxStreak).then((r) => {
+    const badge = rankBadgeHtml(r);
+    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
+  });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(wordleShareCard(game.results, game.status, s.currentStreak));
     const outcome = await shareResult({

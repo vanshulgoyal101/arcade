@@ -5,6 +5,8 @@ import { saveStore } from './storage';
 import * as sfx from './audio';
 import { echoShareText, echoShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
+import { cloudReady, submitScore, getRank } from '../../shared/cloud';
+import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new EchoGame();
 sfx.setMuted(game.store.muted);
@@ -212,12 +214,19 @@ function gameOver(): void {
     <div class="big">${reached}</div>
     <p class="sub">steps · ${game.strict ? 'Strict' : 'Forgiving'} · ${game.pads}-pad · Best ${game.best}</p>
     ${newBest ? '<p class="newbest">🏆 New best!</p>' : ''}
+    <div class="cloud-rank-slot" id="rank"></div>
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
       <button class="btn" id="m-again">Play again</button>
     </div>
   `;
   overlay.classList.add('show');
+  // Cloud: record the run and show where this best sits on the global board.
+  void submitScore('echo', game.best);
+  getRank('echo', game.best).then((r) => {
+    const el = modal.querySelector('#rank');
+    if (el) el.innerHTML = rankBadgeHtml(r);
+  });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(echoShareCard(reached, game.strict, game.pads, game.best));
     const outcome = await shareResult({
@@ -280,6 +289,7 @@ muteBtn.addEventListener('click', () => {
 startBtn.addEventListener('click', startGame);
 
 // ---- boot ----
+void cloudReady();
 renderMute();
 renderToggles();
 renderHud();

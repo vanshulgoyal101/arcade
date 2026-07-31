@@ -14,6 +14,8 @@ import type { Word } from './content';
 import { loadStore, saveStore } from './storage';
 import { dailyShareCard, practiceShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
+import { submitScore, getRank } from '../../shared/cloud';
+import { rankBadgeHtml } from '../../shared/rank';
 
 const store = loadStore();
 const MUTE_KEY = 'word.muted';
@@ -319,6 +321,11 @@ function practiceOver(newBest: boolean): void {
       <button class="btn" id="m-again">Play again</button>
     </div>`;
   overlay.classList.add('show');
+  void submitScore('word', practice.best);
+  getRank('word', practice.best).then((r) => {
+    const badge = rankBadgeHtml(r);
+    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
+  });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(practiceShareCard(practice.round.word, practice.score, practice.best));
     const outcome = await shareResult({

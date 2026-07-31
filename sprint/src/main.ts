@@ -4,6 +4,8 @@ import * as sfx from '../../shared/sfx';
 import { SprintGame, DURATIONS, type Duration } from './game';
 import { sprintShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
+import { submitScore, getRank } from '../../shared/cloud';
+import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new SprintGame();
 const MUTE_KEY = 'sprint.muted';
@@ -155,6 +157,11 @@ function endRun(now: number): void {
     </div>
   `;
   overlay.classList.add('show');
+  void submitScore('sprint', game.best);
+  getRank('sprint', game.best).then((r) => {
+    const badge = rankBadgeHtml(r);
+    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
+  });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(sprintShareCard(stats, game.duration, game.best));
     const outcome = await shareResult({

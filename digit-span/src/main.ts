@@ -5,6 +5,8 @@ import { saveStore } from './storage';
 import * as sfx from './audio';
 import { digitShareText, digitShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
+import { submitScore, getRank } from '../../shared/cloud';
+import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new DigitGame();
 sfx.setMuted(game.store.muted);
@@ -172,6 +174,11 @@ function gameOver(): void {
     </div>
   `;
   overlay.classList.add('show');
+  void submitScore('digit-span', game.best);
+  getRank('digit-span', game.best).then((r) => {
+    const badge = rankBadgeHtml(r);
+    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
+  });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(digitShareCard(game.expected(), reached, game.mode, game.best));
     const outcome = await shareResult({

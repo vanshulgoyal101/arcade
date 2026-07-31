@@ -6,6 +6,8 @@ import { RsvpPlayer, type Token } from './rsvp';
 import type { Passage } from './content';
 import { flashShareText, flashShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
+import { submitScore, getRank } from '../../shared/cloud';
+import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new FlashGame();
 const MUTE_KEY = 'flash.muted';
@@ -293,6 +295,11 @@ function showResult(r: RoundResult): void {
     </div>
   `;
   overlay.classList.add('show');
+  void submitScore('flash', game.store.bestWpm);
+  getRank('flash', game.store.bestWpm).then((r) => {
+    const badge = rankBadgeHtml(r);
+    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
+  });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(flashShareCard(r, game.store.bestWpm));
     const outcome = await shareResult({

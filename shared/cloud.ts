@@ -34,6 +34,32 @@ function num(v: unknown): number {
   return typeof v === 'number' && isFinite(v) ? v : 0;
 }
 
+// localStorage key per game slug — lets submitScore ship the full store blob
+// (for cross-device restore) without each game passing it in.
+const LS_KEYS: Record<string, string> = {
+  'hue-hunt': 'huehunt.v2',
+  where: 'where.v1',
+  echo: 'echo.v2',
+  chromatic: 'chromatic.v2',
+  flash: 'flash.v1',
+  flashmath: 'flashmath.v1',
+  sprint: 'sprint.v1',
+  'digit-span': 'digitspan.v1',
+  word: 'word.v1',
+  wordle: 'wordle.v1',
+};
+
+function readBlob(game: string): unknown {
+  try {
+    const k = LS_KEYS[game];
+    if (!k) return null;
+    const raw = localStorage.getItem(k);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 function googleName(u: any): string {
   const m = u?.user_metadata || {};
   return m.full_name || m.name || (u?.email ? String(u.email).split('@')[0] : 'Player');
@@ -88,9 +114,10 @@ export function cloudProfile(): CloudProfile | null {
  * RPC (server-side clamping) and falls back to a direct upsert if the RPC
  * isn't deployed yet. No-op when signed out or the score isn't positive.
  */
-export async function submitScore(game: string, best: number, data: unknown): Promise<void> {
+export async function submitScore(game: string, best: number): Promise<void> {
   await init();
   if (!client || !user || !(best > 0)) return;
+  const data = readBlob(game);
   try {
     const rpc = await client.rpc('submit_score', { p_game: game, p_best: Math.floor(best), p_data: data });
     if (!rpc.error) return;
