@@ -3,5 +3,7 @@
 
 User-agent: *
 Allow: /
+# Private owner-only analytics dashboard — keep it out of search.
+Disallow: /stats/
 
 Sitemap: https://games.vanshul.com/sitemap.xml
