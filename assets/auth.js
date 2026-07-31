@@ -337,7 +337,15 @@ async function loadLeaderboard() {
             `<span class="lb-who">${esc(pName())}<span class="lb-tag">You</span></span>` +
             `<span class="lb-score">${esc(myBest[g.slug])} ${esc(g.unit)}</span></li>`
           : '';
-        return `<section class="lb-game" data-game="${esc(g.slug)}"><h3>${g.emoji} ${esc(g.name)}</h3><ol>${list}${mine}</ol></section>`;
+        const lead = rows.length
+          ? `<span class="lb-lead">🥇 ${esc(rows[0].display_name || 'Player')} · ${esc(rows[0].best)} ${esc(g.unit)}</span>`
+          : `<span class="lb-lead lb-lead-empty">No scores yet</span>`;
+        return (
+          `<details class="lb-game" data-game="${esc(g.slug)}">` +
+          `<summary class="lb-head"><span class="lb-game-name">${g.emoji} ${esc(g.name)}</span>` +
+          `<span class="lb-head-right">${lead}<span class="lb-caret">▾</span></span></summary>` +
+          `<ol>${list}${mine}</ol></details>`
+        );
       })
       .join('');
   } catch {
