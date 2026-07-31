@@ -16,6 +16,7 @@ export interface CloudProfile {
 export interface RankInfo {
   rank: number;
   total: number;
+  signedOut?: boolean; // sentinel: not ranked because nobody is signed in here
 }
 export interface DailyRow {
   name: string;
@@ -125,6 +126,20 @@ export function isSignedIn(): boolean {
   return !!user;
 }
 
+/** Start Google sign-in from within a game, returning to this page afterwards. */
+export async function signIn(): Promise<void> {
+  await init();
+  if (!client) return;
+  try {
+    await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href } });
+  } catch {
+    /* ignore */
+  }
+}
+// Exposed so a self-contained nudge button (rendered as an HTML string in every
+// game's game-over modal) can trigger sign-in without per-game wiring.
+try { (globalThis as { __arcadeSignIn?: () => void }).__arcadeSignIn = signIn; } catch { /* ignore */ }
+
 /** The signed-in player's display name + avatar, or null when signed out. */
 export function cloudProfile(): CloudProfile | null {
   return profile;
@@ -165,8 +180,9 @@ export async function submitScore(game: string, best: number): Promise<void> {
 /** Where `score` would place on `game`'s all-time board, plus the field size. */
 export async function getRank(game: string, score: number): Promise<RankInfo | null> {
   await init();
-  // No board placement for signed-out players — their score isn't submitted.
-  if (!client || !user || !(score > 0)) return null;
+  if (!client || !(score > 0)) return null;
+  // Signed-out players aren't on the board — surface a sign-in nudge instead.
+  if (!user) return { rank: 0, total: 0, signedOut: true };
   try {
     const [ahead, total] = await Promise.all([
       client.from('arcade_scores').select('user_id', { count: 'exact', head: true }).eq('game', game).gt('best', score),
@@ -272,7 +288,8 @@ export async function getDailyBoard(game: string, key: string = dailyKey(), limi
 /** Where `score` places on today's daily board for `game`. */
 export async function getDailyRank(game: string, score: number, key: string = dailyKey()): Promise<RankInfo | null> {
   await init();
-  if (!client || !user || !(score > 0)) return null;
+  if (!client || !(score > 0)) return null;
+  if (!user) return { rank: 0, total: 0, signedOut: true };
   try {
     const [ahead, total] = await Promise.all([
       client.from('arcade_daily').select('user_id', { count: 'exact', head: true }).eq('game', game).eq('day', key).gt('score', score),
