@@ -189,7 +189,7 @@ function openEndlessModal(): void {
     const outcome = await shareResult({
       title: 'Chromatic',
       text: endlessShareText(game.score, game.level, best),
-      url: 'https://games.vanshul.com/chromatic/dist/',
+      url: 'https://games.vanshul.com/chromatic/',
       blob,
       filename: 'chromatic.png',
     });

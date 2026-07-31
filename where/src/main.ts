@@ -146,7 +146,7 @@ function endGame(newBest: boolean): void {
     const outcome = await shareResult({
       title: 'Where',
       text: whereShareText(game.score, game.mode, game.difficulty, best, newBest),
-      url: 'https://games.vanshul.com/where/dist/',
+      url: 'https://games.vanshul.com/where/',
       blob,
       filename: 'where.png',
     });

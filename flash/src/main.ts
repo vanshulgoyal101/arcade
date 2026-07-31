@@ -305,7 +305,7 @@ function showResult(r: RoundResult): void {
     const outcome = await shareResult({
       title: 'Flash',
       text: flashShareText(r, game.store.bestWpm),
-      url: 'https://games.vanshul.com/flash/dist/',
+      url: 'https://games.vanshul.com/flash/',
       blob,
       filename: 'flash.png',
     });

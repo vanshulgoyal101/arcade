@@ -193,7 +193,7 @@ function showResults(newBest: boolean, reached: number): void {
     const outcome = await shareResult({
       title: 'Hue Hunt',
       text: hueShareText(game.score, reached, game.store.bestScore),
-      url: 'https://games.vanshul.com/hue-hunt/dist/',
+      url: 'https://games.vanshul.com/hue-hunt/',
       blob,
       filename: 'hue-hunt.png',
     });

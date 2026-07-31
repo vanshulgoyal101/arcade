@@ -184,7 +184,7 @@ function gameOver(): void {
     const outcome = await shareResult({
       title: 'Digit Span',
       text: digitShareText(reached, game.mode, game.best, newBest),
-      url: 'https://games.vanshul.com/digit-span/dist/',
+      url: 'https://games.vanshul.com/digit-span/',
       blob,
       filename: 'digit-span.png',
     });

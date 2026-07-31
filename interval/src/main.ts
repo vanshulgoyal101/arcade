@@ -142,7 +142,7 @@ function endGame(newBest: boolean): void {
     const outcome = await shareResult({
       title: 'Interval',
       text: intervalShareText(game.score, best, newBest),
-      url: 'https://games.vanshul.com/interval/dist/',
+      url: 'https://games.vanshul.com/interval/',
       blob,
       filename: 'interval.png',
     });

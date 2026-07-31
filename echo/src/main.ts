@@ -232,7 +232,7 @@ function gameOver(): void {
     const outcome = await shareResult({
       title: 'Echo',
       text: echoShareText(reached, game.strict, game.pads, game.best, newBest),
-      url: 'https://games.vanshul.com/echo/dist/',
+      url: 'https://games.vanshul.com/echo/',
       blob,
       filename: 'echo.png',
     });

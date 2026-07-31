@@ -203,7 +203,7 @@ function endGame(): void {
     const outcome = await shareResult({
       title: 'Flashmath',
       text: mathShareText(game.score, game.solved, game.store.bestScore, newBest),
-      url: 'https://games.vanshul.com/flashmath/dist/',
+      url: 'https://games.vanshul.com/flashmath/',
       blob,
       filename: 'flashmath.png',
     });
