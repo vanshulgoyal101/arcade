@@ -17,12 +17,22 @@ export interface RankInfo {
   rank: number;
   total: number;
 }
+export interface DailyRow {
+  name: string;
+  avatar: string;
+  score: number;
+  isYou: boolean;
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 let client: any = null;
 let user: any = null;
 let profile: CloudProfile | null = null;
 let initPromise: Promise<void> | null = null;
+
+function num(v: unknown): number {
+  return typeof v === 'number' && isFinite(v) ? v : 0;
+}
 
 function googleName(u: any): string {
   const m = u?.user_metadata || {};
@@ -112,6 +122,109 @@ export async function getRank(game: string, score: number): Promise<RankInfo | n
     const [ahead, total] = await Promise.all([
       client.from('arcade_scores').select('user_id', { count: 'exact', head: true }).eq('game', game).gt('best', score),
       client.from('arcade_scores').select('user_id', { count: 'exact', head: true }).eq('game', game),
+    ]);
+    return { rank: (ahead.count || 0) + 1, total: total.count || 0 };
+  } catch {
+    return null;
+  }
+}
+
+// ---- daily challenge ----
+
+/** Local calendar day as YYYY-MM-DD — the seed key for a day's puzzle. */
+export function dailyKey(d: Date = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function hashSeed(str: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** Deterministic RNG in [0,1); same output for every player on the same day. */
+export function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** A game's seeded RNG for today's daily challenge. */
+export function dailyRng(game: string, key: string = dailyKey()): () => number {
+  return mulberry32(hashSeed(`${game}:${key}`));
+}
+
+/** Record today's daily score, keeping the player's best for the day. */
+export async function submitDaily(game: string, score: number, key: string = dailyKey()): Promise<void> {
+  await init();
+  if (!client || !user || !(score >= 0)) return;
+  try {
+    const { data } = await client
+      .from('arcade_daily')
+      .select('score')
+      .eq('user_id', user.id)
+      .eq('game', game)
+      .eq('day', key)
+      .maybeSingle();
+    if (data && num(data.score) >= score) return;
+    await client.from('arcade_daily').upsert(
+      {
+        user_id: user.id,
+        game,
+        day: key,
+        score: Math.floor(score),
+        display_name: profile?.name ?? googleName(user),
+        avatar_url: profile?.avatar ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,game,day' }
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Today's top scores for a game's daily board. */
+export async function getDailyBoard(game: string, key: string = dailyKey(), limit = 10): Promise<DailyRow[]> {
+  await init();
+  if (!client) return [];
+  try {
+    const { data } = await client
+      .from('arcade_daily')
+      .select('user_id,display_name,avatar_url,score')
+      .eq('game', game)
+      .eq('day', key)
+      .order('score', { ascending: false })
+      .limit(limit);
+    return (data || []).map((r: any) => ({
+      name: r.display_name || 'Player',
+      avatar: r.avatar_url || '🎮',
+      score: num(r.score),
+      isYou: !!user && r.user_id === user.id,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Where `score` places on today's daily board for `game`. */
+export async function getDailyRank(game: string, score: number, key: string = dailyKey()): Promise<RankInfo | null> {
+  await init();
+  if (!client || !(score > 0)) return null;
+  try {
+    const [ahead, total] = await Promise.all([
+      client.from('arcade_daily').select('user_id', { count: 'exact', head: true }).eq('game', game).eq('day', key).gt('score', score),
+      client.from('arcade_daily').select('user_id', { count: 'exact', head: true }).eq('game', game).eq('day', key),
     ]);
     return { rank: (ahead.count || 0) + 1, total: total.count || 0 };
   } catch {
