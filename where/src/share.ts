@@ -6,10 +6,17 @@ import { flagEmoji } from './content';
 export { copyToClipboard } from '../../shared/clipboard';
 export { shareResult, shareToast } from '../../shared/share';
 
-export function whereShareText(score: number, mode: string, best: number, newBest: boolean): string {
+export function whereShareText(
+  score: number,
+  mode: string,
+  difficulty: string,
+  best: number,
+  newBest: boolean
+): string {
+  const label = `${difficulty === 'hard' ? 'Hard' : 'Easy'} · ${mode === 'flag' ? 'Flags' : 'Capitals'}`;
   return [
     'Where 🗺️ geography',
-    `Score ${score} (${mode})`,
+    `Score ${score} (${label})`,
     newBest ? '🏆 New best!' : `Best ${best}`,
     '',
     'How well do you know the world?',
@@ -19,14 +26,16 @@ export function whereShareText(score: number, mode: string, best: number, newBes
 export function whereShareCard(
   score: number,
   mode: string,
+  difficulty: string,
   best: number,
   country: { name: string; capital: string; code: string }
 ): HTMLCanvasElement {
+  const label = `${difficulty === 'hard' ? 'Hard' : 'Easy'} · ${mode === 'flag' ? 'Flags' : 'Capitals'}`;
   return renderShareCard({
     title: 'Where',
     emoji: '🗺️',
     stat: String(score),
-    statLabel: `${mode === 'flag' ? 'Flags' : 'Capitals'} · best ${best}`,
+    statLabel: `${label} · best ${best}`,
     tagline: 'How well do you know the world?',
     slug: 'where',
     draw: (ctx, a) => drawCountry(ctx, a, country),

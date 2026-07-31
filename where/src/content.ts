@@ -214,3 +214,31 @@ export const COUNTRIES: Country[] = [
   { name: 'Zambia', capital: 'Lusaka', code: 'ZM' },
   { name: 'Zimbabwe', capital: 'Harare', code: 'ZW' },
 ];
+
+export type Difficulty = 'easy' | 'hard';
+
+// The ~100 most globally recognisable countries make up the "easy" pool; every
+// other country falls into "hard". Codes only, so the split survives edits to
+// names/capitals above.
+const FAMOUS_CODES = new Set<string>([
+  'US', 'GB', 'FR', 'DE', 'IT', 'ES', 'PT', 'NL', 'BE', 'CH',
+  'AT', 'IE', 'SE', 'NO', 'DK', 'FI', 'IS', 'PL', 'CZ', 'HU',
+  'GR', 'RO', 'RU', 'UA', 'HR', 'RS', 'BG', 'SK', 'SI', 'LU',
+  'MC', 'VA', 'MT', 'CY', 'CA', 'MX', 'BR', 'AR', 'CL', 'CO',
+  'PE', 'VE', 'EC', 'BO', 'UY', 'PY', 'CU', 'JM', 'HT', 'CR',
+  'PA', 'GT', 'CN', 'JP', 'KR', 'KP', 'IN', 'PK', 'BD', 'LK',
+  'NP', 'TH', 'VN', 'MY', 'SG', 'ID', 'PH', 'MM', 'KH', 'TW',
+  'MN', 'AF', 'TR', 'SA', 'AE', 'QA', 'KW', 'IL', 'IR', 'IQ',
+  'JO', 'LB', 'SY', 'YE', 'OM', 'EG', 'ZA', 'NG', 'KE', 'ET',
+  'MA', 'DZ', 'TN', 'GH', 'LY', 'ZW', 'AU', 'NZ', 'KZ', 'UZ',
+]);
+
+/** The famous, easier-to-recognise countries. */
+export const EASY_COUNTRIES: Country[] = COUNTRIES.filter((c) => FAMOUS_CODES.has(c.code));
+/** The remaining, lesser-known countries. */
+export const HARD_COUNTRIES: Country[] = COUNTRIES.filter((c) => !FAMOUS_CODES.has(c.code));
+
+/** The country pool for a difficulty. */
+export function countriesFor(difficulty: Difficulty): Country[] {
+  return difficulty === 'easy' ? EASY_COUNTRIES : HARD_COUNTRIES;
+}

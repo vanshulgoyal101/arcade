@@ -1,7 +1,7 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
 import * as sfx from '../../shared/sfx';
-import { WhereGame, type Mode } from './game';
+import { WhereGame, type Mode, type Difficulty } from './game';
 import { flagEmoji } from './content';
 import { whereShareText, whereShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
@@ -19,6 +19,10 @@ app.innerHTML = `
   </div>
 
   <div class="controls">
+    <div class="toggle" id="diffToggle">
+      <button data-diff="easy" class="active">Easy</button>
+      <button data-diff="hard">Hard</button>
+    </div>
     <div class="toggle" id="modeToggle">
       <button data-mode="flag" class="active">Flags</button>
       <button data-mode="capital">Capitals</button>
@@ -42,6 +46,7 @@ app.innerHTML = `
 `;
 
 const modeToggle = app.querySelector<HTMLDivElement>('#modeToggle')!;
+const diffToggle = app.querySelector<HTMLDivElement>('#diffToggle')!;
 const scoreEl = app.querySelector<HTMLSpanElement>('#score')!;
 const streakEl = app.querySelector<HTMLSpanElement>('#streak')!;
 const livesEl = app.querySelector<HTMLSpanElement>('#lives')!;
@@ -115,12 +120,12 @@ function onAnswer(name: string, btn: HTMLButtonElement): void {
 }
 
 function endGame(newBest: boolean): void {
-  const best = game.store.bestScore;
+  const best = game.best;
   modal.innerHTML = `
     <h2>Out of lives</h2>
     <p class="sub">Score</p>
     <div class="big">${game.score}</div>
-    <p class="sub">${game.mode === 'flag' ? 'Flags' : 'Capitals'} · Best ${best}</p>
+    <p class="sub">${game.difficulty === 'hard' ? 'Hard' : 'Easy'} · ${game.mode === 'flag' ? 'Flags' : 'Capitals'} · Best ${best}</p>
     ${newBest ? '<p class="newbest">🏆 New best!</p>' : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
@@ -129,10 +134,10 @@ function endGame(newBest: boolean): void {
   `;
   overlay.classList.add('show');
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const blob = await canvasToBlob(whereShareCard(game.score, game.mode, best, game.target));
+    const blob = await canvasToBlob(whereShareCard(game.score, game.mode, game.difficulty, best, game.target));
     const outcome = await shareResult({
       title: 'Where',
-      text: whereShareText(game.score, game.mode, best, newBest),
+      text: whereShareText(game.score, game.mode, game.difficulty, best, newBest),
       url: 'https://games.vanshul.com/where/dist/',
       blob,
       filename: 'where.png',
@@ -147,7 +152,6 @@ function endGame(newBest: boolean): void {
 
 function startGame(): void {
   overlay.classList.remove('show');
-  answered = false;
   game.start();
   renderHud();
   renderPrompt();
@@ -161,6 +165,16 @@ modeToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
     modeToggle.querySelectorAll('button').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
     hint.textContent = game.mode === 'flag' ? 'Whose flag is this?' : 'Which country has this capital?';
+    startGame();
+  });
+});
+
+diffToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
+  b.addEventListener('click', () => {
+    sfx.click();
+    game.setDifficulty(b.dataset.diff as Difficulty);
+    diffToggle.querySelectorAll('button').forEach((x) => x.classList.remove('active'));
+    b.classList.add('active');
     startGame();
   });
 });
