@@ -3,7 +3,7 @@ import { makeDismissable } from '../../shared/overlay';
 import { IntervalGame, INTERVALS } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
-import { intervalShareText, intervalShareCard, shareResult, shareToast } from './share';
+import { intervalShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 
 const game = new IntervalGame();
@@ -14,7 +14,10 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🎹 Interval</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    </div>
   </div>
 
   <div class="hud">
@@ -54,8 +57,11 @@ makeDismissable(overlay, () => startGame());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
+const restartBtn = app.querySelector<HTMLButtonElement>('#restart')!;
 
 let answered = false;
+// Bumped on every (re)start so queued round/play/game-over timeouts abort.
+let runId = 0;
 
 const NOTE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
 function noteName(midi: number): string {
@@ -94,7 +100,10 @@ function newRound(autoplay = true): void {
   clearOptionStates();
   optionsEl.classList.remove('locked');
   hint.textContent = 'Listen, then pick the interval you heard.';
-  if (autoplay) window.setTimeout(playCurrent, 250);
+  if (autoplay) {
+    const myRun = runId;
+    window.setTimeout(() => { if (myRun === runId) playCurrent(); }, 250);
+  }
 }
 
 function onAnswer(semis: number, btn: HTMLButtonElement): void {
@@ -113,10 +122,11 @@ function onAnswer(semis: number, btn: HTMLButtonElement): void {
   hint.textContent = `${game.current.name}: ${noteName(game.rootMidi)} → ${noteName(game.rootMidi + game.current.semis)}`;
   renderHud();
 
+  const myRun = runId;
   if (res.gameOver) {
-    window.setTimeout(() => endGame(res.newBest), 700);
+    window.setTimeout(() => { if (myRun === runId) endGame(res.newBest); }, 700);
   } else {
-    window.setTimeout(() => newRound(true), 850);
+    window.setTimeout(() => { if (myRun === runId) newRound(true); }, 850);
   }
 }
 
@@ -141,8 +151,7 @@ function endGame(newBest: boolean): void {
     );
     const outcome = await shareResult({
       title: 'Interval',
-      text: intervalShareText(game.score, best, newBest),
-      url: 'https://games.vanshul.com/interval/dist/',
+      url: 'https://games.vanshul.com/interval/',
       blob,
       filename: 'interval.png',
     });
@@ -156,6 +165,8 @@ function endGame(newBest: boolean): void {
 
 function startGame(): void {
   overlay.classList.remove('show');
+  runId++;
+  answered = false;
   game.start();
   renderHud();
   newRound(false);
@@ -174,6 +185,8 @@ muteBtn.addEventListener('click', () => {
   saveStore(game.store);
   renderMute();
 });
+
+restartBtn.addEventListener('click', startGame);
 
 // ---- boot ----
 renderMute();

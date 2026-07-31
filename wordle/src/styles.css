@@ -74,6 +74,7 @@ button { font-family: inherit; }
 .icon-btn { background: var(--bg-soft); border: 1px solid var(--line); color: var(--text); width: 42px; height: 42px; border-radius: 10px; font-size: 1.05rem; cursor: pointer; transition: transform .08s, filter .12s, border-color .12s; }
 @media (hover: hover) { .icon-btn:hover { border-color: var(--accent); } }
 .icon-btn:active { transform: scale(.9); }
+.icon-btn#restart { display: inline-flex; align-items: center; justify-content: center; }
 .title { font-size: 1.4rem; font-weight: 900; margin: 0; }
 
 /* ---- board ---- */

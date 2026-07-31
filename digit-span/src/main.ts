@@ -3,7 +3,7 @@ import { makeDismissable } from '../../shared/overlay';
 import { DigitGame, type Mode } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
-import { digitShareText, digitShareCard, shareResult, shareToast } from './share';
+import { digitShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 
 const game = new DigitGame();
@@ -14,7 +14,10 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🔢 Digit Span</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    </div>
   </div>
 
   <div class="controls">
@@ -64,9 +67,12 @@ makeDismissable(overlay, () => startRun());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
+const restartBtn = app.querySelector<HTMLButtonElement>('#restart')!;
 
 let entry: number[] = [];
 let accepting = false;
+// Bumped on every (re)start so in-flight async sequences/timeouts abort.
+let runId = 0;
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -99,16 +105,20 @@ function renderEntry(bad = false): void {
 }
 
 async function showSequence(): Promise<void> {
+  const myRun = runId;
   accepting = false;
   setKeypad(false);
   const dur = game.flashDuration();
   for (const d of game.sequence) {
+    if (myRun !== runId) return;
     stage.innerHTML = `<div class="digit show">${d}</div>`;
     sfx.digit(d);
     await wait(dur);
+    if (myRun !== runId) return;
     stage.innerHTML = `<div class="digit">&nbsp;</div>`;
     await wait(220);
   }
+  if (myRun !== runId) return;
   entry = [];
   renderEntry();
   msg.textContent = '';
@@ -141,7 +151,10 @@ function check(): void {
   if (game.check(entry)) {
     sfx.correct();
     flashOk();
-    window.setTimeout(nextRound, 500);
+    const myRun = runId;
+    window.setTimeout(() => {
+      if (myRun === runId) nextRound();
+    }, 500);
   } else {
     sfx.wrong();
     renderEntry(true);
@@ -154,6 +167,7 @@ function flashOk(): void {
 
 function gameOver(): void {
   accepting = false;
+  runId++;
   setKeypad(false);
   const reached = game.sequence.length - 1;
   const newBest = game.recordBest();
@@ -176,8 +190,7 @@ function gameOver(): void {
     const blob = await canvasToBlob(digitShareCard(game.expected(), reached, game.mode, game.best));
     const outcome = await shareResult({
       title: 'Digit Span',
-      text: digitShareText(reached, game.mode, game.best, newBest),
-      url: 'https://games.vanshul.com/digit-span/dist/',
+      url: 'https://games.vanshul.com/digit-span/',
       blob,
       filename: 'digit-span.png',
     });
@@ -191,6 +204,9 @@ function gameOver(): void {
 
 function startRun(): void {
   overlay.classList.remove('show');
+  runId++;
+  accepting = false;
+  entry = [];
   startWrap.classList.add('hidden');
   modeToggle.classList.add('locked');
   game.reset();
@@ -235,6 +251,14 @@ modeToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
 });
 
 startBtn.addEventListener('click', startRun);
+
+// Restart is always available from the topbar; mid-run it abandons the current
+// run (aborting the in-flight sequence) and starts fresh.
+restartBtn.addEventListener('click', () => {
+  runId++;
+  accepting = false;
+  startRun();
+});
 
 muteBtn.addEventListener('click', () => {
   const next = !sfx.isMuted();

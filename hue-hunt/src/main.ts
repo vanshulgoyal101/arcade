@@ -3,7 +3,7 @@ import { makeDismissable } from '../../shared/overlay';
 import { HueGame, ROUND_TIME, hslCss } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
-import { hueShareText, hueShareCard, shareResult, shareToast } from './share';
+import { hueShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 
 const game = new HueGame();
@@ -14,7 +14,10 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🎯 Hue Hunt</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    </div>
   </div>
 
   <div class="hud">
@@ -185,8 +188,7 @@ function showResults(newBest: boolean, reached: number): void {
     const blob = await canvasToBlob(hueShareCard(game.round, game.score, reached, game.store.bestScore));
     const outcome = await shareResult({
       title: 'Hue Hunt',
-      text: hueShareText(game.score, reached, game.store.bestScore),
-      url: 'https://games.vanshul.com/hue-hunt/dist/',
+      url: 'https://games.vanshul.com/hue-hunt/',
       blob,
       filename: 'hue-hunt.png',
     });
@@ -198,6 +200,7 @@ function showResults(newBest: boolean, reached: number): void {
 
 function start(): void {
   overlay.classList.remove('show');
+  cancelAnimationFrame(rafId);
   game.start(performance.now());
   renderHud();
   buildBoard();
@@ -205,6 +208,9 @@ function start(): void {
   lastTick = performance.now();
   rafId = requestAnimationFrame(loop);
 }
+
+const restartBtn = app.querySelector<HTMLButtonElement>('#restart')!;
+restartBtn.addEventListener('click', start);
 
 muteBtn.addEventListener('click', () => {
   const next = !sfx.isMuted();

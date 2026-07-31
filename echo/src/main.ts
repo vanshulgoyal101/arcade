@@ -3,7 +3,7 @@ import { makeDismissable } from '../../shared/overlay';
 import { EchoGame } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
-import { echoShareText, echoShareCard, shareResult, shareToast } from './share';
+import { echoShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 
 const game = new EchoGame();
@@ -14,7 +14,10 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🔊 Echo</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    </div>
   </div>
 
   <div class="toggles">
@@ -62,9 +65,12 @@ makeDismissable(overlay, () => startGame());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
+const restartBtn = app.querySelector<HTMLButtonElement>('#restart')!;
 
 let acceptingInput = false;
 let playing = false;
+// Bumped on every (re)start so in-flight async sequences abort themselves.
+let runId = 0;
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -144,14 +150,18 @@ async function lightPad(i: number, dur: number): Promise<void> {
 }
 
 async function playSequence(): Promise<void> {
+  const myRun = runId;
   acceptingInput = false;
   padsEl.classList.add('locked');
   statusEl.textContent = 'Watch…';
   await wait(500);
+  if (myRun !== runId) return;
   const dur = game.stepDuration();
   for (const pad of game.sequence) {
+    if (myRun !== runId) return;
     await lightPad(pad, dur);
   }
+  if (myRun !== runId) return;
   acceptingInput = true;
   padsEl.classList.remove('locked');
   statusEl.textContent = 'Your turn — repeat it!';
@@ -165,6 +175,7 @@ function nextLevel(): void {
 
 async function onPad(i: number): Promise<void> {
   if (!acceptingInput) return;
+  const myRun = runId;
   const el = padEl(i);
   el.classList.add('lit');
   sfx.padTone(i, 0.22);
@@ -179,6 +190,7 @@ async function onPad(i: number): Promise<void> {
     statusEl.textContent = 'Nice! 🎉';
     sfx.levelUp();
     await wait(650);
+    if (myRun !== runId) return;
     nextLevel();
     return;
   }
@@ -189,6 +201,7 @@ async function onPad(i: number): Promise<void> {
     renderHud();
     statusEl.textContent = `Oops! ${game.lives} ${game.lives === 1 ? 'life' : 'lives'} left — watch again.`;
     await wait(900);
+    if (myRun !== runId) return;
     void playSequence();
     return;
   }
@@ -200,6 +213,7 @@ async function onPad(i: number): Promise<void> {
 function gameOver(): void {
   acceptingInput = false;
   playing = false;
+  runId++;
   sfx.gameOver();
   const reached = game.sequence.length - 1;
   const newBest = game.recordBest();
@@ -222,8 +236,7 @@ function gameOver(): void {
     const blob = await canvasToBlob(echoShareCard(reached, game.strict, game.pads, game.best));
     const outcome = await shareResult({
       title: 'Echo',
-      text: echoShareText(reached, game.strict, game.pads, game.best, newBest),
-      url: 'https://games.vanshul.com/echo/dist/',
+      url: 'https://games.vanshul.com/echo/',
       blob,
       filename: 'echo.png',
     });
@@ -237,6 +250,8 @@ function gameOver(): void {
 
 function startGame(): void {
   overlay.classList.remove('show');
+  runId++;
+  acceptingInput = false;
   playing = true;
   game.reset();
   buildPads();
@@ -278,6 +293,12 @@ muteBtn.addEventListener('click', () => {
 });
 
 startBtn.addEventListener('click', startGame);
+
+// Restart is always available from the topbar. startGame() bumps runId which
+// aborts any in-flight sequence, then re-arms the board for a fresh run.
+restartBtn.addEventListener('click', () => {
+  startGame();
+});
 
 // ---- boot ----
 renderMute();

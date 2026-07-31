@@ -3,7 +3,7 @@ import { makeDismissable } from '../../shared/overlay';
 import { MathGame, ROUND_TIME, type Op } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
-import { mathShareText, mathShareCard, shareResult, shareToast } from './share';
+import { mathShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 
 const game = new MathGame();
@@ -14,7 +14,10 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🧮 Flashmath</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    </div>
   </div>
 
   <div class="hud">
@@ -195,8 +198,7 @@ function endGame(): void {
     const blob = await canvasToBlob(mathShareCard(game.score, game.solved, game.level, game.store.bestScore));
     const outcome = await shareResult({
       title: 'Flashmath',
-      text: mathShareText(game.score, game.solved, game.store.bestScore, newBest),
-      url: 'https://games.vanshul.com/flashmath/dist/',
+      url: 'https://games.vanshul.com/flashmath/',
       blob,
       filename: 'flashmath.png',
     });
@@ -207,12 +209,16 @@ function endGame(): void {
 
 function start(): void {
   overlay.classList.remove('show');
+  cancelAnimationFrame(rafId);
   game.start(performance.now());
   renderHud();
   renderProblem();
   lastTick = performance.now();
   rafId = requestAnimationFrame(loop);
 }
+
+const restartBtn = app.querySelector<HTMLButtonElement>('#restart')!;
+restartBtn.addEventListener('click', start);
 
 muteBtn.addEventListener('click', () => {
   const next = !sfx.isMuted();

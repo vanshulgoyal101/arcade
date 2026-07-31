@@ -3,7 +3,7 @@ import { makeDismissable } from '../../shared/overlay';
 import * as sfx from '../../shared/sfx';
 import { WhereGame, type Mode, type Difficulty } from './game';
 import { flagEmoji } from './content';
-import { whereShareText, whereShareCard, shareResult, shareToast } from './share';
+import { whereShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 
 const game = new WhereGame();
@@ -15,7 +15,10 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🗺️ Where</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    </div>
   </div>
 
   <div class="controls">
@@ -59,8 +62,11 @@ makeDismissable(overlay, () => startGame());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
+const restartBtn = app.querySelector<HTMLButtonElement>('#restart')!;
 
 let answered = false;
+// Bumped on every (re)start so queued round/game-over timeouts abort.
+let runId = 0;
 
 function renderMute(): void {
   muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
@@ -115,8 +121,9 @@ function onAnswer(name: string, btn: HTMLButtonElement): void {
   window.setTimeout(() => (res.correct ? sfx.correct(game.streak) : sfx.wrong()), 120);
   renderHud();
 
-  if (res.gameOver) window.setTimeout(() => { sfx.gameOver(); endGame(res.newBest); }, 750);
-  else window.setTimeout(newRound, 850);
+  const myRun = runId;
+  if (res.gameOver) window.setTimeout(() => { if (myRun !== runId) return; sfx.gameOver(); endGame(res.newBest); }, 750);
+  else window.setTimeout(() => { if (myRun === runId) newRound(); }, 850);
 }
 
 function endGame(newBest: boolean): void {
@@ -137,8 +144,7 @@ function endGame(newBest: boolean): void {
     const blob = await canvasToBlob(whereShareCard(game.score, game.mode, game.difficulty, best, game.target));
     const outcome = await shareResult({
       title: 'Where',
-      text: whereShareText(game.score, game.mode, game.difficulty, best, newBest),
-      url: 'https://games.vanshul.com/where/dist/',
+      url: 'https://games.vanshul.com/where/',
       blob,
       filename: 'where.png',
     });
@@ -152,6 +158,7 @@ function endGame(newBest: boolean): void {
 
 function startGame(): void {
   overlay.classList.remove('show');
+  runId++;
   answered = false;
   game.start();
   renderHud();
@@ -185,6 +192,11 @@ muteBtn.addEventListener('click', () => {
   sfx.setMuted(next);
   sfx.saveMuted(MUTE_KEY, next);
   renderMute();
+});
+
+restartBtn.addEventListener('click', () => {
+  sfx.click();
+  startGame();
 });
 
 // ---- boot ----

@@ -4,7 +4,7 @@ import * as sfx from '../../shared/sfx';
 import { canvasToBlob } from '../../shared/card';
 import { WordleGame, WORD_LENGTH, MAX_GUESSES, type Tile } from './game';
 import { winPercent } from './storage';
-import { wordleShareText, wordleShareCard, shareResult, shareToast } from './share';
+import { wordleShareCard, shareResult, shareToast } from './share';
 
 const game = new WordleGame();
 const MUTE_KEY = 'wordle.muted';
@@ -23,6 +23,7 @@ app.innerHTML = `
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🟩 Wordle</h1>
     <div class="topbar-btns">
+      <button class="icon-btn" id="restart" title="New word" aria-label="New word"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
       <button class="icon-btn" id="stats" title="Statistics" aria-label="Statistics">📊</button>
       <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
     </div>
@@ -146,6 +147,8 @@ function shakeRow(row: number): void {
 
 // ---- input ----
 let locked = false;
+// Bumped on every new game so an in-flight reveal timeout aborts.
+let runId = 0;
 
 function handleKey(key: string): void {
   if (locked || game.status !== 'playing') return;
@@ -181,16 +184,18 @@ function onSubmit(): void {
   locked = true;
   revealRow(res.row, res.result);
   const revealMs = (WORD_LENGTH - 1) * FLIP_STAGGER + FLIP_DURATION + 40;
+  const myRun = runId;
   window.setTimeout(() => {
+    if (myRun !== runId) return;
     paintKeyboard();
     locked = false;
     if (res.status === 'won') {
       bounceRow(res.row);
       sfx.levelUp();
-      window.setTimeout(() => endGame(true, res.newRecord), 900);
+      window.setTimeout(() => { if (myRun === runId) endGame(true, res.newRecord); }, 900);
     } else if (res.status === 'lost') {
       sfx.gameOver();
-      window.setTimeout(() => endGame(false, false), 500);
+      window.setTimeout(() => { if (myRun === runId) endGame(false, false); }, 500);
     }
   }, revealMs);
 }
@@ -226,9 +231,8 @@ function endGame(won: boolean, newRecord: boolean): void {
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(wordleShareCard(game.results, game.status, s.currentStreak));
     const outcome = await shareResult({
-      title: 'Tiny Wordle',
-      text: wordleShareText(game.results, game.status),
-      url: 'https://games.vanshul.com/wordle/dist/',
+      title: 'Wordle',
+      url: 'https://games.vanshul.com/wordle/',
       blob,
       filename: 'wordle.png',
     });
@@ -283,6 +287,7 @@ function openStats(): void {
 function newGame(): void {
   overlay.classList.remove('show');
   statsOverlay.classList.remove('show');
+  runId++;
   locked = false;
   game.newGame();
   for (const row of tiles) {
@@ -313,6 +318,12 @@ muteBtn.addEventListener('click', () => {
 statsBtn.addEventListener('click', () => {
   sfx.click();
   openStats();
+});
+
+const restartBtn = app.querySelector<HTMLButtonElement>('#restart')!;
+restartBtn.addEventListener('click', () => {
+  sfx.click();
+  newGame();
 });
 
 // ---- boot ----

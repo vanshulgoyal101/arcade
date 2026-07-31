@@ -65,6 +65,8 @@ button { font-family: inherit; }
 @media (hover: hover) { .icon-btn:hover { border-color: var(--accent); } }
 .icon-btn:active { transform: scale(.9); }
 .title { font-size: 1.4rem; font-weight: 900; margin: 0; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.icon-btn#restart { display: inline-flex; align-items: center; justify-content: center; }
 
 .controls { display: flex; justify-content: center; margin-bottom: 14px; }
 .toggle { display: inline-flex; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; }

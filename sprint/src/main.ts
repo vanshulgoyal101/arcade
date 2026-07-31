@@ -2,7 +2,7 @@ import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
 import * as sfx from '../../shared/sfx';
 import { SprintGame, DURATIONS, type Duration } from './game';
-import { sprintShareText, sprintShareCard, shareResult, shareToast } from './share';
+import { sprintShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 
 const game = new SprintGame();
@@ -14,7 +14,10 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">⌨️ Sprint</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    </div>
   </div>
 
   <div class="controls">
@@ -156,8 +159,7 @@ function endRun(now: number): void {
     const blob = await canvasToBlob(sprintShareCard(stats, game.duration, game.best));
     const outcome = await shareResult({
       title: 'Sprint',
-      text: sprintShareText(stats, game.duration, game.best, newBest),
-      url: 'https://games.vanshul.com/sprint/dist/',
+      url: 'https://games.vanshul.com/sprint/',
       blob,
       filename: 'sprint.png',
     });
@@ -243,6 +245,12 @@ muteBtn.addEventListener('click', () => {
   sfx.setMuted(next);
   sfx.saveMuted(MUTE_KEY, next);
   renderMute();
+});
+
+const restartBtn = app.querySelector<HTMLButtonElement>('#restart')!;
+restartBtn.addEventListener('click', () => {
+  sfx.click();
+  resetRun();
 });
 
 // ---- boot ----
