@@ -28,15 +28,33 @@ function readLocal(key) { try { const r = localStorage.getItem(key); return r ? 
 function localBest(g) { const s = readLocal(g.key); return s ? num(g.best(s)) : 0; }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function isUrl(a) { return typeof a === 'string' && /^https?:/.test(a); }
+function isSvgAv(a) { return typeof a === 'string' && a.slice(0, 2) === 'a:' && AV[a.slice(2)]; }
 function avatarHtml(a, cls) {
-  return isUrl(a)
-    ? `<img class="${cls}" src="${esc(a)}" alt="" referrerpolicy="no-referrer" />`
-    : `<span class="${cls} av-emoji">${esc(a || '🎮')}</span>`;
+  if (isUrl(a)) return `<img class="${cls}" src="${esc(a)}" alt="" referrerpolicy="no-referrer" />`;
+  if (isSvgAv(a)) return `<span class="${cls} av-svg"><svg viewBox="0 0 64 64" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">${AV[a.slice(2)]}</svg></span>`;
+  return `<span class="${cls} av-emoji">${esc(a || '🎮')}</span>`;
 }
 
-// Avatars a player can pick (emoji rendered in a coloured disc). Their Google
-// photo is offered too, when available.
-const PRESET_AVATARS = ['🐼','🦊','🐙','🐸','🦖','👾','🚀','🎮','🎧','🕹️','🌟','⚡','🔥','🍀','🌈','🦄','🐝','🐳'];
+// Hand-drawn flat character avatars (self-contained SVG, no external assets).
+// Each value is the inner SVG for a 64×64 disc; stored as an id like "a:fox".
+const AV = {
+  panda: '<circle cx="32" cy="32" r="32" fill="#5b8cf0"/><circle cx="20" cy="18" r="7" fill="#20242f"/><circle cx="44" cy="18" r="7" fill="#20242f"/><circle cx="32" cy="34" r="18" fill="#fff"/><ellipse cx="25" cy="32" rx="5" ry="6.5" fill="#20242f"/><ellipse cx="39" cy="32" rx="5" ry="6.5" fill="#20242f"/><circle cx="25" cy="32" r="1.9" fill="#fff"/><circle cx="39" cy="32" r="1.9" fill="#fff"/><ellipse cx="32" cy="41" rx="3" ry="2.2" fill="#20242f"/><path d="M29 45 Q32 48 35 45" stroke="#20242f" stroke-width="1.6" fill="none" stroke-linecap="round"/>',
+  fox: '<circle cx="32" cy="32" r="32" fill="#3b4a63"/><polygon points="15,15 24,32 31,22" fill="#ff7a2d"/><polygon points="49,15 40,32 33,22" fill="#ff7a2d"/><polygon points="17,24 47,24 32,50" fill="#ff8f43"/><polygon points="25,36 39,36 32,50" fill="#fff"/><circle cx="25" cy="31" r="2.4" fill="#20242f"/><circle cx="39" cy="31" r="2.4" fill="#20242f"/><circle cx="32" cy="44" r="2.4" fill="#20242f"/>',
+  robot: '<circle cx="32" cy="32" r="32" fill="#8ea2c0"/><line x1="32" y1="12" x2="32" y2="18" stroke="#eef2f8" stroke-width="2"/><circle cx="32" cy="11" r="3" fill="#ff5d5d"/><rect x="16" y="18" width="32" height="28" rx="8" fill="#eef2f8"/><circle cx="25" cy="30" r="3.4" fill="#2b6cff"/><circle cx="39" cy="30" r="3.4" fill="#2b6cff"/><rect x="24" y="38" width="16" height="4" rx="2" fill="#9aa7bd"/>',
+  alien: '<circle cx="32" cy="32" r="32" fill="#7c3aed"/><ellipse cx="32" cy="30" rx="15" ry="17" fill="#7ee7a6"/><ellipse cx="25" cy="30" rx="3.2" ry="5.5" fill="#12241c" transform="rotate(-18 25 30)"/><ellipse cx="39" cy="30" rx="3.2" ry="5.5" fill="#12241c" transform="rotate(18 39 30)"/><path d="M28 44 Q32 47 36 44" stroke="#2f7a4f" stroke-width="1.6" fill="none" stroke-linecap="round"/>',
+  cat: '<circle cx="32" cy="32" r="32" fill="#ff6b8b"/><polygon points="18,14 22,30 32,22" fill="#ffd0a0"/><polygon points="46,14 42,30 32,22" fill="#ffd0a0"/><circle cx="32" cy="34" r="15" fill="#ffd0a0"/><polygon points="20,18 23,27 28,23" fill="#ff9db3"/><polygon points="44,18 41,27 36,23" fill="#ff9db3"/><ellipse cx="26" cy="33" rx="2" ry="3" fill="#3a2a2a"/><ellipse cx="38" cy="33" rx="2" ry="3" fill="#3a2a2a"/><path d="M30 39 l2 2 2 -2 z" fill="#ff7a90"/><path d="M32 41 v2" stroke="#3a2a2a" stroke-width="1.2" stroke-linecap="round"/>',
+  frog: '<circle cx="32" cy="32" r="32" fill="#7ccf67"/><circle cx="22" cy="20" r="8" fill="#e9f7e0"/><circle cx="42" cy="20" r="8" fill="#e9f7e0"/><circle cx="22" cy="21" r="3.6" fill="#1f2a1a"/><circle cx="42" cy="21" r="3.6" fill="#1f2a1a"/><path d="M18 36 Q32 50 46 36" stroke="#2e6b28" stroke-width="2.4" fill="none" stroke-linecap="round"/><circle cx="24" cy="40" r="1.6" fill="#f2a6b0"/><circle cx="40" cy="40" r="1.6" fill="#f2a6b0"/>',
+  ghost: '<circle cx="32" cy="32" r="32" fill="#a78bfa"/><path d="M18 44 V30 a14 14 0 0 1 28 0 V44 q-3.5 4 -7 0 t-7 0 t-7 0 t-7 0 Z" fill="#fff"/><circle cx="27" cy="30" r="2.4" fill="#3a2f5a"/><circle cx="37" cy="30" r="2.4" fill="#3a2f5a"/><ellipse cx="32" cy="36" rx="2.2" ry="2.8" fill="#d7c4fb"/>',
+  penguin: '<circle cx="32" cy="32" r="32" fill="#38bdf8"/><ellipse cx="32" cy="34" rx="15" ry="19" fill="#2b3140"/><ellipse cx="32" cy="38" rx="9" ry="14" fill="#fff"/><circle cx="26" cy="26" r="2.6" fill="#fff"/><circle cx="38" cy="26" r="2.6" fill="#fff"/><circle cx="26" cy="26" r="1.3" fill="#2b3140"/><circle cx="38" cy="26" r="1.3" fill="#2b3140"/><polygon points="29,30 35,30 32,35" fill="#ff9f2d"/><polygon points="24,50 30,50 27,54" fill="#ff9f2d"/><polygon points="34,50 40,50 37,54" fill="#ff9f2d"/>',
+  owl: '<circle cx="32" cy="32" r="32" fill="#f59e0b"/><ellipse cx="32" cy="34" rx="16" ry="17" fill="#8a5a2b"/><polygon points="18,16 24,26 28,18" fill="#8a5a2b"/><polygon points="46,16 40,26 36,18" fill="#8a5a2b"/><circle cx="25" cy="30" r="7" fill="#fff"/><circle cx="39" cy="30" r="7" fill="#fff"/><circle cx="25" cy="30" r="3.2" fill="#2b2018"/><circle cx="39" cy="30" r="3.2" fill="#2b2018"/><polygon points="29,34 35,34 32,40" fill="#ffb03a"/><path d="M22 44 h20" stroke="#6b451f" stroke-width="2" stroke-linecap="round"/>',
+  bee: '<circle cx="32" cy="32" r="32" fill="#60a5fa"/><ellipse cx="18" cy="28" rx="7" ry="5" fill="#eaf2ff"/><ellipse cx="46" cy="28" rx="7" ry="5" fill="#eaf2ff"/><ellipse cx="32" cy="36" rx="12" ry="14" fill="#ffcf33"/><path d="M22 32 h20 M21 39 h22 M24 46 h16" stroke="#2b2410" stroke-width="3"/><path d="M28 24 Q26 18 24 18 M36 24 Q38 18 40 18" stroke="#2b2410" stroke-width="1.6" fill="none"/><circle cx="28" cy="27" r="1.6" fill="#2b2410"/><circle cx="36" cy="27" r="1.6" fill="#2b2410"/>',
+  dino: '<circle cx="32" cy="32" r="32" fill="#4ade80"/><polygon points="20,20 24,14 27,20 31,14 34,20 38,14 41,20" fill="#15803d"/><path d="M18 24 h22 a9 9 0 0 1 9 9 v3 a10 10 0 0 1 -10 10 h-13 a8 8 0 0 1 -8 -8 z" fill="#22a34e"/><circle cx="40" cy="32" r="3" fill="#fff"/><circle cx="41" cy="32" r="1.5" fill="#0c2b16"/><circle cx="46" cy="41" r="1.2" fill="#0c2b16"/><path d="M39 45 h7" stroke="#0c2b16" stroke-width="1.6" stroke-linecap="round"/>',
+  bear: '<circle cx="32" cy="32" r="32" fill="#2dd4bf"/><circle cx="20" cy="20" r="7" fill="#a06a3c"/><circle cx="44" cy="20" r="7" fill="#a06a3c"/><circle cx="20" cy="20" r="3.4" fill="#c98f5d"/><circle cx="44" cy="20" r="3.4" fill="#c98f5d"/><circle cx="32" cy="34" r="16" fill="#a06a3c"/><ellipse cx="32" cy="40" rx="9" ry="7" fill="#e8c9a0"/><circle cx="26" cy="31" r="2.2" fill="#2b1c10"/><circle cx="38" cy="31" r="2.2" fill="#2b1c10"/><ellipse cx="32" cy="37" rx="2.4" ry="1.8" fill="#2b1c10"/><path d="M32 39 v2 M27 42 q5 3 5 -1 q0 4 5 1" stroke="#2b1c10" stroke-width="1.2" fill="none" stroke-linecap="round"/>',
+};
+const AVATAR_IDS = ['panda', 'fox', 'robot', 'alien', 'cat', 'frog', 'ghost', 'penguin', 'owl', 'bee', 'dino', 'bear'];
+// The pickable set: designed avatars first. A player's Google photo is offered
+// too, when available (added by the profile editor).
+const PRESET_AVATARS = AVATAR_IDS.map((id) => 'a:' + id);
 function pickRandomAvatar() { return PRESET_AVATARS[Math.floor(Math.random() * PRESET_AVATARS.length)]; }
 
 // ---- load the Supabase client (graceful if the CDN is unreachable) ----

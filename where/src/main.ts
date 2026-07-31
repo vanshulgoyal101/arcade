@@ -1,9 +1,9 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
 import * as sfx from '../../shared/sfx';
-import { WhereGame, type Mode, type Difficulty } from './game';
-import { flagEmoji } from './content';
-import { whereShareCard, shareResult, shareToast } from './share';
+import { WhereGame, type Mode } from './game';
+import { flagEmoji, type Difficulty } from './content';
+import { whereShareText, whereShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 
 const game = new WhereGame();
@@ -15,20 +15,17 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🗺️ Where</h1>
-    <div class="topbar-actions">
-      <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
-    </div>
+    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
   </div>
 
   <div class="controls">
-    <div class="toggle" id="diffToggle">
-      <button data-diff="easy" class="active">Easy</button>
-      <button data-diff="hard">Hard</button>
-    </div>
     <div class="toggle" id="modeToggle">
       <button data-mode="flag" class="active">Flags</button>
       <button data-mode="capital">Capitals</button>
+    </div>
+    <div class="toggle" id="diffToggle">
+      <button data-diff="easy" class="active">Easy</button>
+      <button data-diff="hard">Hard</button>
     </div>
   </div>
 
@@ -62,11 +59,8 @@ makeDismissable(overlay, () => startGame());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
-const restartBtn = app.querySelector<HTMLButtonElement>('#restart')!;
 
 let answered = false;
-// Bumped on every (re)start so queued round/game-over timeouts abort.
-let runId = 0;
 
 function renderMute(): void {
   muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
@@ -121,18 +115,18 @@ function onAnswer(name: string, btn: HTMLButtonElement): void {
   window.setTimeout(() => (res.correct ? sfx.correct(game.streak) : sfx.wrong()), 120);
   renderHud();
 
-  const myRun = runId;
-  if (res.gameOver) window.setTimeout(() => { if (myRun !== runId) return; sfx.gameOver(); endGame(res.newBest); }, 750);
-  else window.setTimeout(() => { if (myRun === runId) newRound(); }, 850);
+  if (res.gameOver) window.setTimeout(() => { sfx.gameOver(); endGame(res.newBest); }, 750);
+  else window.setTimeout(newRound, 850);
 }
 
 function endGame(newBest: boolean): void {
   const best = game.best;
+  const label = `${game.mode === 'flag' ? 'Flags' : 'Capitals'} · ${game.difficulty === 'hard' ? 'Hard' : 'Easy'}`;
   modal.innerHTML = `
     <h2>Out of lives</h2>
     <p class="sub">Score</p>
     <div class="big">${game.score}</div>
-    <p class="sub">${game.difficulty === 'hard' ? 'Hard' : 'Easy'} · ${game.mode === 'flag' ? 'Flags' : 'Capitals'} · Best ${best}</p>
+    <p class="sub">${label} · Best ${best}</p>
     ${newBest ? '<p class="newbest">🏆 New best!</p>' : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
@@ -144,7 +138,8 @@ function endGame(newBest: boolean): void {
     const blob = await canvasToBlob(whereShareCard(game.score, game.mode, game.difficulty, best, game.target));
     const outcome = await shareResult({
       title: 'Where',
-      url: 'https://games.vanshul.com/where/',
+      text: whereShareText(game.score, game.mode, game.difficulty, best, newBest),
+      url: 'https://games.vanshul.com/where/dist/',
       blob,
       filename: 'where.png',
     });
@@ -158,7 +153,6 @@ function endGame(newBest: boolean): void {
 
 function startGame(): void {
   overlay.classList.remove('show');
-  runId++;
   answered = false;
   game.start();
   renderHud();
@@ -192,11 +186,6 @@ muteBtn.addEventListener('click', () => {
   sfx.setMuted(next);
   sfx.saveMuted(MUTE_KEY, next);
   renderMute();
-});
-
-restartBtn.addEventListener('click', () => {
-  sfx.click();
-  startGame();
 });
 
 // ---- boot ----

@@ -5,3 +5,7 @@ node_modules/
 # OS / editor
 .DS_Store
 *.log
+
+# Local secrets — never commit
+.env
+.sb_token

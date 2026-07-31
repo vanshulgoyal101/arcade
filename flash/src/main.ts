@@ -4,7 +4,7 @@ import * as sfx from '../../shared/sfx';
 import { FlashGame, type RoundResult } from './game';
 import { RsvpPlayer, type Token } from './rsvp';
 import type { Passage } from './content';
-import { flashShareCard, shareResult, shareToast } from './share';
+import { flashShareText, flashShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 
 const game = new FlashGame();
@@ -297,7 +297,8 @@ function showResult(r: RoundResult): void {
     const blob = await canvasToBlob(flashShareCard(r, game.store.bestWpm));
     const outcome = await shareResult({
       title: 'Flash',
-      url: 'https://games.vanshul.com/flash/',
+      text: flashShareText(r, game.store.bestWpm),
+      url: 'https://games.vanshul.com/flash/dist/',
       blob,
       filename: 'flash.png',
     });

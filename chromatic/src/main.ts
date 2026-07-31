@@ -2,7 +2,7 @@ import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
 import { toCss, contrastText, toHex, type RGB } from './color';
 import { Game, type Difficulty } from './game';
-import { chromaticShareCard, shareResult, shareToast } from './share';
+import { endlessShareText, chromaticShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { saveStore } from './storage';
 import * as sfx from './audio';
@@ -17,10 +17,7 @@ app.innerHTML = `
   <div class="topbar">
     <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🌈 Chromatic</h1>
-    <div class="topbar-actions">
-      <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
-    </div>
+    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
   </div>
 
   <div class="controls">
@@ -176,7 +173,8 @@ function openEndlessModal(): void {
     );
     const outcome = await shareResult({
       title: 'Chromatic',
-      url: 'https://games.vanshul.com/chromatic/',
+      text: endlessShareText(game.score, game.level, best),
+      url: 'https://games.vanshul.com/chromatic/dist/',
       blob,
       filename: 'chromatic.png',
     });
@@ -253,9 +251,6 @@ muteBtn.addEventListener('click', () => {
   saveStore(game.store);
   renderMute();
 });
-
-const restartBtn = app.querySelector<HTMLButtonElement>('#restart')!;
-restartBtn.addEventListener('click', restartEndless);
 
 // ---- Boot ----
 renderMute();

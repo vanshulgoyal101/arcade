@@ -1,11 +1,12 @@
 // Where core: identify a country from its flag or capital.
 // Missed countries resurface sooner (light spaced repetition).
+// Two difficulty pools (easy = famous countries, hard = the rest) each track
+// their own best score.
 
 import { countriesFor, type Country, type Difficulty } from './content';
 import { loadStore, saveStore, type WhereStore } from './storage';
 
 export type Mode = 'flag' | 'capital';
-export type { Difficulty } from './content';
 
 const START_LIVES = 3;
 const OPTION_COUNT = 4;
@@ -22,12 +23,11 @@ function shuffle<T>(arr: T[]): T[] {
 export class WhereGame {
   mode: Mode = 'flag';
   difficulty: Difficulty = 'easy';
-  pool: Country[] = countriesFor('easy');
   score = 0;
   lives = START_LIVES;
   streak = 0;
   finished = false;
-  target: Country = countriesFor('easy')[0];
+  target: Country;
   options: Country[] = [];
   private miss: Record<string, number> = {};
   private recent: string[] = [];
@@ -35,10 +35,20 @@ export class WhereGame {
 
   constructor() {
     this.store = loadStore();
+    this.target = this.pool()[0];
+  }
+
+  private pool(): Country[] {
+    return countriesFor(this.difficulty);
   }
 
   get best(): number {
     return this.difficulty === 'easy' ? this.store.bestEasy : this.store.bestHard;
+  }
+
+  private setBest(v: number): void {
+    if (this.difficulty === 'easy') this.store.bestEasy = v;
+    else this.store.bestHard = v;
   }
 
   setMode(m: Mode): void {
@@ -47,7 +57,6 @@ export class WhereGame {
 
   setDifficulty(d: Difficulty): void {
     this.difficulty = d;
-    this.pool = countriesFor(d);
   }
 
   start(): void {
@@ -56,18 +65,20 @@ export class WhereGame {
     this.streak = 0;
     this.finished = false;
     this.recent = [];
+    this.miss = {};
     this.nextRound();
   }
 
   private weightedTarget(): Country {
+    const all = this.pool();
     // Skip recently shown countries so questions don't repeat back-to-back.
     const avoid = new Set(this.recent);
-    const pool = this.pool.filter((c) => !avoid.has(c.name));
-    const source = pool.length >= OPTION_COUNT ? pool : this.pool;
-    let best = source[0];
+    const source = all.filter((c) => !avoid.has(c.name));
+    const from = source.length >= OPTION_COUNT ? source : all;
+    let best = from[0];
     let bestScore = -1;
     for (let i = 0; i < 6; i++) {
-      const c = source[Math.floor(Math.random() * source.length)];
+      const c = from[Math.floor(Math.random() * from.length)];
       const s = Math.random() + (this.miss[c.name] ?? 0) * 0.8;
       if (s > bestScore) {
         bestScore = s;
@@ -78,13 +89,14 @@ export class WhereGame {
   }
 
   nextRound(): void {
+    const all = this.pool();
     this.target = this.weightedTarget();
     this.recent.push(this.target.name);
-    const cap = Math.min(12, Math.floor(this.pool.length / 2));
+    const cap = Math.min(12, Math.floor(all.length / 2));
     while (this.recent.length > cap) this.recent.shift();
     const opts: Country[] = [this.target];
     while (opts.length < OPTION_COUNT) {
-      const c = this.pool[Math.floor(Math.random() * this.pool.length)];
+      const c = all[Math.floor(Math.random() * all.length)];
       if (!opts.some((o) => o.name === c.name)) opts.push(c);
     }
     this.options = shuffle(opts);
@@ -101,10 +113,9 @@ export class WhereGame {
     this.lives -= 1;
     if (this.lives <= 0) {
       this.finished = true;
-      const key = this.difficulty === 'easy' ? 'bestEasy' : 'bestHard';
-      const newBest = this.score > this.store[key];
+      const newBest = this.score > this.best;
       if (newBest) {
-        this.store[key] = this.score;
+        this.setBest(this.score);
         saveStore(this.store);
       }
       return { correct: false, gameOver: true, newBest };

@@ -1,11 +1,9 @@
 // Tiny service worker for the arcade. GitHub Pages serves HTML with
 // Cache-Control: max-age=600, so a refresh could show a 10-minute-stale page.
-// Strategy: network-first for documents AND for shared, non-hashed static files
-// (assets/style.css, assets/auth.js, art, og images) so a deploy is picked up
-// on the next load; cache-first only for content-hashed, immutable bundles
-// under /dist/assets/ (their name changes when the contents do).
+// Strategy: network-first for documents (always fresh when online, bypassing
+// the HTTP cache), cache-first for content-hashed assets (immutable).
 
-const CACHE = 'arcade-v3';
+const CACHE = 'arcade-v1';
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -19,35 +17,6 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-async function networkFirst(req) {
-  try {
-    // `no-store` skips the browser HTTP cache so we truly hit the network.
-    const fresh = await fetch(req, { cache: 'no-store' });
-    if (fresh && fresh.ok && fresh.type === 'basic') {
-      const cache = await caches.open(CACHE);
-      cache.put(req, fresh.clone());
-    }
-    return fresh;
-  } catch {
-    return (await caches.match(req)) || Response.error();
-  }
-}
-
-async function cacheFirst(req) {
-  const cached = await caches.match(req);
-  if (cached) return cached;
-  try {
-    const fresh = await fetch(req);
-    if (fresh.ok && fresh.type === 'basic') {
-      const cache = await caches.open(CACHE);
-      cache.put(req, fresh.clone());
-    }
-    return fresh;
-  } catch {
-    return Response.error();
-  }
-}
-
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -58,8 +27,38 @@ self.addEventListener('fetch', (event) => {
   const isDocument =
     req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');
 
-  // Vite emits immutable, content-hashed bundles here — safe to cache forever.
-  const isHashedBundle = url.pathname.includes('/dist/assets/');
+  if (isDocument) {
+    event.respondWith(
+      (async () => {
+        try {
+          // `no-store` skips the browser HTTP cache so we truly hit the network.
+          const fresh = await fetch(req, { cache: 'no-store' });
+          const cache = await caches.open(CACHE);
+          cache.put(req, fresh.clone());
+          return fresh;
+        } catch {
+          return (await caches.match(req)) || Response.error();
+        }
+      })()
+    );
+    return;
+  }
 
-  event.respondWith(isHashedBundle && !isDocument ? cacheFirst(req) : networkFirst(req));
+  // Hashed assets never change under the same name — serve from cache first.
+  event.respondWith(
+    (async () => {
+      const cached = await caches.match(req);
+      if (cached) return cached;
+      try {
+        const fresh = await fetch(req);
+        if (fresh.ok && fresh.type === 'basic') {
+          const cache = await caches.open(CACHE);
+          cache.put(req, fresh.clone());
+        }
+        return fresh;
+      } catch {
+        return Response.error();
+      }
+    })()
+  );
 });

@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <script>(function(){var h=location.hostname;if(h!=='localhost'&&h!=='127.0.0.1'&&location.pathname.indexOf('/dist/')<0){location.replace('dist/'+location.search+location.hash)}})();</script>
   <script>try{var t=localStorage.getItem('arcade.theme')==='classic'?'classic':'refined';if(t==='classic')document.documentElement.setAttribute('data-theme','classic');addEventListener('DOMContentLoaded',function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='classic'?'#12141c':'#0c0d12')})}catch(e){}</script>
-  <script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(function(r){r.update();setInterval(function(){r.update()},60000);document.addEventListener('visibilitychange',function(){document.hidden||r.update()});r.addEventListener('updatefound',function(){var n=r.installing;n&&n.addEventListener('statechange',function(){n.state==='installed'&&navigator.serviceWorker.controller&&location.reload()})})}).catch(function(){})})}</script>
+  <script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(function(){})})}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0c0d12" />
   <meta name="color-scheme" content="dark" />
@@ -14,7 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Where" />
   <meta name="application-name" content="Where" />
   <title>Where — Geography Quiz | Guess the Country by Flag &amp; Capital</title>
-  <meta name="description" content="How well do you know the world? Where is a free geography quiz — identify the country from its flag or capital city, with four choices each round across nearly 200 countries. Pick Easy mode (about 100 famous countries) or Hard mode (the rest). Learn flags and capitals fast. Plays instantly in your browser." />
+  <meta name="description" content="How well do you know the world? Where is a free geography quiz — identify the country from its flag or capital city, with four choices each round across around eighty countries. Learn flags and capitals fast. Plays instantly in your browser." />
   <meta name="keywords" content="geography quiz, flags quiz, guess the country, capital cities quiz, world geography game, flag game, country trivia, free geography quiz" />
   <meta name="author" content="Tiny Arcade" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
@@ -49,7 +48,7 @@
     "name": "Where",
     "url": "https://games.vanshul.com/where/dist/",
     "image": "https://games.vanshul.com/assets/og/where.png",
-    "description": "A free geography quiz: identify the country from its flag or capital city, choosing from four options each round across nearly 200 countries.",
+    "description": "A free geography quiz: identify the country from its flag or capital city, choosing from four options each round across around eighty countries.",
     "genre": ["Educational", "Trivia", "Geography"],
     "applicationCategory": "Game",
     "operatingSystem": "Any (modern web browser)",
@@ -67,12 +66,11 @@
   <div id="app">
     <noscript>
       <h1>Where — Geography Quiz</h1>
-      <p>Where is a free geography quiz. Identify the country from its flag or capital city, choosing from four options each round. Learn the flags and capitals of nearly 200 countries.</p>
+      <p>Where is a free geography quiz. Identify the country from its flag or capital city, choosing from four options each round. Learn the flags and capitals of around eighty countries.</p>
       <h2>How to play</h2>
       <ul>
         <li>See a flag or capital city and pick the matching country.</li>
         <li>Four choices per round — one is correct.</li>
-        <li>Choose Easy (about 100 famous countries) or Hard (the rest of the world).</li>
         <li>Keep your streak going and beat your best score.</li>
       </ul>
       <p>Where needs JavaScript. Explore more free games at <a href="../../index.html">Tiny Arcade</a>.</p>
