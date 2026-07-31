@@ -128,21 +128,28 @@ button { font-family: inherit; }
 .keyboard { display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
 .krow { display: flex; gap: 5px; justify-content: center; }
 .key {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
   height: 54px;
-  max-width: 44px;
+  max-width: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   border-radius: 7px;
   background: var(--key);
   color: #fff;
-  font-size: 1rem;
+  font-size: clamp(.7rem, 3.4vw, 1rem);
   font-weight: 700;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
   cursor: pointer;
   transition: transform .06s, filter .12s, background .15s;
 }
-.key.wide { max-width: 68px; font-size: .78rem; }
+/* Enter/Backspace stay proportionally wider even on a cramped row (bigger
+   flex-grow plus a min-width floor so the label can never clip). */
+.key.wide { flex: 1.6 1 0; min-width: 52px; max-width: 72px; font-size: clamp(.55rem, 3vw, .78rem); letter-spacing: 0; padding: 0 2px; }
 @media (hover: hover) { .key:hover { filter: brightness(1.12); } }
 .key:active { transform: scale(.92); }
 .key.correct { background: var(--correct); }
