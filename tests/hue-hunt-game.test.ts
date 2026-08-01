@@ -10,10 +10,10 @@ describe('hue-hunt/game helpers', () => {
     expect(gridSize(100)).toBe(7);
   });
 
-  it('colorDelta shrinks with level and floors at 5', () => {
+  it('colorDelta shrinks with level and floors at 12', () => {
     expect(colorDelta(1)).toBe(50);
     expect(colorDelta(1)).toBeGreaterThan(colorDelta(5));
-    expect(colorDelta(100)).toBe(5);
+    expect(colorDelta(100)).toBe(12);
   });
 
   it('makeRound always places the odd tile inside the grid', () => {
@@ -21,6 +21,16 @@ describe('hue-hunt/game helpers', () => {
       const r = makeRound(lvl);
       expect(r.oddIndex).toBeGreaterThanOrEqual(0);
       expect(r.oddIndex).toBeLessThan(r.size * r.size);
+    }
+  });
+
+  it('the odd tile always differs from the base colour', () => {
+    for (let lvl = 1; lvl <= 60; lvl++) {
+      for (let i = 0; i < 200; i++) {
+        const { base, odd } = makeRound(lvl);
+        const differs = base.h !== odd.h || base.s !== odd.s || base.l !== odd.l;
+        expect(differs).toBe(true);
+      }
     }
   });
 });

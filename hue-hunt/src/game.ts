@@ -31,7 +31,9 @@ export function gridSize(level: number): number {
 
 /** Colour difference shrinks with level, making the odd tile subtler. */
 export function colorDelta(level: number): number {
-  return Math.max(50 - (level - 1) * 2.5, 5);
+  // Floor of 12 keeps the odd tile above the just-noticeable threshold (min ΔE≈2.5);
+  // a lower floor produced sub-perceptible, unsolvable rounds at high levels.
+  return Math.max(50 - (level - 1) * 2.5, 12);
 }
 
 function baseColor(): HSL {
