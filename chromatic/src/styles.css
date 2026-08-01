@@ -41,10 +41,12 @@ html, body {
   background: radial-gradient(1100px 700px at 50% -20%, var(--glow), var(--bg));
   color: var(--text);
   font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
-  overflow-x: hidden;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
 }
+/* overflow-x clipping on <html> only; on <body> it also makes body a scroll
+   container that traps touch scrolling on pages taller than the viewport. */
+html { overflow-x: hidden; }
 body { min-height: 100dvh; }
 
 button, a {

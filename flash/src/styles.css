@@ -40,10 +40,13 @@ html, body {
   background: radial-gradient(1100px 700px at 50% -20%, var(--glow), var(--bg));
   color: var(--text);
   font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
-  overflow-x: hidden;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
 }
+/* Keep overflow-x clipping on <html> only. On <body> it also makes body a
+   scroll container (overflow-y computes to auto), which traps touch scrolling
+   when the page is taller than the viewport (e.g. Flash's quiz). */
+html { overflow-x: hidden; }
 body { min-height: 100dvh; }
 
 button, a {
