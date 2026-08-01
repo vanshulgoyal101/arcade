@@ -39,7 +39,7 @@ app.innerHTML = `
     <button class="key enter" data-k="enter" aria-label="Submit">✓</button>
   </div>
 
-  <p class="center hint">Type your answer — number keys work too. Correct answers add time.</p>
+  <p class="center hint">Type your answer — it submits the moment it's right. Correct answers add time.</p>
 
   <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
   <div class="toast" id="toast"></div>
@@ -112,6 +112,10 @@ function type(ch: string): void {
   if (entry.length >= 6) return;
   entry += ch;
   answerEl.textContent = entry;
+  // Auto-submit the instant the typed value matches — no ✓ needed. Compare the
+  // exact number (not a prefix) so multi-digit answers like 12 or 144 aren't
+  // submitted early while a matching leading digit is still being typed.
+  if (Number(entry) === game.problem.answer) submit();
 }
 function backspace(): void {
   entry = entry.slice(0, -1);
