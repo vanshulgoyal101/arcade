@@ -26,6 +26,10 @@
       font: inherit; font-weight: 700; color: #10131c; background: var(--accent);
       border: none; border-radius: 999px; padding: 10px 20px; cursor: pointer;
     }
+    .btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 6px 14px; font-weight: 600; }
+    .btn.ghost:hover { color: var(--text); border-color: var(--muted); }
+    .hdr-actions { display: flex; align-items: center; gap: 12px; }
+    .upd { color: var(--muted); font-size: .72rem; font-variant-numeric: tabular-nums; }
     .msg { color: var(--muted); background: var(--bg-soft); border: 1px solid var(--line); border-radius: 14px; padding: 24px; text-align: center; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 26px; }
     .card { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -49,7 +53,7 @@
   <div class="wrap">
     <header>
       <h1>📊 Tiny Arcade — Stats</h1>
-      <a class="back" href="/index.html">← Arcade</a>
+      <div class="hdr-actions"><span id="actions"></span><a class="back" href="/index.html">← Arcade</a></div>
     </header>
     <div id="root"><div class="msg">Loading…</div></div>
     <p class="foot">Private · anonymous analytics · times in IST (Asia/Kolkata).</p>
@@ -61,25 +65,51 @@
     const SUPABASE_KEY = 'sb_publishable_qFZySs9l19_7bISrvmLHIw_vwt-DUdx';
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     const root = document.getElementById('root');
+    const actions = document.getElementById('actions');
     const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+    // slug -> [emoji, display name] for friendlier "Plays per game" labels.
+    const GAME_META = {
+      'hue-hunt': ['🎨', 'Hue Hunt'], where: ['🗺️', 'Where'], echo: ['🔊', 'Echo'],
+      flash: ['⚡', 'Flash'], chromatic: ['🌈', 'Chromatic'], flashmath: ['🧮', 'Flashmath'],
+      wordle: ['🟩', 'Wordle'], 'digit-span': ['🔢', 'Digit Span'], word: ['📖', 'Word of the Day'],
+      sprint: ['⌨️', 'Sprint'], interval: ['🎹', 'Interval'], hub: ['🕹️', 'Hub'],
+    };
+    const gameLabel = (slug) => { const m = GAME_META[slug]; return m ? m[0] + ' ' + m[1] : (slug || '—'); };
+
     function signInView(note) {
+      actions.innerHTML = '';
       root.innerHTML = `<div class="msg">${note ? esc(note) + '<br><br>' : ''}<button class="btn" id="si">Sign in with Google</button></div>`;
       document.getElementById('si').onclick = () =>
         supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
     }
 
-    function bars(items, key, label) {
-      const max = Math.max(1, ...items.map((i) => i.plays ?? i.visits ?? 0));
+    function bars(items, fmt, label) {
+      const max = Math.max(1, ...items.map((i) => i.value));
       return items.map((i) => {
-        const v = i.plays ?? i.visits ?? 0;
-        return `<div class="row"><span class="k">${esc(i[key])}</span><div class="bar"><span style="width:${(v / max) * 100}%"></span></div><span class="v">${v}</span></div>`;
+        const name = fmt(i);
+        return `<div class="row"><span class="k">${esc(name)}</span>` +
+          `<div class="bar" role="img" aria-label="${esc(name)}: ${i.value}"><span style="width:${(i.value / max) * 100}%"></span></div>` +
+          `<span class="v">${i.value}</span></div>`;
       }).join('') || `<div class="msg">No ${label} yet.</div>`;
+    }
+
+    // Gap-free rolling 30-day series (missing days zero-filled) with readable labels.
+    function last30(byDay) {
+      const map = new Map((byDay || []).map((d) => [d.day, (d.visits || 0) + (d.plays || 0)]));
+      const out = [];
+      for (let i = 29; i >= 0; i--) {
+        const dt = new Date(Date.now() - i * 86400000);
+        const key = dt.toISOString().slice(0, 10);
+        out.push({ label: dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }), value: map.get(key) || 0 });
+      }
+      return out;
     }
 
     function render(s) {
       const byHour = Array.from({ length: 24 }, (_, h) => (s.by_hour || []).find((x) => x.hour === h) || { hour: h, visits: 0, plays: 0 });
       const hmax = Math.max(1, ...byHour.map((x) => (x.visits || 0) + (x.plays || 0)));
+      const perGame = (s.per_game || []).map((g) => ({ slug: g.game, value: g.plays || 0 }));
       root.innerHTML =
         `<div class="cards">
           <div class="card"><div class="n">${s.total_visits}</div><div class="l">Total visits</div></div>
@@ -88,22 +118,41 @@
           <div class="card"><div class="n">${s.visits_today}</div><div class="l">Visits today</div></div>
           <div class="card"><div class="n">${s.plays_today}</div><div class="l">Plays today</div></div>
         </div>
-        <section><h2>Plays per game</h2>${bars(s.per_game || [], 'game', 'plays')}</section>
+        <section><h2>Plays per game</h2>${bars(perGame, (i) => gameLabel(i.slug), 'plays')}</section>
         <section><h2>By hour of day (visits + plays)</h2>
           <div class="hours">${byHour.map((x) => `<div class="h" title="${x.hour}:00 — ${x.visits}v ${x.plays}p"><span style="height:${(((x.visits || 0) + (x.plays || 0)) / hmax) * 100}%"></span></div>`).join('')}</div>
           <div class="hlabels">${byHour.map((x) => `<div>${x.hour % 3 === 0 ? x.hour : ''}</div>`).join('')}</div>
         </section>
-        <section><h2>Last 30 days</h2>${bars((s.by_day || []).map((d) => ({ day: d.day, plays: (d.visits || 0) + (d.plays || 0) })), 'day', 'activity')}</section>`;
+        <section><h2>Last 30 days</h2>${bars(last30(s.by_day), (i) => i.label, 'activity')}</section>`;
+      actions.innerHTML = `<span class="upd">Updated ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span><button class="btn ghost" id="out">Sign out</button>`;
+      document.getElementById('out').onclick = () => supabase.auth.signOut();
     }
 
+    let loading = false;
     async function load() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { signInView('This page is private — sign in as the owner.'); return; }
-      const { data, error } = await supabase.rpc('arcade_stats');
-      if (error) { signInView('Signed in, but this account is not the owner.'); return; }
-      render(data);
+      if (loading) return; // avoid overlapping RPCs (auth events + auto-refresh)
+      loading = true;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { signInView('This page is private — sign in as the owner.'); return; }
+        const { data, error } = await supabase.rpc('arcade_stats');
+        if (error) {
+          const denied = /not authorized/i.test(error.message || '');
+          signInView(denied ? 'Signed in, but this account is not the owner.' : 'Could not load stats — please try again.');
+          return;
+        }
+        render(data);
+      } finally {
+        loading = false;
+      }
     }
-    supabase.auth.onAuthStateChange(() => load());
+
+    // INITIAL_SESSION is handled by the single load() below; only react to real changes.
+    supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') load();
+    });
+    setInterval(() => { if (!document.hidden) load(); }, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
     load();
   </script>
 </body>
