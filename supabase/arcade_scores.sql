@@ -37,6 +37,28 @@ create policy arcade_scores_update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+-- Privacy: the `data` blob is a player's whole localStorage. RLS is row-level,
+-- so a `using(true)` read policy would let anyone `.select('data')` and dump
+-- every player's blob. A column-level revoke can't carve a subset out of a
+-- table-wide SELECT grant, so drop the table grant and re-grant SELECT only on
+-- the safe columns (leaderboard reads user_id/display_name/avatar_url/best).
+-- Own-row restore goes through the SECURITY DEFINER restore_my_scores() RPC.
+revoke select on public.arcade_scores from anon, authenticated;
+grant select (user_id, game, best, display_name, avatar_url, updated_at)
+  on public.arcade_scores to anon, authenticated;
+
+create or replace function public.restore_my_scores()
+returns table (game text, best integer, data jsonb)
+language sql
+security definer
+set search_path = public
+as $$
+  select game, best, data
+  from public.arcade_scores
+  where user_id = auth.uid();
+$$;
+grant execute on function public.restore_my_scores() to authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Player profile: an editable display name + avatar (emoji or Google photo URL).
 -- Kept separate so a player has an identity even before setting any score.

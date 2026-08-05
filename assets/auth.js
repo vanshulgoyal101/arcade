@@ -190,8 +190,8 @@ async function uploadScores(user) {
   if (rows.length) await supabase.from('arcade_scores').upsert(rows, { onConflict: 'user_id,game' });
 }
 
-async function restoreScores(user, overwrite = false) {
-  const { data } = await supabase.from('arcade_scores').select('game,best,data').eq('user_id', user.id);
+async function restoreScores(overwrite = false) {
+  const { data } = await supabase.rpc('restore_my_scores');
   if (!data) return;
   for (const row of data) {
     const g = GAMES.find((x) => x.slug === row.game);
@@ -286,10 +286,10 @@ async function onUser(user) {
         // A different account signed in on this browser — don't carry over the
         // previous account's scores; this account's cloud data is authoritative.
         clearLocalScores();
-        await restoreScores(user, true);
+        await restoreScores(true);
       } else {
         // Same account, or a guest claiming their local scores for the first time.
-        await restoreScores(user);
+        await restoreScores();
         await uploadScores(user);
       }
       localStorage.setItem(OWNER_KEY, user.id);
