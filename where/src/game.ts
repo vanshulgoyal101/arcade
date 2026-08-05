@@ -1,7 +1,8 @@
 // Where core: identify a country from its flag or capital.
-// Targets are drawn from a shuffled "deck" so every country in the current
-// difficulty pool appears once before any repeats. Missed countries are
-// re-queued a bit later for light spaced repetition.
+// No country repeats within a session: targets are drawn from a shuffled deck
+// of countries not yet shown. The chosen difficulty is used first; once its pool
+// is exhausted the deck spills into the other pool (easy → hard and vice versa),
+// so even a long run stays repeat-free until the whole world has been shown.
 // Two pools (easy = famous countries, hard = the rest) each keep their own best.
 
 import { countriesFor, type Country, type Difficulty } from './content';
@@ -31,6 +32,7 @@ export class WhereGame {
   target: Country;
   options: Country[] = [];
   private deck: Country[] = [];
+  private seen = new Set<string>(); // codes shown this session — never repeat
   store: WhereStore;
 
   constructor() {
@@ -40,6 +42,21 @@ export class WhereGame {
 
   private pool(): Country[] {
     return countriesFor(this.difficulty);
+  }
+
+  // Countries not yet shown this session: the current difficulty's pool first,
+  // then the other pool once this one is used up, so a long run never repeats.
+  private freshCountries(): Country[] {
+    const primary = countriesFor(this.difficulty);
+    const secondary = countriesFor(this.difficulty === 'easy' ? 'hard' : 'easy');
+    const unseen = (list: Country[]) => list.filter((c) => !this.seen.has(c.code));
+    const fromPrimary = unseen(primary);
+    if (fromPrimary.length) return fromPrimary;
+    const fromSecondary = unseen(secondary);
+    if (fromSecondary.length) return fromSecondary;
+    // Every country has been shown — unavoidable; start the world over.
+    this.seen.clear();
+    return primary;
   }
 
   get best(): number {
@@ -67,21 +84,23 @@ export class WhereGame {
     this.streak = 0;
     this.finished = false;
     this.deck = [];
+    this.seen.clear();
     this.nextRound();
   }
 
   nextRound(): void {
-    const all = this.pool();
-    // Refill and reshuffle once the deck is exhausted, avoiding an immediate
-    // repeat of the country we just showed across the shuffle boundary.
+    // Refill from the unshown countries once the deck runs dry, avoiding an
+    // immediate repeat of the country just shown across the refill boundary.
     if (this.deck.length === 0) {
-      this.deck = shuffle(all);
+      this.deck = shuffle(this.freshCountries());
       if (this.deck.length > 1 && this.deck[0].code === this.target.code) {
         this.deck.push(this.deck.shift()!);
       }
     }
     this.target = this.deck.shift()!;
+    this.seen.add(this.target.code);
 
+    const all = this.pool();
     const opts: Country[] = [this.target];
     while (opts.length < OPTION_COUNT && opts.length < all.length) {
       const c = all[Math.floor(Math.random() * all.length)];
@@ -96,10 +115,7 @@ export class WhereGame {
       this.streak += 1;
       return { correct: true, gameOver: false, newBest: false };
     }
-    // Re-queue the missed country for a spaced review, far enough ahead that it
-    // doesn't feel like an immediate repeat.
-    const pos = Math.min(this.deck.length, 12 + Math.floor(Math.random() * 8));
-    this.deck.splice(pos, 0, this.target);
+    // A missed country is not re-queued — it still won't reappear this session.
     this.streak = 0;
     this.lives -= 1;
     if (this.lives <= 0) {

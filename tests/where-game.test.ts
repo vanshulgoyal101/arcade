@@ -70,6 +70,39 @@ describe('where/difficulty', () => {
     }
     expect(new Set(seen).size).toBe(EASY_COUNTRIES.length); // a full pass is all-distinct
   });
+
+  it('never repeats a country in a session, spilling easy → hard once famous run out', () => {
+    const g = new WhereGame();
+    g.setDifficulty('easy');
+    g.start();
+    const seen = [g.target.code];
+    // Draw the whole world's worth of rounds — must all be distinct.
+    for (let i = 1; i < COUNTRIES.length; i++) {
+      g.nextRound();
+      seen.push(g.target.code);
+    }
+    expect(new Set(seen).size).toBe(COUNTRIES.length); // every country exactly once
+
+    // The first EASY_COUNTRIES rounds are all famous; the pool then spills to hard.
+    const easyCodes = new Set(EASY_COUNTRIES.map((c) => c.code));
+    for (let i = 0; i < EASY_COUNTRIES.length; i++) expect(easyCodes.has(seen[i])).toBe(true);
+    for (let i = EASY_COUNTRIES.length; i < seen.length; i++) expect(easyCodes.has(seen[i])).toBe(false);
+  });
+
+  it('does not reappear a missed country later in the same session', () => {
+    const g = new WhereGame();
+    g.setDifficulty('easy');
+    g.start();
+    g.lives = 999; // stay alive to observe a long run
+    const seen = new Set([g.target.code]);
+    for (let i = 1; i < COUNTRIES.length; i++) {
+      const wrong = COUNTRIES.find((c) => c.name !== g.target.name)!.name;
+      g.answer(wrong); // miss every round
+      g.nextRound();
+      expect(seen.has(g.target.code)).toBe(false); // a missed country never returns
+      seen.add(g.target.code);
+    }
+  });
 });
 
 describe('where/rounds', () => {
