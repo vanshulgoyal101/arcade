@@ -92,17 +92,17 @@ button { font-family: inherit; }
 .icon-btn:active { transform: scale(.9); }
 .title { font-size: 1.4rem; font-weight: 900; margin: 0; }
 
-.hud { display: flex; gap: 10px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+.hud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
 .pill {
   background: var(--bg-soft);
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 8px 14px;
+  padding: 8px 10px;
   text-align: center;
-  min-width: 76px;
+  min-width: 0;
 }
 .pill .k { display: block; font-size: .64rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
-.pill .v { font-size: 1.25rem; font-weight: 800; }
+.pill .v { font-size: clamp(.95rem, 4vw, 1.25rem); font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .panel {
   background: var(--bg-card);

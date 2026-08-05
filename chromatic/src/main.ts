@@ -204,6 +204,10 @@ function openEndlessModal(): void {
 
 // ---- Interactions ----
 let lastTick = 0;
+let inProgress = false; // true once a run is underway — locks difficulty
+function setDiffLocked(locked: boolean): void {
+  diff.classList.toggle('disabled', locked);
+}
 (['r', 'g', 'b'] as const).forEach((ch) => {
   sliders[ch].addEventListener('input', () => {
     game.setGuess({ [ch]: Number(sliders[ch].value) } as Partial<RGB>);
@@ -218,9 +222,12 @@ let lastTick = 0;
 
 function handleSubmit(): void {
   if (game.finished) return;
+  if (!inProgress) { inProgress = true; setDiffLocked(true); }
   const result = game.submit();
 
   if (result.gameOver) {
+    inProgress = false;
+    setDiffLocked(false);
     sfx.gameOver();
     renderAll();
     window.setTimeout(openEndlessModal, 300);
@@ -243,6 +250,7 @@ document.addEventListener('keydown', (e) => {
 
 diff.querySelectorAll<HTMLButtonElement>('.diff-btn').forEach((btn) => {
   btn.addEventListener('click', () => {
+    if (inProgress) return; // no difficulty changes mid-run
     game.setDifficulty(btn.dataset.diff as Difficulty);
     renderControls();
     renderHint();
