@@ -40,7 +40,8 @@ set search_path = public
 as $$
 declare v jsonb;
 begin
-  if auth.uid() <> 'a0c64b9b-7d84-45d4-8ef7-522a6b294b42'::uuid then
+  -- `is distinct from` (not `<>`) so an anonymous NULL uid is correctly rejected.
+  if auth.uid() is distinct from 'a0c64b9b-7d84-45d4-8ef7-522a6b294b42'::uuid then
     raise exception 'not authorized';
   end if;
   select jsonb_build_object(
