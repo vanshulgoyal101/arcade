@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- SEO: replace https://games.vanshul.com with your real production domain, and update <lastmod> when content changes. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
@@ -7,109 +6,89 @@
     <lastmod>2026-08-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/hub.png</image:loc>
-      <image:title>Tiny Arcade</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://games.vanshul.com/hue-hunt/dist/</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/hue-hunt.png</image:loc>
-      <image:title>Hue Hunt — Spot the Odd Colour</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://games.vanshul.com/echo/dist/</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/echo.png</image:loc>
-      <image:title>Echo — Memory Pattern Game</image:title>
-    </image:image>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/hub.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/chromatic/dist/</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/chromatic.png</image:loc>
-      <image:title>Chromatic — Match the Colour</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://games.vanshul.com/flash/dist/</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/flash.png</image:loc>
-      <image:title>Flash — Speed Reading Trainer</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://games.vanshul.com/flashmath/dist/</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/flashmath.png</image:loc>
-      <image:title>Flashmath — Mental Arithmetic Game</image:title>
-    </image:image>
-  </url>
-  <url>
-    <loc>https://games.vanshul.com/sprint/dist/</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/sprint.png</image:loc>
-      <image:title>Sprint — Typing Speed Test</image:title>
-    </image:image>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/chromatic.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/digit-span/dist/</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/digit-span.png</image:loc>
-      <image:title>Digit Span — Working-Memory Test</image:title>
-    </image:image>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/digit-span.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/echo/dist/</loc>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/echo.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/flash/dist/</loc>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/flash.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/flashmath/dist/</loc>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/flashmath.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/hue-hunt/dist/</loc>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/hue-hunt.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/interval/dist/</loc>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/interval.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/sprint/dist/</loc>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/sprint.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/stats/</loc>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://games.vanshul.com/where/dist/</loc>
     <lastmod>2026-08-05</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/where.png</image:loc>
-      <image:title>Where — Geography Quiz</image:title>
-    </image:image>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/where.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/word/dist/</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/word.png</image:loc>
-      <image:title>Word of the Day — Vocabulary Game</image:title>
-    </image:image>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/word.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/wordle/dist/</loc>
-    <lastmod>2026-07-31</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <image:image>
-      <image:loc>https://games.vanshul.com/assets/og/wordle.png</image:loc>
-      <image:title>Wordle — Unlimited Word Guessing Game</image:title>
-    </image:image>
+    <lastmod>2026-08-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/wordle.png</image:loc></image:image>
   </url>
 </urlset>

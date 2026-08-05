@@ -1,0 +1,10 @@
+{
+  "baseUrl": "https://games.vanshul.com",
+  "scanDir": ".",
+  "outFile": "sitemap.xml",
+  "include": ["index.html", "stats/index.html", "*/dist/index.html"],
+  "exclude": ["404.html", "node_modules/**", ".git/**", "tests/**", "scripts/**", "shared/**", "supabase/**"],
+  "extraRoutes": [],
+  "defaultChangefreq": "weekly",
+  "updateRobots": true
+}
