@@ -26,7 +26,7 @@ function num(v) { return typeof v === 'number' && isFinite(v) ? v : 0; }
 function maxVal(o) { return o && typeof o === 'object' ? Math.max(0, ...Object.values(o).map(num)) : 0; }
 function readLocal(key) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; } catch { return null; } }
 function localBest(g) { const s = readLocal(g.key); return s ? num(g.best(s)) : 0; }
-function esc(s) { return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function esc(s) { return String(s ?? '').replace(/[&<>"'`]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c])); }
 function isUrl(a) { return typeof a === 'string' && /^https?:/.test(a); }
 function isSvgAv(a) { return typeof a === 'string' && a.slice(0, 2) === 'a:' && AV[a.slice(2)]; }
 function avatarHtml(a, cls) {

@@ -167,6 +167,11 @@ begin
   if new.data is not null and octet_length(new.data::text) > 65536 then
     new.data := null;
   end if;
+  -- Bound the free-text identity fields so a direct upsert can't store an
+  -- oversized display name (leaderboard layout abuse), avatar or game slug.
+  new.display_name := left(new.display_name, 24);
+  new.avatar_url   := left(new.avatar_url, 512);
+  new.game         := left(new.game, 32);
   return new;
 end;
 $$;
@@ -177,36 +182,24 @@ create trigger arcade_scores_guard
   for each row execute function public.arcade_scores_guard();
 
 -- ---------------------------------------------------------------------------
--- Daily challenge boards: one best row per player, per game, per day.
-create table if not exists public.arcade_daily (
-  user_id      uuid        not null references auth.users (id) on delete cascade,
-  game         text        not null,
-  day          date        not null,
-  score        integer     not null default 0,
-  display_name text,
-  avatar_url   text,
-  updated_at   timestamptz not null default now(),
-  primary key (user_id, game, day)
-);
+-- Bound the profile free-text fields on every write, mirroring the client's
+-- own caps so a direct upsert can't store oversized values.
+create or replace function public.arcade_profiles_guard()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.display_name := left(new.display_name, 24);
+  new.avatar       := left(new.avatar, 512);
+  return new;
+end;
+$$;
 
-create index if not exists arcade_daily_board_idx
-  on public.arcade_daily (game, day, score desc);
+drop trigger if exists arcade_profiles_guard on public.arcade_profiles;
+create trigger arcade_profiles_guard
+  before insert or update on public.arcade_profiles
+  for each row execute function public.arcade_profiles_guard();
 
-alter table public.arcade_daily enable row level security;
-
-drop policy if exists arcade_daily_read on public.arcade_daily;
-create policy arcade_daily_read
-  on public.arcade_daily for select
-  using (true);
-
-drop policy if exists arcade_daily_insert on public.arcade_daily;
-create policy arcade_daily_insert
-  on public.arcade_daily for insert
-  with check (auth.uid() = user_id);
-
-drop policy if exists arcade_daily_update on public.arcade_daily;
-create policy arcade_daily_update
-  on public.arcade_daily for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+-- The daily-challenge boards were never shipped; drop the unused table.
+drop table if exists public.arcade_daily cascade;
 

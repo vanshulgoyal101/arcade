@@ -14,6 +14,11 @@ create table if not exists public.arcade_events (
 create index if not exists arcade_events_ts_idx on public.arcade_events (ts);
 create index if not exists arcade_events_kg_idx on public.arcade_events (kind, game);
 
+-- Bound the free-text fields so anonymous inserts can't store oversized rows.
+alter table public.arcade_events drop constraint if exists arcade_events_bounds;
+alter table public.arcade_events add constraint arcade_events_bounds
+  check (char_length(coalesce(game, '')) <= 40 and char_length(coalesce(visitor, '')) <= 64) not valid;
+
 alter table public.arcade_events enable row level security;
 
 -- Anyone may log an event (anonymous). Only 'visit'/'play' kinds are accepted.
