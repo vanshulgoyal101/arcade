@@ -118,6 +118,7 @@
     <h1 class="logo">TINY&nbsp;ARCADE</h1>
     <p class="tagline">Ten tiny games. One more round. Just one more.</p>
     <div class="theme-switch">
+      <button type="button" id="randomBtn" class="theme-btn">🎲 Random</button>
       <button type="button" id="lbBtn" class="theme-btn">🏆 Leaderboard</button>
       <span id="account" class="account"></span>
     </div>
@@ -242,5 +243,18 @@
     })();
   </script>
   <script type="module" src="assets/auth.js?v=8"></script>
+  <script>
+    // "Surprise me": jump straight into a random game.
+    (function () {
+      var b = document.getElementById('randomBtn');
+      if (!b) return;
+      b.addEventListener('click', function () {
+        var cards = document.querySelectorAll('.grid a.card');
+        if (!cards.length) return;
+        var href = cards[Math.floor(Math.random() * cards.length)].getAttribute('href');
+        if (href) location.href = href;
+      });
+    })();
+  </script>
 </body>
 </html>
