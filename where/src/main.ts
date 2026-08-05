@@ -63,6 +63,12 @@ const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 
 let answered = false;
+let inProgress = false; // true once the player has answered — locks difficulty mid-run
+
+function setDiffLocked(locked: boolean): void {
+  diffToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => { b.disabled = locked; });
+  diffToggle.classList.toggle('locked', locked);
+}
 
 function renderMute(): void {
   muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
@@ -107,6 +113,7 @@ function newRound(): void {
 function onAnswer(name: string, btn: HTMLButtonElement): void {
   if (answered) return;
   answered = true;
+  if (!inProgress) { inProgress = true; setDiffLocked(true); }
   sfx.select();
   optionsEl.classList.add('locked');
   const res = game.answer(name);
@@ -122,6 +129,8 @@ function onAnswer(name: string, btn: HTMLButtonElement): void {
 }
 
 function endGame(newBest: boolean): void {
+  inProgress = false;
+  setDiffLocked(false);
   const best = game.best;
   const label = `${game.mode === 'flag' ? 'Flags' : 'Capitals'} · ${game.difficulty === 'hard' ? 'Hard' : 'Easy'}`;
   modal.innerHTML = `
@@ -161,6 +170,8 @@ function endGame(newBest: boolean): void {
 function startGame(): void {
   overlay.classList.remove('show');
   answered = false;
+  inProgress = false;
+  setDiffLocked(false);
   game.start();
   renderHud();
   renderPrompt();
@@ -180,6 +191,7 @@ modeToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
 
 diffToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {
   b.addEventListener('click', () => {
+    if (inProgress) return; // no difficulty changes mid-game
     sfx.click();
     game.setDifficulty(b.dataset.diff as Difficulty);
     diffToggle.querySelectorAll('button').forEach((x) => x.classList.remove('active'));
