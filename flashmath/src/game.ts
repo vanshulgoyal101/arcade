@@ -42,20 +42,25 @@ export function makeProblem(level: number): Problem {
   const op = pick(ops[tier]);
 
   if (op === '×') {
-    const hi = tier >= 3 ? 12 : 9;
-    const a = ri(2, hi);
-    const b = ri(2, hi);
+    // Factors climb with the level, so trivial products (2×2) drop out as you go.
+    const lo = Math.min(2 + Math.floor(level / 4), 9);
+    const hi = Math.min(6 + Math.floor(level / 2), 20);
+    const a = ri(lo, hi);
+    const b = ri(lo, hi);
     return { a, b, op, answer: a * b };
   }
   if (op === '÷') {
-    const b = ri(2, 12);
-    const answer = ri(2, 12);
+    const lo = Math.min(2 + Math.floor(level / 5), 9);
+    const hi = Math.min(6 + Math.floor(level / 3), 15);
+    const b = ri(lo, hi);
+    const answer = ri(lo, hi);
     return { a: b * answer, b, op, answer };
   }
-  // + / −
-  const hi = [10, 25, 50, 99, 150][tier];
-  let a = ri(1, hi);
-  let b = ri(1, hi);
+  // + / − : both operands grow and the floor rises so sums never stay trivial.
+  const hi = Math.min(12 + level * 6, 400);
+  const lo = Math.min(Math.max(1, Math.floor(level * 1.5) - 1), hi - 1);
+  let a = ri(lo, hi);
+  let b = ri(lo, hi);
   if (op === '−' && b > a) [a, b] = [b, a]; // keep it non-negative
   return { a, b, op, answer: op === '+' ? a + b : a - b };
 }

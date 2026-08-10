@@ -34,6 +34,27 @@ describe('flashmath/problem generation', () => {
       }
     }
   });
+
+  it('difficulty scales with level — no trivial products at high levels', () => {
+    // At a high level the multiplication factors have a raised floor (no 2×2).
+    for (let i = 0; i < 300; i++) {
+      const p = makeProblem(20);
+      if (p.op === '×') {
+        expect(p.a).toBeGreaterThanOrEqual(5);
+        expect(p.b).toBeGreaterThanOrEqual(5);
+      }
+    }
+    // Operand magnitudes grow with the level.
+    const maxOperand = (lvl: number): number => {
+      let m = 0;
+      for (let i = 0; i < 400; i++) {
+        const p = makeProblem(lvl);
+        m = Math.max(m, p.a, p.b);
+      }
+      return m;
+    };
+    expect(maxOperand(25)).toBeGreaterThan(maxOperand(4));
+  });
 });
 
 describe('flashmath/scoring', () => {

@@ -22,7 +22,7 @@ app.innerHTML = `
   <div class="hud">
     <div class="pill" id="p-level"><span class="k">Level</span><span class="v" id="level">1</span></div>
     <div class="pill" id="p-score"><span class="k">Score</span><span class="v" id="score">0</span></div>
-    <div class="pill combo" id="p-combo"><span class="k">Combo</span><span class="v" id="combo">x1</span></div>
+    <div class="pill combo" id="p-combo"><span class="k">Combo</span><span class="v" id="combo">0</span></div>
     <div class="pill" id="p-best"><span class="k">Best</span><span class="v" id="best">0</span></div>
   </div>
 
@@ -97,7 +97,7 @@ function renderMute(): void {
 function renderHud(): void {
   levelEl.textContent = String(game.level);
   scoreEl.textContent = String(game.score);
-  comboEl.textContent = `x${game.multiplier}`;
+  comboEl.textContent = String(game.combo);
   bestEl.textContent = String(game.store.bestScore);
 }
 function renderProblem(): void {
@@ -126,13 +126,12 @@ function submit(): void {
   const res = game.submit(Number(entry), performance.now());
   if (res.correct) {
     sfx.correct(game.combo);
-    popup(`+${res.points}`, res.fast ? '#ffd93d' : '#4ecdc4');
+    const mult = game.multiplier > 1 ? ` ×${game.multiplier}` : '';
+    popup(`+${res.points}${mult}`, res.fast ? '#ffd93d' : '#4ecdc4');
     bump(pScore);
     bump(pLevel);
-    if (game.multiplier >= 2) {
-      bump(pCombo);
-      if (game.combo % 3 === 0) sfx.levelUp();
-    }
+    bump(pCombo);
+    if (game.multiplier >= 2 && game.combo % 3 === 0) sfx.levelUp();
     renderHud();
     renderProblem();
   } else {
