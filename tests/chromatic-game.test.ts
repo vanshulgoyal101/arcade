@@ -45,4 +45,15 @@ describe('chromatic/game', () => {
     g.setDifficulty('hard');
     expect(g.threshold).toBeGreaterThan(easy);
   });
+
+  it('the pass threshold ramps up with the level but stays achievable', () => {
+    const g = new Game();
+    g.setDifficulty('easy');
+    g.startEndless(); // level 1
+    const t1 = g.threshold;
+    g.level = 40;
+    expect(g.threshold).toBeGreaterThan(t1); // higher levels demand more accuracy
+    g.level = 1000;
+    expect(g.threshold).toBeLessThanOrEqual(98); // never reaches an impossible 100%
+  });
 });

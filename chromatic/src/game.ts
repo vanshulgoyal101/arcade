@@ -46,7 +46,9 @@ export class Game {
   }
 
   get threshold(): number {
-    return DIFFICULTY[this.difficulty].threshold;
+    const base = DIFFICULTY[this.difficulty].threshold;
+    // Ramp the required accuracy up with the level (capped) so higher levels get harder.
+    return Math.min(base + Math.floor((this.level - 1) / 4), base + 4, 98);
   }
 
   // ---- Endless ----

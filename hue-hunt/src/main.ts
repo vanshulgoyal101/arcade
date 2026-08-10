@@ -22,7 +22,7 @@ app.innerHTML = `
   <div class="hud">
     <div class="pill" id="p-level"><span class="k">Level</span><span class="v" id="level">1</span></div>
     <div class="pill" id="p-score"><span class="k">Score</span><span class="v" id="score">0</span></div>
-    <div class="pill combo" id="p-combo"><span class="k">Combo</span><span class="v" id="combo">x1</span></div>
+    <div class="pill combo" id="p-combo"><span class="k">Combo</span><span class="v" id="combo">0</span></div>
     <div class="pill" id="p-best"><span class="k">Best</span><span class="v" id="best">0</span></div>
   </div>
 
@@ -92,7 +92,7 @@ function renderMute(): void {
 function renderHud(): void {
   levelEl.textContent = String(game.level);
   scoreEl.textContent = String(game.score);
-  comboEl.textContent = `x${game.multiplier}`;
+  comboEl.textContent = String(game.combo);
   bestEl.textContent = String(game.store.bestScore);
 }
 
@@ -121,7 +121,8 @@ function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
     void boardEl.offsetWidth;
     boardEl.classList.add('board-flash');
 
-    scorePopup(ev.clientX, ev.clientY, `+${points}`, fast ? '#ffd93d' : '#4ecdc4');
+    const mult = game.multiplier > 1 ? ` ×${game.multiplier}` : '';
+    scorePopup(ev.clientX, ev.clientY, `+${points}${mult}`, fast ? '#ffd93d' : '#4ecdc4');
     if (game.multiplier >= 2 && game.combo % 3 === 0) {
       comboFlash.textContent = `COMBO x${game.multiplier}!`;
       comboFlash.classList.remove('show');
@@ -131,7 +132,7 @@ function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
     }
     bump(pScore);
     bump(pLevel);
-    if (game.multiplier >= 2) bump(pCombo);
+    bump(pCombo);
 
     renderHud();
     setTimeout(buildBoard, 60);
