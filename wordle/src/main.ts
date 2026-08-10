@@ -216,12 +216,12 @@ function bounceRow(row: number): void {
 // ---- overlays ----
 function endGame(won: boolean, newRecord: boolean): void {
   const s = game.store;
-  const solvedLine = won
-    ? `Solved in ${game.guesses.length} ${game.guesses.length === 1 ? 'guess' : 'guesses'}`
-    : `The word was <b>${game.answer.toUpperCase()}</b>`;
+  const reveal = won
+    ? `<p class="sub">Solved in ${game.guesses.length} ${game.guesses.length === 1 ? 'guess' : 'guesses'}</p>`
+    : `<p class="sub">The word was</p><div class="answer">${game.answer.toUpperCase()}</div>`;
   modal.innerHTML = `
     <h2>${won ? 'Splendid!' : 'Next time'}</h2>
-    <p class="sub">${solvedLine}</p>
+    ${reveal}
     ${newRecord ? '<p class="newbest">🔥 New best streak!</p>' : ''}
     ${statBlockHtml()}
     <div class="row-btns">
