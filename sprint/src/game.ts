@@ -19,6 +19,7 @@ export interface Stats {
 export class SprintGame {
   duration: Duration = 30;
   upcoming: string[] = [];
+  typedHistory: { word: string; typed: string }[] = []; // recently completed words, kept visible
   correctChars = 0;
   incorrectChars = 0;
   wordsTyped = 0;
@@ -69,6 +70,7 @@ export class SprintGame {
     this.finished = false;
     this.startedAt = 0;
     this.upcoming = [];
+    this.typedHistory = [];
     this.lastSentence = -1;
     this.refill();
   }
@@ -100,6 +102,8 @@ export class SprintGame {
     }
     this.correctChars++; // the separating space
     this.wordsTyped++;
+    this.typedHistory.push({ word: w, typed });
+    if (this.typedHistory.length > 40) this.typedHistory.shift();
     this.upcoming.shift();
     this.refill();
   }

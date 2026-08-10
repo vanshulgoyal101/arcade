@@ -86,20 +86,27 @@ button { font-family: inherit; }
 .timerbar > span { display: block; height: 100%; width: 100%; transform-origin: left; background: var(--accent); }
 
 .stream {
+  position: relative;
   background: var(--bg-card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 22px;
-  font-size: 1.6rem;
+  padding: 22px 24px;
+  font-size: 1.55rem;
   line-height: 2.1rem;
   font-family: "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
-  min-height: 4.2em;
+  height: calc(2.1rem * 3);
+  box-sizing: content-box;
+  overflow: hidden;
   margin-bottom: 14px;
   word-spacing: .3em;
+  /* Fade partial lines at the top/bottom edges like MonkeyType. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
 }
 .stream .w { color: var(--muted); transition: color .1s; }
-.stream .w.current { color: var(--text); border-radius: 4px; }
-.stream .w .c-ok { color: var(--good); }
+.stream .w.done { color: var(--text); }
+.stream .w.current { color: var(--muted); }
+.stream .w .c-ok { color: var(--text); }
 .stream .w .c-bad { color: var(--bad); text-decoration: underline; }
 .stream .w .c-extra { color: var(--bad); opacity: .7; }
 .stream .caret { border-left: 2px solid var(--accent); margin-left: -1px; animation: blink 1s step-end infinite; }

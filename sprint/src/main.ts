@@ -76,34 +76,41 @@ function showToast(msg: string): void {
 function esc(ch: string): string {
   return ch === ' ' ? '&nbsp;' : ch.replace('<', '&lt;').replace('>', '&gt;');
 }
+function escWord(w: string): string {
+  return w.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
+// One word rendered character-by-character against what was typed (green/red/caret).
+function wordCharsHtml(target: string, typed: string, withCaret: boolean): string {
+  let inner = '';
+  const len = Math.max(target.length, typed.length);
+  for (let i = 0; i < len; i++) {
+    const t = target[i];
+    const g = typed[i];
+    const caret = withCaret && i === typed.length ? '<span class="caret"></span>' : '';
+    if (g === undefined) inner += `${caret}<span>${esc(t)}</span>`;
+    else if (t === undefined) inner += `<span class="c-extra">${esc(g)}</span>`;
+    else if (g === t) inner += `${caret}<span class="c-ok">${esc(t)}</span>`;
+    else inner += `${caret}<span class="c-bad">${esc(t)}</span>`;
+  }
+  if (withCaret && typed.length >= target.length) inner += '<span class="caret"></span>';
+  return inner;
+}
+
+// MonkeyType-style: keep recently-typed words on screen and scroll the current
+// word into the middle, so nothing you just typed disappears mid-flow.
 function renderStream(typed: string): void {
-  const words = game.upcoming.slice(0, VISIBLE);
-  const html = words
-    .map((w, wi) => {
-      if (wi !== 0) return `<span class="w">${w}</span>`;
-      // Current word: colour each character against what's typed.
-      let inner = '';
-      const len = Math.max(w.length, typed.length);
-      for (let i = 0; i < len; i++) {
-        const target = w[i];
-        const got = typed[i];
-        const caret = i === typed.length ? '<span class="caret"></span>' : '';
-        if (got === undefined) {
-          inner += `${caret}<span>${esc(target)}</span>`;
-        } else if (target === undefined) {
-          inner += `<span class="c-extra">${esc(got)}</span>`;
-        } else if (got === target) {
-          inner += `${caret}<span class="c-ok">${esc(target)}</span>`;
-        } else {
-          inner += `${caret}<span class="c-bad">${esc(target)}</span>`;
-        }
-      }
-      if (typed.length >= w.length) inner += '<span class="caret"></span>';
-      return `<span class="w current">${inner}</span>`;
-    })
-    .join(' ');
-  streamEl.innerHTML = html;
+  const parts: string[] = [];
+  for (const h of game.typedHistory) {
+    parts.push(`<span class="w done">${wordCharsHtml(h.word, h.typed, false)}</span>`);
+  }
+  parts.push(`<span class="w current">${wordCharsHtml(game.current, typed, true)}</span>`);
+  for (const w of game.upcoming.slice(1, 1 + VISIBLE)) {
+    parts.push(`<span class="w">${escWord(w)}</span>`);
+  }
+  streamEl.innerHTML = parts.join(' ');
+  const cur = streamEl.querySelector<HTMLElement>('.w.current');
+  if (cur) streamEl.scrollTop = Math.max(0, cur.offsetTop - streamEl.clientHeight / 2 + cur.offsetHeight / 2);
 }
 
 function renderBest(): void {
