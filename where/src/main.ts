@@ -27,7 +27,7 @@ app.innerHTML = `
     </div>
     <div class="toggle" id="diffToggle">
       <button data-diff="easy" class="active">Easy</button>
-      <button data-diff="hard">Hard</button>
+      <button data-diff="hard">Hard ×2</button>
     </div>
   </div>
 

@@ -148,7 +148,8 @@ function renderControls(): void {
 }
 
 function renderHint(): void {
-  hint.textContent = `Reach ${game.threshold}% to clear the round. Miss and you lose a life.`;
+  const mult = game.pointsMultiplier;
+  hint.textContent = `Reach ${game.threshold}% to clear the round.${mult > 1 ? ` Points ×${mult}.` : ''} Miss and you lose a life.`;
 }
 
 function renderAll(): void {

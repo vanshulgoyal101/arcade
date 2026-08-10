@@ -111,7 +111,8 @@ export class WhereGame {
 
   answer(name: string): { correct: boolean; gameOver: boolean; newBest: boolean } {
     if (name === this.target.name) {
-      this.score += 10 + this.streak * 2;
+      const bonus = this.difficulty === 'hard' ? 2 : 1; // the harder pool rewards double
+      this.score += (10 + this.streak * 2) * bonus;
       this.streak += 1;
       return { correct: true, gameOver: false, newBest: false };
     }

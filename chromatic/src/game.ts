@@ -8,12 +8,13 @@ export type Difficulty = 'easy' | 'normal' | 'hard';
 export interface DifficultyConfig {
   label: string;
   threshold: number; // accuracy needed to pass a round
+  points: number; // score multiplier — harder difficulties reward more
 }
 
 export const DIFFICULTY: Record<Difficulty, DifficultyConfig> = {
-  easy: { label: 'Easy', threshold: 90 },
-  normal: { label: 'Normal', threshold: 94 },
-  hard: { label: 'Hard', threshold: 97 },
+  easy: { label: 'Easy', threshold: 90, points: 1 },
+  normal: { label: 'Normal', threshold: 94, points: 1.5 },
+  hard: { label: 'Hard', threshold: 97, points: 2 },
 };
 
 const ENDLESS_START_LIVES = 3;
@@ -51,6 +52,10 @@ export class Game {
     return Math.min(base + Math.floor((this.level - 1) / 4), base + 4, 98);
   }
 
+  get pointsMultiplier(): number {
+    return DIFFICULTY[this.difficulty].points;
+  }
+
   // ---- Endless ----
   startEndless(): void {
     this.finished = false;
@@ -83,8 +88,9 @@ export class Game {
 
   private commitEndless(acc: number, passed: boolean): SubmitResult {
     if (passed) {
-      // Reward accuracy, bonus for higher levels.
-      this.score += Math.round(acc) + this.level * 5;
+      // Reward accuracy + level, scaled by the difficulty's point multiplier.
+      const mult = DIFFICULTY[this.difficulty].points;
+      this.score += Math.round((Math.round(acc) + this.level * 5) * mult);
       this.level += 1;
       this.nextEndlessTarget();
       this.guess = { r: 128, g: 128, b: 128 };
