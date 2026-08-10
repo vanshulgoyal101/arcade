@@ -90,14 +90,13 @@ function setKeypad(on: boolean): void {
 }
 
 function renderEntry(bad = false): void {
-  const filled = entry.join(' ');
   stage.innerHTML = `
-    <div>
-      <div class="entry${bad ? ' bad' : ''}">${filled || '&nbsp;'}</div>
-      <div class="dots">${game.sequence
-        .map((_, i) => `<span class="d ${i < entry.length ? 'filled' : ''}"></span>`)
-        .join('')}</div>
-    </div>`;
+    <div class="cells${bad ? ' bad' : ''}">${game.sequence
+      .map((_, i) => {
+        const cls = i < entry.length ? ' filled' : i === entry.length ? ' active' : '';
+        return `<span class="cell${cls}">${entry[i] ?? ''}</span>`;
+      })
+      .join('')}</div>`;
 }
 
 async function showSequence(): Promise<void> {
