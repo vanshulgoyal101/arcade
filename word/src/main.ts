@@ -5,7 +5,7 @@ import {
   dailyWord,
   dailyOptions,
   todayKey,
-  yesterdayKey,
+  nextDailyStreak,
   PracticeGame,
   type Mode,
   type Option,
@@ -123,7 +123,7 @@ function renderHud(): void {
     hud.innerHTML = `
       <div class="pill"><span class="k">Streak</span><span class="v">${d.streak} 🔥</span></div>
       <div class="pill"><span class="k">Best</span><span class="v">${d.maxStreak}</span></div>
-      <div class="pill"><span class="k">Learned</span><span class="v">${store.learned}</span></div>`;
+      <div class="pill"><span class="k">Learned</span><span class="v">${store.learnedIds.length}</span></div>`;
   } else {
     hud.innerHTML = `
       <div class="pill"><span class="k">Score</span><span class="v">${practice.score}</span></div>
@@ -184,7 +184,7 @@ function answerToday(i: number, opts: Option[], w: Word, optionsEl: HTMLDivEleme
   });
   window.setTimeout(() => (correct ? sfx.correct(store.daily.streak) : sfx.wrong()), 120);
 
-  completeDaily(correct);
+  completeDaily(correct, w.word);
 
   window.setTimeout(() => {
     const card = view.querySelector<HTMLDivElement>('.card')!;
@@ -209,14 +209,13 @@ function answerToday(i: number, opts: Option[], w: Word, optionsEl: HTMLDivEleme
   }, 700);
 }
 
-function completeDaily(correct: boolean): void {
-  const today = todayKey();
-  if (store.daily.lastKey === today) return;
-  store.daily.streak = store.daily.lastKey === yesterdayKey() ? store.daily.streak + 1 : 1;
-  store.daily.maxStreak = Math.max(store.daily.maxStreak, store.daily.streak);
-  store.daily.lastKey = today;
-  store.daily.lastCorrect = correct;
-  store.learned += 1;
+function completeDaily(correct: boolean, word: string): void {
+  if (store.daily.lastKey === todayKey()) return;
+  const next = nextDailyStreak(store.daily, correct);
+  store.daily.streak = next.streak;
+  store.daily.maxStreak = next.maxStreak;
+  store.daily.lastKey = next.lastKey;
+  if (!store.learnedIds.includes(word)) store.learnedIds.push(word);
   saveStore(store);
 }
 

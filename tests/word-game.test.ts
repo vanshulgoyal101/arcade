@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   todayKey,
   yesterdayKey,
+  nextDailyStreak,
   dailyWord,
   meaningOptions,
   dailyOptions,
@@ -11,6 +12,32 @@ import {
 import { WORDS } from '../word/src/content';
 
 beforeEach(() => localStorage.clear());
+
+describe('nextDailyStreak', () => {
+  const rec = (streak: number, maxStreak: number, lastKey: string) => ({ streak, maxStreak, lastKey });
+
+  it('extends the streak on a correct answer the next day', () => {
+    const r = nextDailyStreak(rec(3, 5, 'D1'), true, 'D2', 'D1');
+    expect(r).toEqual({ streak: 4, maxStreak: 5, lastKey: 'D2' });
+  });
+
+  it('breaks the streak on a wrong answer (but keeps maxStreak and marks the day)', () => {
+    const r = nextDailyStreak(rec(4, 6, 'D1'), false, 'D2', 'D1');
+    expect(r).toEqual({ streak: 0, maxStreak: 6, lastKey: 'D2' });
+  });
+
+  it('starts a fresh streak of 1 after skipping a day', () => {
+    expect(nextDailyStreak(rec(9, 9, 'D1'), true, 'D3', 'D2').streak).toBe(1);
+  });
+
+  it('raises maxStreak when the streak sets a new high', () => {
+    expect(nextDailyStreak(rec(5, 5, 'D1'), true, 'D2', 'D1').maxStreak).toBe(6);
+  });
+
+  it('is a no-op when today was already completed', () => {
+    expect(nextDailyStreak(rec(4, 6, 'D2'), true, 'D2', 'D1')).toEqual(rec(4, 6, 'D2'));
+  });
+});
 
 describe('date helpers', () => {
   it('formats todayKey as YYYY-MM-DD', () => {

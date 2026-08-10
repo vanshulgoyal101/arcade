@@ -23,6 +23,19 @@ export function yesterdayKey(): string {
   return todayKey(d);
 }
 
+/** Advance the daily streak: a correct answer extends/starts it on consecutive
+ * days, a wrong answer breaks it. No-op if today's word was already done. */
+export function nextDailyStreak(
+  record: { streak: number; maxStreak: number; lastKey: string },
+  correct: boolean,
+  today: string = todayKey(),
+  yesterday: string = yesterdayKey()
+): { streak: number; maxStreak: number; lastKey: string } {
+  if (record.lastKey === today) return { streak: record.streak, maxStreak: record.maxStreak, lastKey: record.lastKey };
+  const streak = correct ? (record.lastKey === yesterday ? record.streak + 1 : 1) : 0;
+  return { streak, maxStreak: Math.max(record.maxStreak, streak), lastKey: today };
+}
+
 // ---- seeded RNG (FNV-1a -> mulberry32) so the daily word is stable per date ----
 function hashSeed(s: string): number {
   let h = 2166136261;
