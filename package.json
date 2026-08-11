@@ -7,6 +7,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "build:games": "for g in chromatic digit-span echo flash flashmath hue-hunt interval sprint where word wordle; do (cd $g && npm run build) || exit 1; done && node scripts/clean-urls.mjs",
+    "clean:urls": "node scripts/clean-urls.mjs",
     "generate:og": "node scripts/generate-og.mjs"
   },
   "devDependencies": {

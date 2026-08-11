@@ -17,10 +17,10 @@
     } catch (e) { return null; }
   }
 
-  // '/wordle/dist/index.html' -> 'wordle'; hub ('/', '/index.html') -> 'hub'.
+  // '/wordle/' or '/wordle/index.html' -> 'wordle'; hub / other pages -> 'hub'.
   function slug() {
-    var m = location.pathname.match(/^\/([a-z0-9-]+)\/dist\//);
-    return m ? m[1] : 'hub';
+    var m = location.pathname.match(/^\/([a-z0-9-]+)\/(?:index\.html)?$/);
+    return (m && m[1] !== 'stats' && m[1] !== 'assets') ? m[1] : 'hub';
   }
 
   function log(kind, game) {

@@ -80,9 +80,12 @@ All eleven games follow the same architecture and idioms:
 - **Shared code.** `shared/` holds the small pieces that were identical across games —
   `clipboard.ts` and the WebAudio `tone()` primitive in `audio.ts`. Games import them via
   a relative path (`../../shared/...`); each Vite build bundles them independently.
-- **Build.** `npm run build` = `tsc` (type-check) then `vite build` → `dist/`.
-  `vite.config.ts` sets `base: './'` so `dist/index.html` works when the hub links to
-  it with a relative path. The back link in each game points to `../../index.html`.
+- **Build.** Each game's Vite build input is `template.html` (the dev entry); `npm run
+  build` type-checks then `vite build`s it to `dist/`. `scripts/clean-urls.mjs` then
+  **promotes** the built document to `<game>/index.html` + `<game>/assets/` so it is served
+  at the clean URL `/<game>/` (a small `<game>/dist/` redirect stub keeps any old
+  `/<game>/dist/` link working). `vite.config.ts` sets `base: './'` so the hashed assets
+  resolve relatively. From the repo root, `npm run build:games` builds + promotes all games.
 
 ### localStorage keys
 
@@ -139,8 +142,7 @@ The hub and all games are tuned to feel native on phones and tablets:
 A static landing page. Key points:
 
 - `<body class="hub">` — hub styles live in `assets/style.css`.
-- Ten `.card` links, one per featured game, each pointing at the game's **built** output under
-  `<game>/dist/index.html`.
+- Ten `.card` links, one per featured game, each pointing at the game's clean URL `<game>/`.
 - Each card sets an accent colour via `style="--accent:…"`.
 - The SVG favicon is inlined as a data URI (🕹️).
 - No JavaScript on the hub itself.
@@ -461,18 +463,26 @@ covered by unit tests in [`tests/`](tests) alongside the original games.
 ### Develop a single game (hot reload)
 
 ```bash
-cd arcade/<game>          # hue-hunt | echo | chromatic | flash | flashmath | sprint | digit-span | interval | where
+cd arcade/<game>          # hue-hunt | echo | chromatic | flash | flashmath | sprint | digit-span | interval | where | word | wordle
 npm install
-npm run dev               # Vite dev server, http://localhost:5173
+npm run dev               # Vite dev server; open http://localhost:5173/template.html
 ```
 
-### Build for the hub
+> The dev entry is `template.html` — `index.html` is the generated, promoted production page.
 
-The hub links to each game's `dist/`, so build before using the hub:
+### Build + promote for the hub
 
 ```bash
-cd arcade/<game> && npm run build      # → <game>/dist/
+# one game:
+cd arcade/<game> && npm run build                 # → <game>/dist/template.html + dist/assets
+cd arcade && node scripts/clean-urls.mjs <game>   # promote → <game>/index.html + <game>/assets
+
+# all games at once, from the repo root:
+cd arcade && npm run build:games
 ```
+
+`clean-urls.mjs` promotes each built game to its clean served path `<game>/` and writes a
+`noindex` redirect stub at `<game>/dist/` for any already-indexed legacy link.
 
 ### Serve the whole arcade
 
@@ -482,7 +492,7 @@ Built games use ES modules and relative asset paths, so they must be served over
 ```bash
 cd arcade
 python3 -m http.server 8000
-# open http://localhost:8000/index.html
+# open http://localhost:8000/   (hub)  →  /hue-hunt/, /echo/, …
 ```
 
 ---
@@ -532,8 +542,8 @@ Coverage lives in `arcade/tests/` — **129 tests across 17 files**:
 ## 11. SEO & discoverability
 
 Every page (the hub + every game) ships a full metadata layer aimed at ranking and
-rich social previews. It lives entirely in the **source** `index.html` files, so it is
-copied into each `dist/index.html` on build.
+rich social previews. For games it lives in the **source** `template.html`, which is built
+and promoted to the clean served page `<game>/index.html` (URL `/<game>/`).
 
 Per page:
 
@@ -568,17 +578,19 @@ Site-wide:
 1. **Domain.** All canonical/OG/sitemap URLs use the production domain
    `https://games.vanshul.com` (set in `sitemap.config.json` and each `index.html`). If
    you fork this for another domain, find-and-replace it everywhere.
-2. **Clean URLs (optional).** Canonicals currently use the working `/<game>/dist/`
-   paths. If you later serve each game's `dist/` at a clean path (e.g. `/hue-hunt/`),
-   update the canonical, OG `url`, sitemap `loc`, and hub links to match.
+2. **Clean URLs.** Games are served at `/<game>/` (not `/<game>/dist/`). The build
+   promotes each `dist/` build up to `<game>/` and leaves a `noindex` redirect stub at
+   `/<game>/dist/`, so any previously-indexed URL consolidates to the clean canonical.
 
 ---
 
 ## 12. Gotchas
 
-- **Build before linking.** The hub cards point at `dist/`; an unbuilt game 404s.
-- **http, not file://.** Built output uses ES modules; opening `dist/index.html`
-  directly via `file://` will fail to load the module.
+- **Build + promote.** After `vite build`, run `scripts/clean-urls.mjs` (or `npm run
+  build:games`) so `<game>/index.html` + `<game>/assets/` are refreshed; the hub links to
+  `/<game>/`, which 404s if a game was never promoted.
+- **http, not file://.** Built output uses ES modules; opening a game via `file://`
+  will fail to load the module.
 - **Per-config bests in Echo.** Changing Strict/Forgiving or 4/6 pads switches to a
   different best-score bucket — expected, not a bug.
 - **Word's daily word is once per day.** Word of the Day seeds the featured word (and its
