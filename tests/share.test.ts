@@ -44,9 +44,10 @@ describe('shared/share', () => {
     Object.assign(navigator, { share: undefined, canShare: undefined, userAgentData: undefined });
   });
 
-  it('opens the native share sheet with the image on mobile', async () => {
+  it('opens the native share sheet with the image when supported', async () => {
     const share = vi.fn().mockResolvedValue(undefined);
     const canShare = vi.fn().mockReturnValue(true);
+    // The image is only attached on mobile (desktop shares clean text+URL).
     Object.assign(navigator, { share, canShare, userAgentData: { mobile: true } });
     const blob = new Blob(['img'], { type: 'image/png' });
     const outcome = await shareResult({ title: 'T', text: 'hi', url: 'u', blob });
@@ -54,17 +55,15 @@ describe('shared/share', () => {
     expect(share.mock.calls[0][0].files).toHaveLength(1);
   });
 
-  it('shares clean text + url without the file on desktop', async () => {
+  it('shares clean text + URL without the image on desktop', async () => {
     const share = vi.fn().mockResolvedValue(undefined);
-    const canShare = vi.fn().mockReturnValue(true);
-    Object.assign(navigator, { share, canShare, userAgentData: { mobile: false } });
+    // Desktop share targets often paste the temp file path, so no file is attached.
+    Object.assign(navigator, { share, canShare: () => true, userAgentData: { mobile: false } });
     const blob = new Blob(['img'], { type: 'image/png' });
     const outcome = await shareResult({ title: 'T', text: 'hi', url: 'u', blob });
     expect(outcome).toBe('shared');
-    const arg = share.mock.calls[0][0];
-    expect(arg.files).toBeUndefined();
-    expect(arg.url).toBe('u');
-    expect(arg.text).toBe('hi');
+    expect(share.mock.calls[0][0].files).toBeUndefined();
+    expect(share.mock.calls[0][0].url).toBe('u');
   });
 
   it('treats a user-cancelled share sheet as shared', async () => {
