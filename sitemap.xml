@@ -65,12 +65,6 @@
     <image:image><image:loc>https://games.vanshul.com/assets/og/sprint.png</image:loc></image:image>
   </url>
   <url>
-    <loc>https://games.vanshul.com/stats/</loc>
-    <lastmod>2026-08-11</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://games.vanshul.com/where/dist/</loc>
     <lastmod>2026-08-11</lastmod>
     <changefreq>weekly</changefreq>
