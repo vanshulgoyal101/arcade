@@ -221,16 +221,29 @@ function clearLocalScores() {
   for (const g of GAMES) { try { localStorage.removeItem(g.key); } catch { /* ignore */ } }
 }
 
-// Render (or clear) the personal-best pill on each hub card from local scores.
-// Text-only content, so it is XSS-safe.
+// Render (or clear) the personal-best chip on each hub card's bottom row (beside
+// the category tag), from local scores. Text-only content, so it is XSS-safe.
 function paintCardBests() {
   for (const g of GAMES) {
-    const art = document.querySelector(`.card[data-game="${g.slug}"] .card-art`);
-    if (!art) continue;
+    const card = document.querySelector(`.card[data-game="${g.slug}"]`);
+    if (!card) continue;
     const best = localBest(g);
-    let el = art.querySelector('.card-best');
+    let el = card.querySelector('.card-best');
     if (best > 0) {
-      if (!el) { el = document.createElement('span'); el.className = 'card-best'; art.appendChild(el); }
+      if (!el) {
+        el = document.createElement('span');
+        el.className = 'card-best';
+        // Share a row with the category tag rather than floating over the art.
+        const tag = card.querySelector('.tag');
+        let foot = card.querySelector('.card-foot');
+        if (!foot && tag) {
+          foot = document.createElement('div');
+          foot.className = 'card-foot';
+          card.insertBefore(foot, tag);
+          foot.appendChild(tag);
+        }
+        (foot || card).appendChild(el);
+      }
       const label = `${fmtScore(best)} ${g.unit}`;
       el.textContent = label;
       el.setAttribute('aria-label', `Your best: ${label}`);
