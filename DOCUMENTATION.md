@@ -511,7 +511,7 @@ npm test           # vitest run  — one-shot
 npm run test:watch # watch mode
 ```
 
-Coverage lives in `arcade/tests/` — **129 tests across 17 files**:
+Coverage lives in `arcade/tests/` — **147 tests across 18 files**:
 
 | File | What it locks down |
 |------|--------------------|
@@ -532,6 +532,7 @@ Coverage lives in `arcade/tests/` — **129 tests across 17 files**:
 | `shared.test.ts` | `rankText`/`rankBadgeHtml` medals + percentile + sign-in nudge, `codedAvatarSvg` whitelist |
 | `shared-card.test.ts` | `withAlpha` hex→rgba (3/6-digit, no-hash), `roundRect` corner arcs + radius clamp |
 | `shared-sfx.test.ts` | mute persistence (`loadMuted`/`saveMuted`, per-game keys), runtime mute flag |
+| `storage.test.ts` | `loadStore` migrations/sanitising: where `bestScore`→Hard, word `learnedIds` guard, wordle distribution pad/trim/coerce, flash/echo defaults |
 
 > The tests are intentionally logic-only (no `main.ts`/CSS), so they run fast and don't
 > need a real browser. Run `npm test` after changing any `game.ts`, `color.ts`,
