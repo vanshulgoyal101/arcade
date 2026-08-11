@@ -1,6 +1,6 @@
 # 🕹️ Tiny Arcade
 
-**11 tiny, instantly-playable browser games for your brain and reflexes.**
+**10 tiny, instantly-playable browser games for your brain and reflexes.**
 No installs, no accounts, no backend — just open a page and play.
 
 ### ▶️ Play now: **[games.vanshul.com](https://games.vanshul.com)**
@@ -23,10 +23,13 @@ No installs, no accounts, no backend — just open a page and play.
 | 🧮 **Flashmath** | Mental-arithmetic beat-the-clock |
 | ⌨️ **Sprint** | Typing speed & accuracy (15 / 30 / 60s) |
 | 🔢 **Digit Span** | Working-memory digit recall (forward & reverse) |
-| 🎹 **Interval** | Ear-training — name the musical interval |
 | 🗺️ **Where** | Geography — flags & capitals of ~200 countries |
 | 📖 **Word of the Day** | Vocabulary builder with a daily word + practice quiz |
 | 🟩 **Wordle** | Unlimited 5-letter word puzzles |
+
+> Also included: **Interval** (ear-training) — fully built, but not currently featured on the hub.
+
+> Also included: **Interval** (ear-training) — fully built, but not currently featured on the hub.
 
 Every game has sound, a mute toggle, light/dark themes, shareable result cards,
 an optional cloud leaderboard (Google sign-in), and works great on mobile.
