@@ -216,6 +216,7 @@ function endGame(): void {
 }
 
 function start(): void {
+  cancelAnimationFrame(rafId); // never run two loops if start() is re-triggered (double-tap replay)
   overlay.classList.remove('show');
   game.start(performance.now());
   renderHud();
