@@ -87,6 +87,10 @@ let pendingSignIn = false;
   } catch { /* ignore */ }
 })();
 
+// Paint each hub card with the player's personal best — instant + local-only, so
+// it shows even before (or entirely without) the Supabase SDK.
+paintCardBests();
+
 let supabase;
 try {
   const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
@@ -217,6 +221,25 @@ function clearLocalScores() {
   for (const g of GAMES) { try { localStorage.removeItem(g.key); } catch { /* ignore */ } }
 }
 
+// Render (or clear) the personal-best pill on each hub card from local scores.
+// Text-only content, so it is XSS-safe.
+function paintCardBests() {
+  for (const g of GAMES) {
+    const art = document.querySelector(`.card[data-game="${g.slug}"] .card-art`);
+    if (!art) continue;
+    const best = localBest(g);
+    let el = art.querySelector('.card-best');
+    if (best > 0) {
+      if (!el) { el = document.createElement('span'); el.className = 'card-best'; art.appendChild(el); }
+      const label = `${fmtScore(best)} ${g.unit}`;
+      el.textContent = label;
+      el.setAttribute('aria-label', `Your best: ${label}`);
+    } else if (el) {
+      el.remove();
+    }
+  }
+}
+
 // ---- account UI ----
 let syncedFor = null;
 
@@ -277,6 +300,7 @@ async function onUser(user) {
   currentUser = user;
   if (!user) {
     profile = null; syncedFor = null; renderAccount(null);
+    paintCardBests();
     // If the visitor clicked "Sign in" while the SDK was still loading, go now.
     if (pendingSignIn) { pendingSignIn = false; signIn(); }
     return;
@@ -302,6 +326,7 @@ async function onUser(user) {
       }
       localStorage.setItem(OWNER_KEY, user.id);
     } catch { /* ignore */ }
+    paintCardBests();
   } else if (profile) {
     renderAccount(user);
   }
