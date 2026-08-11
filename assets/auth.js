@@ -27,6 +27,14 @@ function maxVal(o) { return o && typeof o === 'object' ? Math.max(0, ...Object.v
 function readLocal(key) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; } catch { return null; } }
 function localBest(g) { const s = readLocal(g.key); return s ? num(g.best(s)) : 0; }
 function esc(s) { return String(s ?? '').replace(/[&<>"'`]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c])); }
+// Compact score display: 256000 -> "256k", 1_000_000 -> "1M". SI casing (k lower, M/B upper).
+const _compactNum = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+function fmtScore(n) {
+  const v = Number(n);
+  if (!isFinite(v)) return '0';
+  if (Math.abs(v) < 1000) return String(v);
+  return _compactNum.format(v).replace('K', 'k');
+}
 function isUrl(a) { return typeof a === 'string' && /^https?:/.test(a); }
 function isSvgAv(a) { return typeof a === 'string' && a.slice(0, 2) === 'a:' && AV[a.slice(2)]; }
 function avatarHtml(a, cls) {
@@ -346,7 +354,7 @@ async function loadLeaderboard() {
                   `<li class="${you ? 'lb-you' : ''}">${rank}` +
                   `${avatarHtml(r.avatar_url || '🎮', 'lb-av')}` +
                   `<span class="lb-who">${esc(r.display_name || 'Player')}${you ? '<span class="lb-tag">You</span>' : ''}</span>` +
-                  `<span class="lb-score">${esc(r.best)} ${esc(g.unit)}</span></li>`
+                  `<span class="lb-score">${fmtScore(r.best)} ${esc(g.unit)}</span></li>`
                 );
               })
               .join('')
@@ -357,10 +365,10 @@ async function loadLeaderboard() {
             ? `<li class="lb-you lb-mine"><span class="lb-rank">${myRank}</span>` +
               `${avatarHtml(pAvatar(), 'lb-av')}` +
               `<span class="lb-who">${esc(pName())}<span class="lb-tag">You</span></span>` +
-              `<span class="lb-score">${esc(myBest)} ${esc(g.unit)}</span></li>`
+              `<span class="lb-score">${fmtScore(myBest)} ${esc(g.unit)}</span></li>`
             : '';
         const lead = rows.length
-          ? `<span class="lb-lead">🥇 ${esc(rows[0].display_name || 'Player')} · ${esc(rows[0].best)} ${esc(g.unit)}</span>`
+          ? `<span class="lb-lead">🥇 ${esc(rows[0].display_name || 'Player')} · ${fmtScore(rows[0].best)} ${esc(g.unit)}</span>`
           : `<span class="lb-lead lb-lead-empty">No scores yet</span>`;
         return (
           `<details class="lb-game" data-game="${esc(g.slug)}">` +
