@@ -1,5 +1,6 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
+import { fmtScore } from '../../shared/format';
 import { toCss, contrastText, toHex, type RGB } from './color';
 import { Game, type Difficulty } from './game';
 import { endlessShareText, chromaticShareCard, shareResult, shareToast } from './share';
@@ -108,9 +109,9 @@ function renderMute(): void {
 function renderHud(): void {
   hud.innerHTML = `
     <div class="pill"><span class="k">Level</span><span class="v">${game.level}</span></div>
-    <div class="pill"><span class="k">Score</span><span class="v">${game.score}</span></div>
+    <div class="pill"><span class="k">Score</span><span class="v">${fmtScore(game.score)}</span></div>
     <div class="pill"><span class="k">Lives</span><span class="v hearts">${'❤️'.repeat(game.lives)}${'🖤'.repeat(Math.max(0, 3 - game.lives))}</span></div>
-    <div class="pill"><span class="k">Best</span><span class="v">${game.store.endlessBest}</span></div>
+    <div class="pill"><span class="k">Best</span><span class="v">${fmtScore(game.store.endlessBest)}</span></div>
   `;
 }
 
@@ -170,8 +171,8 @@ function openEndlessModal(): void {
   const best = game.store.endlessBest;
   modal.innerHTML = `
     <h2>Game Over</h2>
-    <div class="ring" style="--p:100"><span>${game.score}</span></div>
-    <p class="hint" style="margin:0">Reached level ${game.level} · Best ${best} 🏆</p>
+    <div class="ring" style="--p:100"><span>${fmtScore(game.score)}</span></div>
+    <p class="hint" style="margin:0">Reached level ${game.level} · Best ${fmtScore(best)} 🏆</p>
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
       <button class="btn" id="m-retry">Play again</button>

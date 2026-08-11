@@ -1,5 +1,6 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
+import { fmtScore } from '../../shared/format';
 import * as sfx from '../../shared/sfx';
 import { WhereGame, type Mode } from './game';
 import { flagEmoji, type Difficulty } from './content';
@@ -79,10 +80,10 @@ function showToast(m: string): void {
   setTimeout(() => toast.classList.remove('show'), 1500);
 }
 function renderHud(): void {
-  scoreEl.textContent = String(game.score);
+  scoreEl.textContent = fmtScore(game.score);
   streakEl.textContent = String(game.streak);
   livesEl.textContent = '❤️'.repeat(game.lives) + '🖤'.repeat(Math.max(0, 3 - game.lives));
-  bestEl.textContent = String(game.best);
+  bestEl.textContent = fmtScore(game.best);
 }
 
 function renderPrompt(): void {
@@ -136,8 +137,8 @@ function endGame(newBest: boolean): void {
   modal.innerHTML = `
     <h2>Out of lives</h2>
     <p class="sub">Score</p>
-    <div class="big">${game.score}</div>
-    <p class="sub">${label} · Best ${best}</p>
+    <div class="big">${fmtScore(game.score)}</div>
+    <p class="sub">${label} · Best ${fmtScore(best)}</p>
     ${newBest ? '<p class="newbest">🏆 New best!</p>' : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>

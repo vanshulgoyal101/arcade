@@ -1,5 +1,6 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
+import { fmtScore } from '../../shared/format';
 import { IntervalGame, INTERVALS } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
@@ -71,10 +72,10 @@ function renderMute(): void {
   muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
 }
 function renderHud(): void {
-  scoreEl.textContent = String(game.score);
+  scoreEl.textContent = fmtScore(game.score);
   streakEl.textContent = String(game.streak);
   livesEl.textContent = '❤️'.repeat(game.lives) + '🖤'.repeat(Math.max(0, 3 - game.lives));
-  bestEl.textContent = String(game.best);
+  bestEl.textContent = fmtScore(game.best);
 }
 
 function playCurrent(): void {
@@ -126,8 +127,8 @@ function endGame(newBest: boolean): void {
   modal.innerHTML = `
     <h2>Out of lives</h2>
     <p class="sub">Score</p>
-    <div class="big">${game.score}</div>
-    <p class="sub">Best ${best}</p>
+    <div class="big">${fmtScore(game.score)}</div>
+    <p class="sub">Best ${fmtScore(best)}</p>
     ${newBest ? '<p class="newbest">🏆 New best!</p>' : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>

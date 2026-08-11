@@ -1,5 +1,6 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
+import { fmtScore } from '../../shared/format';
 import { MathGame, ROUND_TIME, type Op } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
@@ -96,9 +97,9 @@ function renderMute(): void {
 }
 function renderHud(): void {
   levelEl.textContent = String(game.level);
-  scoreEl.textContent = String(game.score);
+  scoreEl.textContent = fmtScore(game.score);
   comboEl.textContent = String(game.combo);
-  bestEl.textContent = String(game.store.bestScore);
+  bestEl.textContent = fmtScore(game.store.bestScore);
 }
 function renderProblem(): void {
   const p = game.problem;
@@ -187,8 +188,8 @@ function endGame(): void {
   modal.innerHTML = `
     <h2>Time!</h2>
     <p class="sub">Score</p>
-    <div class="big">${game.score}</div>
-    <p class="sub">${game.solved} solved · reached level ${game.level} · Best ${game.store.bestScore}</p>
+    <div class="big">${fmtScore(game.score)}</div>
+    <p class="sub">${game.solved} solved · reached level ${game.level} · Best ${fmtScore(game.store.bestScore)}</p>
     ${newBest ? '<p class="newbest">🏆 New best score!</p>' : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>

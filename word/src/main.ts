@@ -1,5 +1,6 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
+import { fmtScore } from '../../shared/format';
 import * as sfx from '../../shared/sfx';
 import {
   dailyWord,
@@ -126,10 +127,10 @@ function renderHud(): void {
       <div class="pill"><span class="k">Learned</span><span class="v">${store.learnedIds.length}</span></div>`;
   } else {
     hud.innerHTML = `
-      <div class="pill"><span class="k">Score</span><span class="v">${practice.score}</span></div>
+      <div class="pill"><span class="k">Score</span><span class="v">${fmtScore(practice.score)}</span></div>
       <div class="pill"><span class="k">Lives</span><span class="v hearts">${'❤️'.repeat(practice.lives)}${'🖤'.repeat(Math.max(0, 3 - practice.lives))}</span></div>
       <div class="pill"><span class="k">Streak</span><span class="v">${practice.streak}</span></div>
-      <div class="pill"><span class="k">Best</span><span class="v">${practice.best}</span></div>`;
+      <div class="pill"><span class="k">Best</span><span class="v">${fmtScore(practice.best)}</span></div>`;
   }
 }
 
@@ -312,8 +313,8 @@ function practiceOver(newBest: boolean): void {
   modal.innerHTML = `
     <h2>Round over</h2>
     <p class="sub">Score</p>
-    <div class="big">${practice.score}</div>
-    <p class="sub">Best ${practice.best}</p>
+    <div class="big">${fmtScore(practice.score)}</div>
+    <p class="sub">Best ${fmtScore(practice.best)}</p>
     ${newBest ? '<p class="newbest">🏆 New best!</p>' : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
