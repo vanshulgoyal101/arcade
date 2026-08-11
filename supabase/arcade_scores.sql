@@ -59,6 +59,43 @@ as $$
 $$;
 grant execute on function public.restore_my_scores() to authenticated;
 
+-- Whole leaderboard in ONE round trip: per-game top N (by best desc) plus the
+-- caller's own best + rank. Replaces ~20 client REST calls (which the browser
+-- throttles to 6 at a time) so the leaderboard loads instantly. SECURITY DEFINER
+-- so it can read past the column grants, but it only ever returns safe columns.
+create or replace function public.arcade_leaderboard(p_games text[], p_limit int default 5)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with ranked as (
+    select s.game, s.user_id, s.display_name, s.avatar_url, s.best,
+           row_number() over (partition by s.game order by s.best desc, s.updated_at) as rn
+    from public.arcade_scores s
+    where s.game = any(p_games)
+  ),
+  me as (
+    select game, best, rn from ranked where user_id = auth.uid()
+  )
+  select coalesce(jsonb_object_agg(gg, payload), '{}'::jsonb)
+  from (
+    select gg,
+      jsonb_build_object(
+        'top', coalesce((
+          select jsonb_agg(jsonb_build_object(
+                   'user_id', r.user_id, 'display_name', r.display_name,
+                   'avatar_url', r.avatar_url, 'best', r.best) order by r.rn)
+          from ranked r where r.game = gg and r.rn <= p_limit), '[]'::jsonb),
+        'my_best', (select best from me where me.game = gg),
+        'my_rank', (select rn   from me where me.game = gg)
+      ) as payload
+    from unnest(p_games) as u(gg)
+  ) x;
+$$;
+grant execute on function public.arcade_leaderboard(text[], int) to anon, authenticated;
+
 -- ---------------------------------------------------------------------------
 -- Player profile: an editable display name + avatar (emoji or Google photo URL).
 -- Kept separate so a player has an identity even before setting any score.

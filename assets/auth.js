@@ -321,43 +321,20 @@ async function loadLeaderboard() {
   lbBody.innerHTML = '<p class="lb-loading">Loading…</p>';
   try {
     const uid = currentUser?.id || null;
-    // My best per game (one query) so I can show my own rank when I'm outside
-    // the shown top 5.
-    const myBest = {};
-    if (uid) {
-      const { data } = await supabase.from('arcade_scores').select('game,best').eq('user_id', uid);
-      for (const r of data || []) myBest[r.game] = num(r.best);
-    }
-    const results = await Promise.all(
-      GAMES.map((g) =>
-        supabase
-          .from('arcade_scores')
-          .select('user_id,display_name,avatar_url,best')
-          .eq('game', g.slug)
-          .order('best', { ascending: false })
-          .limit(5)
-          .then((r) => ({ g, rows: r.data || [] }))
-      )
-    );
-    // Rank lookup only for games where I have a score but I'm not in the top 5.
-    const ranks = {};
-    if (uid) {
-      const need = results.filter(
-        ({ g, rows }) => myBest[g.slug] != null && !rows.some((r) => r.user_id === uid)
-      );
-      await Promise.all(
-        need.map(async ({ g }) => {
-          const { count } = await supabase
-            .from('arcade_scores')
-            .select('user_id', { count: 'exact', head: true })
-            .eq('game', g.slug)
-            .gt('best', myBest[g.slug]);
-          ranks[g.slug] = (count || 0) + 1;
-        })
-      );
-    }
-    lbBody.innerHTML = results
-      .map(({ g, rows }) => {
+    // One round trip: the server returns every game's top 5 plus my own rank,
+    // instead of ~20 separate REST calls that the browser throttles to 6 at a time.
+    const { data, error } = await supabase.rpc('arcade_leaderboard', {
+      p_games: GAMES.map((g) => g.slug),
+      p_limit: 5,
+    });
+    if (error) throw error;
+    const board = data || {};
+    lbBody.innerHTML = GAMES
+      .map((g) => {
+        const info = board[g.slug] || {};
+        const rows = info.top || [];
+        const myBest = info.my_best;
+        const myRank = info.my_rank;
         const list = rows.length
           ? rows
               .map((r, i) => {
@@ -374,13 +351,14 @@ async function loadLeaderboard() {
               })
               .join('')
           : '<li class="lb-empty">No scores yet — be the first!</li>';
-        // My own row when I'm not already in the shown list.
-        const mine = ranks[g.slug]
-          ? `<li class="lb-you lb-mine"><span class="lb-rank">${ranks[g.slug]}</span>` +
-            `${avatarHtml(pAvatar(), 'lb-av')}` +
-            `<span class="lb-who">${esc(pName())}<span class="lb-tag">You</span></span>` +
-            `<span class="lb-score">${esc(myBest[g.slug])} ${esc(g.unit)}</span></li>`
-          : '';
+        const inTop = uid && rows.some((r) => r.user_id === uid);
+        const mine =
+          uid && myBest != null && !inTop && myRank
+            ? `<li class="lb-you lb-mine"><span class="lb-rank">${myRank}</span>` +
+              `${avatarHtml(pAvatar(), 'lb-av')}` +
+              `<span class="lb-who">${esc(pName())}<span class="lb-tag">You</span></span>` +
+              `<span class="lb-score">${esc(myBest)} ${esc(g.unit)}</span></li>`
+            : '';
         const lead = rows.length
           ? `<span class="lb-lead">🥇 ${esc(rows[0].display_name || 'Player')} · ${esc(rows[0].best)} ${esc(g.unit)}</span>`
           : `<span class="lb-lead lb-lead-empty">No scores yet</span>`;
