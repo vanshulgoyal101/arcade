@@ -14,7 +14,7 @@ sfx.setMuted(sfx.loadMuted(MUTE_KEY));
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
-    <a class="back" href="../../index.html">← Arcade</a>
+    <a class="back" href="/">← Arcade</a>
     <h1 class="title">⌨️ Sprint</h1>
     <div class="topbar-actions">
       <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>

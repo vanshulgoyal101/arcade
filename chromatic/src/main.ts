@@ -17,7 +17,7 @@ const CHANNEL_NAME: Record<keyof RGB, string> = { r: 'Red', g: 'Green', b: 'Blue
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
-    <a class="back" href="../../index.html">← Arcade</a>
+    <a class="back" href="/">← Arcade</a>
     <h1 class="title">🌈 Chromatic</h1>
     <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
   </div>

@@ -15,7 +15,7 @@ sfx.setMuted(sfx.loadMuted(MUTE_KEY));
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
-    <a class="back" href="../../index.html">← Arcade</a>
+    <a class="back" href="/">← Arcade</a>
     <h1 class="title">🗺️ Where</h1>
     <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
   </div>
