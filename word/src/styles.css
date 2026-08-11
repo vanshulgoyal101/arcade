@@ -300,3 +300,7 @@ button { font-family: inherit; }
 .about-body li { margin: 2px 0; }
 .about-body a { color: var(--accent); text-decoration: none; }
 @media (hover: hover) { .about-body a:hover { text-decoration: underline; } }
+@media (max-width: 560px) {
+  .about { border-top: none; margin-top: 30px; }
+  .about summary { opacity: .55; font-size: .8rem; }
+}

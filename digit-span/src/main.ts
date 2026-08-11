@@ -84,8 +84,8 @@ function renderHud(): void {
   spanEl.textContent = String(game.level);
   bestEl.textContent = String(game.best);
 }
+// Keep the pad on screen during the flash (locked + dimmed) so it doesn't jump.
 function setKeypad(on: boolean): void {
-  keypad.classList.toggle('hidden', !on);
   keypad.classList.toggle('locked', !on);
 }
 
@@ -198,6 +198,7 @@ function gameOver(): void {
 function startRun(): void {
   overlay.classList.remove('show');
   startWrap.classList.add('hidden');
+  keypad.classList.remove('hidden');
   modeToggle.classList.add('locked');
   game.reset();
   renderHud();
