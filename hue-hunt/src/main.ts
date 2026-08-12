@@ -60,6 +60,7 @@ const pCombo = app.querySelector<HTMLDivElement>('#p-combo')!;
 
 let rafId = 0;
 let lastTick = 0;
+let advancing = false; // true during the brief board-rebuild after a correct pick
 
 // ---- helpers ----
 function bump(el: HTMLElement): void {
@@ -108,13 +109,15 @@ function buildBoard(): void {
     b.addEventListener('pointerdown', (e) => onPick(i === oddIndex, b, e));
     boardEl.appendChild(b);
   }
+  advancing = false; // fresh board: accept input again
 }
 
 // ---- interactions ----
 function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
-  if (!game.playing) return;
+  if (!game.playing || advancing) return;
 
   if (isOdd) {
+    advancing = true; // block taps on the stale board until it rebuilds
     const { points, fast } = game.correctPick(performance.now());
     sfx.correct(game.combo);
     el.classList.add('correct');
