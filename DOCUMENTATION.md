@@ -511,7 +511,7 @@ npm test           # vitest run  — one-shot
 npm run test:watch # watch mode
 ```
 
-Coverage lives in `arcade/tests/` — **147 tests across 18 files**:
+Coverage lives in `arcade/tests/` — **152 tests across 19 files**:
 
 | File | What it locks down |
 |------|--------------------|
@@ -533,6 +533,7 @@ Coverage lives in `arcade/tests/` — **147 tests across 18 files**:
 | `shared-card.test.ts` | `withAlpha` hex→rgba (3/6-digit, no-hash), `roundRect` corner arcs + radius clamp |
 | `shared-sfx.test.ts` | mute persistence (`loadMuted`/`saveMuted`, per-game keys), runtime mute flag |
 | `storage.test.ts` | `loadStore` migrations/sanitising: where `bestScore`→Hard, word `learnedIds` guard, wordle distribution pad/trim/coerce, flash/echo defaults |
+| `shared-format.test.ts` | `fmtScore` compact numbers (29000→29k, 999999→1M, exact-under-1000, NaN/Infinity) |
 
 > The tests are intentionally logic-only (no `main.ts`/CSS), so they run fast and don't
 > need a real browser. Run `npm test` after changing any `game.ts`, `color.ts`,
@@ -673,7 +674,107 @@ not just text, and degrades gracefully everywhere.
 
 ---
 
-## 16. Related sites
+## 16. Cloud sync, sign-in & the leaderboard
+
+Sign-in, cross-device score sync and the public leaderboard are **hub-only** and entirely
+optional — every game works fully offline with `localStorage` alone. Because all games share
+one origin, signing in once on the hub covers every game.
+
+### Frontend — `assets/auth.js` (plain ES module, no build)
+
+- Loads `@supabase/supabase-js@2` from esm.sh **at runtime** and degrades gracefully
+  (offline / CDN blocked → the account + leaderboard UI simply removes itself; games are
+  unaffected). Only the **publishable** Supabase key is shipped — Row-Level Security guards
+  the data; the secret `SUPABASE_TOKEN` lives only in the untracked `arcade/.env`.
+- **`GAMES` registry** — maps each slug to its `localStorage` key, display `unit`, and a
+  `best(store)` reader. Every metric is “higher is better”. `localStorage` is the source of
+  truth on-device; the cloud is a mirror for restore + the leaderboard.
+- **Sync (`onUser`)** — on sign-in it `restoreScores()` (cloud wins only when strictly
+  better, or fully overwrites on an account switch) then `uploadScores()`. An
+  `arcade.sync.owner` key records which account owns the local scores, so a different
+  account signing in on the same browser clears local first instead of inheriting them.
+- **Leaderboard** — one `supabase.rpc('arcade_leaderboard', { p_games, p_limit })` call
+  returns everything (per-game top N + the caller's own best/rank), replacing ~20 REST
+  round trips. All user text is escaped (`esc`), avatar URLs are gated to `http(s)`, and
+  coded SVG avatars come from a hard-coded whitelist — no XSS sink.
+- **Profiles** — an editable display name + avatar (emoji, a coded `a:<id>` SVG, or the
+  Google photo) + synced colour theme, via a profile modal.
+- **Cache-busting** — `auth.js` and `assets/style.css` are non-hashed, so bump their
+  `?v=` in `index.html` on every edit (the service worker caches them cache-first).
+
+### Backend — `supabase/arcade_scores.sql` (source of truth, idempotent)
+
+Run this in the Supabase SQL editor after any change; it only touches `arcade_`-prefixed
+objects. Summary:
+
+- **`arcade_scores`** `(user_id, game, best, data jsonb, display_name, avatar_url,
+  updated_at)`, PK `(user_id, game)`, index `(game, best desc)`. RLS: public `SELECT`
+  (powers the leaderboard); a user may only insert/update **their own** rows.
+- **Blob privacy** — `data` is a player's whole `localStorage`, so a table-wide `SELECT`
+  grant would let anyone dump every blob. The table grant is **revoked** and `SELECT`
+  re-granted only on the safe columns (`user_id, game, best, display_name, avatar_url,
+  updated_at`). A player restores their own blob through the SECURITY DEFINER
+  **`restore_my_scores()`** RPC.
+- **`arcade_leaderboard(p_games, p_limit)`** — STABLE SECURITY DEFINER; returns jsonb keyed
+  by slug: `{ top: […], my_best, my_rank }` (rank via `row_number()`). Definer-level, but
+  only ever returns safe columns.
+- **`arcade_profiles`** `(user_id, display_name, avatar, theme, updated_at)` with the same
+  public-read / owner-write RLS.
+- **Server-side caps (defence in depth on every write path)** — `arcade_score_cap(game)`
+  (immutable) defines per-game maxima (echo/digit-span 200, flash/sprint 500, wordle 100k,
+  else 10M). `submit_score()` (SECURITY DEFINER) clamps and keeps `greatest(old, new)`. A
+  **`arcade_scores_guard`** BEFORE INSERT/UPDATE trigger clamps `best`, nulls a `data` blob
+  over 64 KB, and bounds identity field lengths — so even a direct RLS-permitted upsert with
+  a forged `best` is capped. `arcade_profiles_guard` mirrors this for profiles.
+
+### One-time dashboard setup
+
+1. Run `supabase/arcade_scores.sql` (and `supabase/analytics.sql`, §18) in the SQL editor.
+2. Create a Google OAuth Web client; set the redirect to
+   `https://<project>.supabase.co/auth/v1/callback`; paste the client id/secret into
+   Supabase → Auth → Providers → Google.
+3. Supabase → Auth → URL config: Site URL `https://games.vanshul.com`, redirect
+   `https://games.vanshul.com/**` (+ `http://localhost:8000/**` for local).
+
+---
+
+## 17. Personal-best badges & number formatting
+
+- **`paintCardBests()`** (in `auth.js`) paints each hub card's bottom row (beside the
+  category tag) with a `🏆 <best> <unit>` chip read from local scores. It runs **before** the
+  Supabase import (so it shows instantly and even offline) and again after cloud sync. The
+  chip is text-only (XSS-safe), accent-coloured, and simply absent when you haven't played.
+- **`shared/format.ts` — `fmtScore(n)`** is the single source of truth for compact numbers:
+  values under 1000 are shown exactly; larger ones use `Intl` compact notation with SI
+  casing (`29000 → 29k`, `256000 → 256k`, `1e6 → 1M`). It is used by the in-game HUD and
+  game-over modals of the point-score games (hue-hunt, flashmath, chromatic, interval,
+  where, word) and mirrored in `auth.js` (the hub is a no-build module and can't import the
+  TS). Games whose headline metric is bounded under 1000 (echo level, digit-span span,
+  sprint/flash wpm) render exactly and don't need it.
+
+---
+
+## 18. Anonymous analytics & the owner dashboard
+
+Privacy-respecting counts of visits + plays — no PII, just a kind, a game slug, a timestamp
+and an anonymous per-device id.
+
+- **Beacon — `assets/analytics.js`** (plain IIFE, no SDK, loaded on every page): stores an
+  anonymous `arcade.vid` uuid, logs one `visit` per browser session and a `play` per game
+  page, via a raw `fetch` POST to `/rest/v1/arcade_events` with the publishable key. The
+  page slug is derived from `location.pathname` (`/<game>/` → slug, else `hub`).
+- **Backend — `supabase/analytics.sql`**: `arcade_events (ts, kind, game, visitor,
+  user_id)` with a bounds CHECK. RLS allows anonymous **inserts** of `visit`/`play` only,
+  and has **no SELECT policy** — the raw log is private. `arcade_stats()` is an
+  **owner-gated** SECURITY DEFINER RPC returning totals / per-game / by-hour / 30-day
+  aggregates (times in Asia/Kolkata).
+- **Dashboard — `/stats/`**: a static, `noindex` page (also `Disallow`ed in `robots.txt`
+  and excluded from the sitemap) where the signed-in owner sees the aggregates. Nobody else
+  can read them.
+
+---
+
+## 19. Related sites
 
 Tiny Arcade is one of a small family of sites under `vanshul.com`, cross-linked from the
 hub footer:
