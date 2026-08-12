@@ -90,6 +90,8 @@ let pendingSignIn = false;
 // Paint each hub card with the player's personal best — instant + local-only, so
 // it shows even before (or entirely without) the Supabase SDK.
 paintCardBests();
+// Refresh when returning from a game (incl. bfcache restore) so a new best shows.
+addEventListener('pageshow', () => paintCardBests());
 
 let supabase;
 try {
