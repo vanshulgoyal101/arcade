@@ -134,6 +134,7 @@ create or replace function public.arcade_score_cap(p_game text)
 returns integer
 language sql
 immutable
+set search_path = public
 as $$
   select case p_game
     when 'echo'       then 200
@@ -194,6 +195,7 @@ grant execute on function public.submit_score(text, integer, jsonb) to authentic
 create or replace function public.arcade_scores_guard()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   if new.best is null or new.best < 0 then
@@ -224,6 +226,7 @@ create trigger arcade_scores_guard
 create or replace function public.arcade_profiles_guard()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
   new.display_name := left(new.display_name, 24);
