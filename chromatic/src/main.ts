@@ -207,6 +207,7 @@ function openEndlessModal(): void {
 // ---- Interactions ----
 let lastTick = 0;
 let inProgress = false; // true once a run is underway — locks difficulty
+let lastSubmitAt = -Infinity; // debounce accidental double-clicks on Submit
 function setDiffLocked(locked: boolean): void {
   diff.classList.toggle('disabled', locked);
 }
@@ -224,6 +225,11 @@ function setDiffLocked(locked: boolean): void {
 
 function handleSubmit(): void {
   if (game.finished) return;
+  // Each submit resets the guess to grey + picks a new target, so a rapid second
+  // click would submit grey against the fresh target and cost a life. Debounce it.
+  const now = performance.now();
+  if (now - lastSubmitAt < 400) return;
+  lastSubmitAt = now;
   if (!inProgress) { inProgress = true; setDiffLocked(true); }
   const result = game.submit();
 
