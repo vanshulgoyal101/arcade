@@ -31,6 +31,11 @@
     .btn.ghost:hover { color: var(--text); border-color: var(--muted); }
     .hdr-actions { display: flex; align-items: center; gap: 12px; }
     .upd { color: var(--muted); font-size: .72rem; font-variant-numeric: tabular-nums; }
+    .ranges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .chip { font: inherit; font-size: .8rem; font-weight: 600; color: var(--muted); background: var(--bg-soft); border: 1px solid var(--line); border-radius: 999px; padding: 6px 15px; cursor: pointer; }
+    .chip:hover:not(.on) { color: var(--text); border-color: var(--muted); }
+    .chip.on { color: #10131c; background: var(--accent); border-color: var(--accent); font-weight: 800; }
+    .rl { color: var(--muted); font-weight: 500; font-size: .82rem; }
     .msg { color: var(--muted); background: var(--bg-soft); border: 1px solid var(--line); border-radius: 14px; padding: 24px; text-align: center; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 26px; }
     .card { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
@@ -78,6 +83,13 @@
     };
     const gameLabel = (slug) => { const m = GAME_META[slug]; return m ? m[0] + ' ' + m[1] : (slug || '—'); };
 
+    // Time-range filter for the windowed figures (null = all time).
+    const RANGES = [['24h', 1], ['7 days', 7], ['30 days', 30], ['All', null]];
+    let currentDays = null;
+    const rangeLabel = () => currentDays == null ? 'all time' : currentDays === 1 ? 'last 24h' : `last ${currentDays} days`;
+    const rangesBar = () => '<div class="ranges">' + RANGES.map(([lbl, d]) =>
+      `<button class="chip${d === currentDays ? ' on' : ''}" data-days="${d == null ? '' : d}">${lbl}</button>`).join('') + '</div>';
+
     function signInView(note) {
       actions.innerHTML = '';
       root.innerHTML = `<div class="msg">${note ? esc(note) + '<br><br>' : ''}<button class="btn" id="si">Sign in with Google</button></div>`;
@@ -112,31 +124,36 @@
       const hmax = Math.max(1, ...byHour.map((x) => (x.visits || 0) + (x.plays || 0)));
       const perGame = (s.per_game || []).map((g) => ({ slug: g.game, value: g.plays || 0 }));
       root.innerHTML =
-        `<div class="cards">
-          <div class="card"><div class="n">${s.total_visits}</div><div class="l">Total visits</div></div>
+        `${rangesBar()}<div class="cards">
+          <div class="card"><div class="n">${s.total_visits}</div><div class="l">Visits</div></div>
           <div class="card"><div class="n">${s.unique_visitors}</div><div class="l">Unique visitors</div></div>
-          <div class="card"><div class="n">${s.total_plays}</div><div class="l">Total plays</div></div>
+          <div class="card"><div class="n">${s.total_plays}</div><div class="l">Plays</div></div>
           <div class="card"><div class="n">${s.visits_today}</div><div class="l">Visits today</div></div>
           <div class="card"><div class="n">${s.plays_today}</div><div class="l">Plays today</div></div>
         </div>
-        <section><h2>Plays per game</h2>${bars(perGame, (i) => gameLabel(i.slug), 'plays')}</section>
-        <section><h2>By hour of day (visits + plays)</h2>
+        <section><h2>Plays per game <span class="rl">· ${rangeLabel()}</span></h2>${bars(perGame, (i) => gameLabel(i.slug), 'plays')}</section>
+        <section><h2>By hour of day <span class="rl">· ${rangeLabel()}</span></h2>
           <div class="hours">${byHour.map((x) => `<div class="h" title="${x.hour}:00 — ${x.visits}v ${x.plays}p"><span style="height:${(((x.visits || 0) + (x.plays || 0)) / hmax) * 100}%"></span></div>`).join('')}</div>
           <div class="hlabels">${byHour.map((x) => `<div>${x.hour % 3 === 0 ? x.hour : ''}</div>`).join('')}</div>
         </section>
         <section><h2>Last 30 days</h2>${bars(last30(s.by_day), (i) => i.label, 'activity')}</section>`;
       actions.innerHTML = `<span class="upd">Updated ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span><button class="btn ghost" id="out">Sign out</button>`;
       document.getElementById('out').onclick = () => supabase.auth.signOut();
+      root.querySelectorAll('.chip').forEach((b) => (b.onclick = () => {
+        currentDays = b.dataset.days === '' ? null : Number(b.dataset.days);
+        load();
+      }));
     }
 
     let loading = false;
     async function load() {
       if (loading) return; // avoid overlapping RPCs (auth events + auto-refresh)
       loading = true;
+      const reqDays = currentDays;
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) { signInView('This page is private — sign in as the owner.'); return; }
-        const { data, error } = await supabase.rpc('arcade_stats');
+        const { data, error } = await supabase.rpc('arcade_stats', { p_days: reqDays });
         if (error) {
           const denied = /not authorized/i.test(error.message || '');
           signInView(denied ? 'Signed in, but this account is not the owner.' : 'Could not load stats — please try again.');
@@ -145,6 +162,7 @@
         render(data);
       } finally {
         loading = false;
+        if (reqDays !== currentDays) load(); // filter changed mid-request — refetch
       }
     }
 

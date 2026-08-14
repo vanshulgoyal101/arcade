@@ -765,12 +765,13 @@ and an anonymous per-device id.
   page slug is derived from `location.pathname` (`/<game>/` → slug, else `hub`).
 - **Backend — `supabase/analytics.sql`**: `arcade_events (ts, kind, game, visitor,
   user_id)` with a bounds CHECK. RLS allows anonymous **inserts** of `visit`/`play` only,
-  and has **no SELECT policy** — the raw log is private. `arcade_stats()` is an
-  **owner-gated** SECURITY DEFINER RPC returning totals / per-game / by-hour / 30-day
-  aggregates (times in Asia/Kolkata).
+  and has **no SELECT policy** — the raw log is private. `arcade_stats(p_days)` is an
+  **owner-gated** SECURITY DEFINER RPC returning totals / per-game / by-hour aggregates
+  scoped to a rolling window (`p_days` = 1 / 7 / 30, or `null` = all time) plus the
+  always-absolute “today” cards and 30-day trend (times in Asia/Kolkata).
 - **Dashboard — `/stats/`**: a static, `noindex` page (also `Disallow`ed in `robots.txt`
-  and excluded from the sitemap) where the signed-in owner sees the aggregates. Nobody else
-  can read them.
+  and excluded from the sitemap) where the signed-in owner sees the aggregates, with a
+  **24h / 7d / 30d / All** time-range filter. Nobody else can read them.
 
 ---
 

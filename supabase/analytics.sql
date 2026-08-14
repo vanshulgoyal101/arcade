@@ -31,32 +31,39 @@ create policy arcade_events_insert
 -- reads aggregates through the arcade_stats() RPC below (or the dashboard).
 
 -- Owner-only aggregate stats (times in Asia/Kolkata). Signed-in owner calls this
--- from the private /stats page; nobody else can read it.
-create or replace function public.arcade_stats()
+-- from the private /stats page; nobody else can read it. `p_days` scopes the
+-- visits/plays/unique/per-game/by-hour figures to a rolling window (null/0 = all
+-- time); the "today" cards and the 30-day trend are always absolute.
+drop function if exists public.arcade_stats();
+create or replace function public.arcade_stats(p_days int default null)
 returns jsonb
 language plpgsql
 security definer
 set search_path = public
 as $$
-declare v jsonb;
+declare
+  v jsonb;
+  v_since timestamptz := case when coalesce(p_days, 0) <= 0 then null
+                              else now() - make_interval(days => p_days) end;
 begin
   -- `is distinct from` (not `<>`) so an anonymous NULL uid is correctly rejected.
   if auth.uid() is distinct from 'a0c64b9b-7d84-45d4-8ef7-522a6b294b42'::uuid then
     raise exception 'not authorized';
   end if;
   select jsonb_build_object(
-    'total_visits',    (select count(*) from arcade_events where kind = 'visit'),
-    'total_plays',     (select count(*) from arcade_events where kind = 'play'),
-    'unique_visitors', (select count(distinct visitor) from arcade_events),
+    'range_days', p_days,
+    'total_visits',    (select count(*) from arcade_events where kind = 'visit' and (v_since is null or ts >= v_since)),
+    'total_plays',     (select count(*) from arcade_events where kind = 'play'  and (v_since is null or ts >= v_since)),
+    'unique_visitors', (select count(distinct visitor) from arcade_events where (v_since is null or ts >= v_since)),
     'visits_today',    (select count(*) from arcade_events where kind = 'visit' and (ts at time zone 'Asia/Kolkata')::date = (now() at time zone 'Asia/Kolkata')::date),
     'plays_today',     (select count(*) from arcade_events where kind = 'play'  and (ts at time zone 'Asia/Kolkata')::date = (now() at time zone 'Asia/Kolkata')::date),
     'per_game', (select coalesce(jsonb_agg(jsonb_build_object('game', game, 'plays', c) order by c desc), '[]')
-                 from (select game, count(*) c from arcade_events where kind = 'play' group by game) t),
+                 from (select game, count(*) c from arcade_events where kind = 'play' and (v_since is null or ts >= v_since) group by game) t),
     'by_hour', (select coalesce(jsonb_agg(jsonb_build_object('hour', h, 'visits', vc, 'plays', pc) order by h), '[]')
                 from (select extract(hour from (ts at time zone 'Asia/Kolkata'))::int h,
                              count(*) filter (where kind = 'visit') vc,
                              count(*) filter (where kind = 'play')  pc
-                      from arcade_events group by 1) t),
+                      from arcade_events where (v_since is null or ts >= v_since) group by 1) t),
     'by_day', (select coalesce(jsonb_agg(jsonb_build_object('day', d, 'visits', vc, 'plays', pc) order by d), '[]')
                from (select (ts at time zone 'Asia/Kolkata')::date d,
                             count(*) filter (where kind = 'visit') vc,
@@ -67,7 +74,7 @@ begin
 end;
 $$;
 
-grant execute on function public.arcade_stats() to authenticated;
+grant execute on function public.arcade_stats(int) to authenticated;
 
 -- Clean up any diagnostic rows.
 delete from public.arcade_events where game = '__diag__';
