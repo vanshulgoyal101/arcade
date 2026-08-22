@@ -386,11 +386,17 @@ or *teach something* and keep a rising personal best. They share every conventio
 including the full mobile/touch layer (viewport + web-app metas, `touch-action`, safe-area
 padding, hover-guarded effects), audio + a mute toggle, and — like the original four — a
 complete SEO layer (title/description/canonical, Open Graph, Twitter card, JSON-LD, a
-`<noscript>` fallback) plus a `sitemap.xml` `<loc>`. Their pure logic (`game.ts`) is
+`<noscript>` fallback). All of them except `interval` also have a `sitemap.xml` `<loc>`
+(see the note below). Their pure logic (`game.ts`) is
 covered by unit tests in [`tests/`](tests) alongside the original games.
 
-> `interval` is fully built, tested, SEO'd and reachable, but is **not** currently featured
-> as a card on the hub, so the hub presents ten of the eleven games.
+> `interval` is fully built, tested, SEO'd and reachable at `/interval/`, but is **not**
+> featured as a card on the hub, so the hub presents ten of the eleven games. Because
+> nothing links to it, it is deliberately **excluded from `sitemap.xml`** (via
+> `interval/*` in `sitemap.config.json`) so it is not advertised to crawlers as an orphan
+> page. To promote it to a full hub game later, add its card + JSON-LD `ItemList` entry to
+> `index.html`, add it to the `GAMES` array in `assets/auth.js`, and drop the
+> `interval/*` exclude from `sitemap.config.json`.
 
 ### 8.1 Flashmath (`flashmath/`) 🧮 — mental arithmetic
 
