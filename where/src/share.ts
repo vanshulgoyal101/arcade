@@ -28,7 +28,8 @@ export function whereShareCard(
   mode: string,
   difficulty: string,
   best: number,
-  country: { name: string; capital: string; code: string }
+  country: { name: string; capital: string; code: string },
+  flag?: HTMLImageElement | null
 ): HTMLCanvasElement {
   const label = `${difficulty === 'hard' ? 'Hard' : 'Easy'} · ${mode === 'flag' ? 'Flags' : 'Capitals'}`;
   return renderShareCard({
@@ -38,19 +39,34 @@ export function whereShareCard(
     statLabel: `${label} · best ${best}`,
     tagline: 'How well do you know the world?',
     slug: 'where',
-    draw: (ctx, a) => drawCountry(ctx, a, country),
+    draw: (ctx, a) => drawCountry(ctx, a, country, flag),
   });
 }
 
 function drawCountry(
   ctx: CanvasRenderingContext2D,
   a: Rect,
-  country: { name: string; capital: string; code: string }
+  country: { name: string; capital: string; code: string },
+  flag?: HTMLImageElement | null
 ): void {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = '220px "Apple Color Emoji", "Segoe UI Emoji", system-ui, sans-serif';
-  ctx.fillText(flagEmoji(country.code), a.x + a.w / 2, a.y + a.h * 0.36);
+  const cx = a.x + a.w / 2;
+  const cy = a.y + a.h * 0.36;
+  if (flag && flag.complete && flag.naturalWidth > 0) {
+    // Real flag image (regional-indicator emoji don't render on Windows), fitted
+    // into the upper area with its natural aspect ratio.
+    const r = Math.min((a.w * 0.62) / flag.naturalWidth, (a.h * 0.42) / flag.naturalHeight);
+    const w = flag.naturalWidth * r;
+    const h = flag.naturalHeight * r;
+    ctx.drawImage(flag, cx - w / 2, cy - h / 2, w, h);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cx - w / 2, cy - h / 2, w, h);
+  } else {
+    ctx.font = '220px "Apple Color Emoji", "Segoe UI Emoji", system-ui, sans-serif';
+    ctx.fillText(flagEmoji(country.code), cx, cy);
+  }
   ctx.fillStyle = themeVar('--text');
   ctx.font = '700 72px system-ui, -apple-system, sans-serif';
   ctx.fillText(country.name, a.x + a.w / 2, a.y + a.h * 0.78);

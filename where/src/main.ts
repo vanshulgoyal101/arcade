@@ -86,6 +86,18 @@ function renderHud(): void {
   bestEl.textContent = fmtScore(game.best);
 }
 
+// Load a country's flag as a CORS-clean image (flagcdn sends ACAO:*) so it can be
+// drawn onto the share canvas without tainting it. Resolves null on failure.
+function loadFlagImage(code: string): Promise<HTMLImageElement | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = `https://flagcdn.com/w640/${code.toLowerCase()}.png`;
+  });
+}
+
 function renderPrompt(): void {
   if (game.mode === 'flag') {
     // Real flag image — regional-indicator emoji show as bare country codes on
@@ -157,7 +169,8 @@ function endGame(newBest: boolean): void {
     if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
   });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const blob = await canvasToBlob(whereShareCard(game.score, game.mode, game.difficulty, best, game.target));
+    const flag = await loadFlagImage(game.target.code);
+    const blob = await canvasToBlob(whereShareCard(game.score, game.mode, game.difficulty, best, game.target, flag));
     const outcome = await shareResult({
       title: 'Where',
       text: whereShareText(game.score, game.mode, game.difficulty, best, newBest),
