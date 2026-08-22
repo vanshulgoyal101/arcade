@@ -123,7 +123,7 @@ button { font-family: inherit; }
 }
 .tile.filled { border-color: var(--key); }
 .tile.pop { animation: pop .12s ease; }
-.tile.reveal { animation: flip .5s ease forwards; transform-origin: center; will-change: transform; }
+.tile.reveal { animation: flip .5s ease forwards; transform-origin: center; }
 .tile.correct { background: var(--correct); border-color: var(--correct); color: #fff; }
 .tile.present { background: var(--present); border-color: var(--present); color: #fff; }
 .tile.absent  { background: var(--absent);  border-color: var(--absent);  color: #fff; }

@@ -137,6 +137,9 @@ function revealRow(row: number, result: Tile[]): void {
     }, start);
     // Swap in the colour when the tile is edge-on, so it "reveals" mid-flip.
     window.setTimeout(() => tile.classList.add(result[c]), start + FLIP_HALF);
+    // Drop the transform/animation once done so Windows/Edge doesn't leave the
+    // tile on a GPU layer with the glyph unpainted (the colour class stays).
+    window.setTimeout(() => tile.classList.remove('reveal'), start + FLIP_DURATION + 30);
   }
 }
 

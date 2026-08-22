@@ -105,6 +105,7 @@ button { font-family: inherit; }
   text-align: center;
 }
 .prompt .flag { font-size: 6rem; line-height: 1; }
+.prompt .flag-img { width: min(60%, 220px); height: auto; display: block; margin: 0 auto; border-radius: 8px; box-shadow: 0 6px 20px rgba(0, 0, 0, .45); }
 .prompt .capital { font-size: 2rem; font-weight: 800; }
 .prompt .capital small { display: block; font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 6px; }
 

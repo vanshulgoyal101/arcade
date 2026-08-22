@@ -88,7 +88,12 @@ function renderHud(): void {
 
 function renderPrompt(): void {
   if (game.mode === 'flag') {
-    promptEl.innerHTML = `<div class="flag">${flagEmoji(game.target.code)}</div>`;
+    // Real flag image — regional-indicator emoji show as bare country codes on
+    // Windows; fall back to the emoji if the CDN is unreachable.
+    const code = game.target.code.toLowerCase();
+    promptEl.innerHTML = `<div class="flag"><img class="flag-img" alt="Flag" src="https://flagcdn.com/w320/${code}.png" srcset="https://flagcdn.com/w640/${code}.png 2x" /></div>`;
+    const img = promptEl.querySelector('img');
+    if (img) img.addEventListener('error', () => img.replaceWith(document.createTextNode(flagEmoji(game.target.code))), { once: true });
   } else {
     promptEl.innerHTML = `<div class="capital"><small>Capital city</small>${game.target.capital}</div>`;
   }
