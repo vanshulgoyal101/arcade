@@ -1,13 +1,10 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
-import { fmtScore } from '../../shared/format';
 import { MathGame, ROUND_TIME, type Op } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
 import { mathShareText, mathShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore, getRank } from '../../shared/cloud';
-import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new MathGame();
 sfx.setMuted(game.store.muted);
@@ -15,15 +12,15 @@ sfx.setMuted(game.store.muted);
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
-    <a class="back" href="/">← Arcade</a>
+    <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🧮 Flashmath</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
   <div class="hud">
     <div class="pill" id="p-level"><span class="k">Level</span><span class="v" id="level">1</span></div>
     <div class="pill" id="p-score"><span class="k">Score</span><span class="v" id="score">0</span></div>
-    <div class="pill combo" id="p-combo"><span class="k">Combo</span><span class="v" id="combo">0</span></div>
+    <div class="pill combo" id="p-combo"><span class="k">Combo</span><span class="v" id="combo">x1</span></div>
     <div class="pill" id="p-best"><span class="k">Best</span><span class="v" id="best">0</span></div>
   </div>
 
@@ -40,7 +37,7 @@ app.innerHTML = `
     <button class="key enter" data-k="enter" aria-label="Submit">✓</button>
   </div>
 
-  <p class="center hint">Type your answer — it submits the moment it's right. Correct answers add time.</p>
+  <p class="center hint">Type your answer — number keys work too. Correct answers add time.</p>
 
   <div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
   <div class="toast" id="toast"></div>
@@ -97,9 +94,9 @@ function renderMute(): void {
 }
 function renderHud(): void {
   levelEl.textContent = String(game.level);
-  scoreEl.textContent = fmtScore(game.score);
-  comboEl.textContent = String(game.combo);
-  bestEl.textContent = fmtScore(game.store.bestScore);
+  scoreEl.textContent = String(game.score);
+  comboEl.textContent = `x${game.multiplier}`;
+  bestEl.textContent = String(game.store.bestScore);
 }
 function renderProblem(): void {
   const p = game.problem;
@@ -113,10 +110,6 @@ function type(ch: string): void {
   if (entry.length >= 6) return;
   entry += ch;
   answerEl.textContent = entry;
-  // Auto-submit the instant the typed value matches — no ✓ needed. Compare the
-  // exact number (not a prefix) so multi-digit answers like 12 or 144 aren't
-  // submitted early while a matching leading digit is still being typed.
-  if (Number(entry) === game.problem.answer) submit();
 }
 function backspace(): void {
   entry = entry.slice(0, -1);
@@ -127,12 +120,13 @@ function submit(): void {
   const res = game.submit(Number(entry), performance.now());
   if (res.correct) {
     sfx.correct(game.combo);
-    const mult = game.multiplier > 1 ? ` ×${game.multiplier}` : '';
-    popup(`+${res.points}${mult}`, res.fast ? '#ffd93d' : '#4ecdc4');
+    popup(`+${res.points}`, res.fast ? '#ffd93d' : '#4ecdc4');
     bump(pScore);
     bump(pLevel);
-    bump(pCombo);
-    if (game.multiplier >= 2 && game.combo % 3 === 0) sfx.levelUp();
+    if (game.multiplier >= 2) {
+      bump(pCombo);
+      if (game.combo % 3 === 0) sfx.levelUp();
+    }
     renderHud();
     renderProblem();
   } else {
@@ -188,8 +182,8 @@ function endGame(): void {
   modal.innerHTML = `
     <h2>Time!</h2>
     <p class="sub">Score</p>
-    <div class="big">${fmtScore(game.score)}</div>
-    <p class="sub">${game.solved} solved · reached level ${game.level} · Best ${fmtScore(game.store.bestScore)}</p>
+    <div class="big">${game.score}</div>
+    <p class="sub">${game.solved} solved · reached level ${game.level} · Best ${game.store.bestScore}</p>
     ${newBest ? '<p class="newbest">🏆 New best score!</p>' : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
@@ -197,17 +191,12 @@ function endGame(): void {
     </div>
   `;
   overlay.classList.add('show');
-  void submitScore('flashmath', game.store.bestScore);
-  getRank('flashmath', game.store.bestScore).then((r) => {
-    const badge = rankBadgeHtml(r);
-    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
-  });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(mathShareCard(game.score, game.solved, game.level, game.store.bestScore));
     const outcome = await shareResult({
       title: 'Flashmath',
       text: mathShareText(game.score, game.solved, game.store.bestScore, newBest),
-      url: 'https://games.vanshul.com/flashmath/',
+      url: 'https://games.vanshul.com/flashmath/dist/',
       blob,
       filename: 'flashmath.png',
     });
@@ -217,7 +206,6 @@ function endGame(): void {
 }
 
 function start(): void {
-  cancelAnimationFrame(rafId); // never run two loops if start() is re-triggered (double-tap replay)
   overlay.classList.remove('show');
   game.start(performance.now());
   renderHud();

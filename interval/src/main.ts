@@ -1,6 +1,5 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
-import { fmtScore } from '../../shared/format';
 import { IntervalGame, INTERVALS } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
@@ -13,9 +12,9 @@ sfx.setMuted(game.store.muted);
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
-    <a class="back" href="/">← Arcade</a>
+    <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🎹 Interval</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
   <div class="hud">
@@ -26,7 +25,7 @@ app.innerHTML = `
   </div>
 
   <div class="play-area">
-    <button class="play-btn" id="play" aria-label="Play the two notes">▶</button>
+    <button class="play-btn" id="play">▶</button>
     <div class="replay"><button id="replay">🔁 Replay</button></div>
   </div>
 
@@ -72,10 +71,10 @@ function renderMute(): void {
   muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
 }
 function renderHud(): void {
-  scoreEl.textContent = fmtScore(game.score);
+  scoreEl.textContent = String(game.score);
   streakEl.textContent = String(game.streak);
   livesEl.textContent = '❤️'.repeat(game.lives) + '🖤'.repeat(Math.max(0, 3 - game.lives));
-  bestEl.textContent = fmtScore(game.best);
+  bestEl.textContent = String(game.best);
 }
 
 function playCurrent(): void {
@@ -127,8 +126,8 @@ function endGame(newBest: boolean): void {
   modal.innerHTML = `
     <h2>Out of lives</h2>
     <p class="sub">Score</p>
-    <div class="big">${fmtScore(game.score)}</div>
-    <p class="sub">Best ${fmtScore(best)}</p>
+    <div class="big">${game.score}</div>
+    <p class="sub">Best ${best}</p>
     ${newBest ? '<p class="newbest">🏆 New best!</p>' : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
@@ -143,7 +142,7 @@ function endGame(newBest: boolean): void {
     const outcome = await shareResult({
       title: 'Interval',
       text: intervalShareText(game.score, best, newBest),
-      url: 'https://games.vanshul.com/interval/',
+      url: 'https://games.vanshul.com/interval/dist/',
       blob,
       filename: 'interval.png',
     });

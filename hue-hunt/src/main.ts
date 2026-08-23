@@ -1,13 +1,10 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
-import { fmtScore } from '../../shared/format';
 import { HueGame, ROUND_TIME, hslCss } from './game';
 import { saveStore } from './storage';
 import * as sfx from './audio';
 import { hueShareText, hueShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore, getRank } from '../../shared/cloud';
-import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new HueGame();
 sfx.setMuted(game.store.muted);
@@ -15,15 +12,15 @@ sfx.setMuted(game.store.muted);
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
-    <a class="back" href="/">← Arcade</a>
+    <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🎯 Hue Hunt</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
   <div class="hud">
     <div class="pill" id="p-level"><span class="k">Level</span><span class="v" id="level">1</span></div>
     <div class="pill" id="p-score"><span class="k">Score</span><span class="v" id="score">0</span></div>
-    <div class="pill combo" id="p-combo"><span class="k">Combo</span><span class="v" id="combo">0</span></div>
+    <div class="pill combo" id="p-combo"><span class="k">Combo</span><span class="v" id="combo">x1</span></div>
     <div class="pill" id="p-best"><span class="k">Best</span><span class="v" id="best">0</span></div>
   </div>
 
@@ -60,7 +57,6 @@ const pCombo = app.querySelector<HTMLDivElement>('#p-combo')!;
 
 let rafId = 0;
 let lastTick = 0;
-let advancing = false; // true during the brief board-rebuild after a correct pick
 
 // ---- helpers ----
 function bump(el: HTMLElement): void {
@@ -93,9 +89,9 @@ function renderMute(): void {
 
 function renderHud(): void {
   levelEl.textContent = String(game.level);
-  scoreEl.textContent = fmtScore(game.score);
-  comboEl.textContent = String(game.combo);
-  bestEl.textContent = fmtScore(game.store.bestScore);
+  scoreEl.textContent = String(game.score);
+  comboEl.textContent = `x${game.multiplier}`;
+  bestEl.textContent = String(game.store.bestScore);
 }
 
 function buildBoard(): void {
@@ -109,15 +105,13 @@ function buildBoard(): void {
     b.addEventListener('pointerdown', (e) => onPick(i === oddIndex, b, e));
     boardEl.appendChild(b);
   }
-  advancing = false; // fresh board: accept input again
 }
 
 // ---- interactions ----
 function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
-  if (!game.playing || advancing) return;
+  if (!game.playing) return;
 
   if (isOdd) {
-    advancing = true; // block taps on the stale board until it rebuilds
     const { points, fast } = game.correctPick(performance.now());
     sfx.correct(game.combo);
     el.classList.add('correct');
@@ -125,8 +119,7 @@ function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
     void boardEl.offsetWidth;
     boardEl.classList.add('board-flash');
 
-    const mult = game.multiplier > 1 ? ` ×${game.multiplier}` : '';
-    scorePopup(ev.clientX, ev.clientY, `+${points}${mult}`, fast ? '#ffd93d' : '#4ecdc4');
+    scorePopup(ev.clientX, ev.clientY, `+${points}`, fast ? '#ffd93d' : '#4ecdc4');
     if (game.multiplier >= 2 && game.combo % 3 === 0) {
       comboFlash.textContent = `COMBO x${game.multiplier}!`;
       comboFlash.classList.remove('show');
@@ -136,7 +129,7 @@ function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
     }
     bump(pScore);
     bump(pLevel);
-    bump(pCombo);
+    if (game.multiplier >= 2) bump(pCombo);
 
     renderHud();
     setTimeout(buildBoard, 60);
@@ -169,18 +162,11 @@ function endGame(): void {
   const newBest = game.end();
   sfx.gameOver();
   const reached = game.level - 1;
-  // Point out the odd tile of the final set before the results cover the board.
-  const oddTile = boardEl.children[game.round.oddIndex] as HTMLElement | undefined;
-  oddTile?.classList.add('reveal');
-  window.setTimeout(() => showResults(newBest, reached), 900);
-}
-
-function showResults(newBest: boolean, reached: number): void {
   modal.innerHTML = `
     <h2>Time!</h2>
     <p class="sub">Score</p>
-    <div class="big">${fmtScore(game.score)}</div>
-    <p class="sub">Reached level ${reached} · Best ${fmtScore(game.store.bestScore)}</p>
+    <div class="big">${game.score}</div>
+    <p class="sub">Reached level ${reached} · Best ${game.store.bestScore}</p>
     ${newBest ? '<p class="newbest">🏆 New best score!</p>' : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
@@ -188,28 +174,21 @@ function showResults(newBest: boolean, reached: number): void {
     </div>
   `;
   overlay.classList.add('show');
-  void submitScore('hue-hunt', game.store.bestScore);
-  getRank('hue-hunt', game.store.bestScore).then((r) => {
-    const badge = rankBadgeHtml(r);
-    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
-  });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(hueShareCard(game.round, game.score, reached, game.store.bestScore));
     const outcome = await shareResult({
       title: 'Hue Hunt',
       text: hueShareText(game.score, reached, game.store.bestScore),
-      url: 'https://games.vanshul.com/hue-hunt/',
+      url: 'https://games.vanshul.com/hue-hunt/dist/',
       blob,
       filename: 'hue-hunt.png',
     });
-    const msg = shareToast(outcome);
-    if (msg) showToast(msg);
+    showToast(shareToast(outcome));
   };
   modal.querySelector<HTMLButtonElement>('#m-again')!.onclick = start;
 }
 
 function start(): void {
-  cancelAnimationFrame(rafId); // never run two loops if start() is re-triggered (double-tap replay)
   overlay.classList.remove('show');
   game.start(performance.now());
   renderHud();

@@ -5,8 +5,6 @@ import { saveStore } from './storage';
 import * as sfx from './audio';
 import { digitShareText, digitShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore, getRank } from '../../shared/cloud';
-import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new DigitGame();
 sfx.setMuted(game.store.muted);
@@ -14,9 +12,9 @@ sfx.setMuted(game.store.muted);
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
-    <a class="back" href="/">← Arcade</a>
+    <a class="back" href="../../index.html">← Arcade</a>
     <h1 class="title">🔢 Digit Span</h1>
-    <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
+    <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
   <div class="controls">
@@ -84,19 +82,20 @@ function renderHud(): void {
   spanEl.textContent = String(game.level);
   bestEl.textContent = String(game.best);
 }
-// Keep the pad on screen during the flash (locked + dimmed) so it doesn't jump.
 function setKeypad(on: boolean): void {
+  keypad.classList.toggle('hidden', !on);
   keypad.classList.toggle('locked', !on);
 }
 
 function renderEntry(bad = false): void {
+  const filled = entry.join(' ');
   stage.innerHTML = `
-    <div class="cells${bad ? ' bad' : ''}">${game.sequence
-      .map((_, i) => {
-        const cls = i < entry.length ? ' filled' : i === entry.length ? ' active' : '';
-        return `<span class="cell${cls}">${entry[i] ?? ''}</span>`;
-      })
-      .join('')}</div>`;
+    <div>
+      <div class="entry${bad ? ' bad' : ''}">${filled || '&nbsp;'}</div>
+      <div class="dots">${game.sequence
+        .map((_, i) => `<span class="d ${i < entry.length ? 'filled' : ''}"></span>`)
+        .join('')}</div>
+    </div>`;
 }
 
 async function showSequence(): Promise<void> {
@@ -173,17 +172,12 @@ function gameOver(): void {
     </div>
   `;
   overlay.classList.add('show');
-  void submitScore('digit-span', game.best);
-  getRank('digit-span', game.best).then((r) => {
-    const badge = rankBadgeHtml(r);
-    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
-  });
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(digitShareCard(game.expected(), reached, game.mode, game.best));
     const outcome = await shareResult({
       title: 'Digit Span',
       text: digitShareText(reached, game.mode, game.best, newBest),
-      url: 'https://games.vanshul.com/digit-span/',
+      url: 'https://games.vanshul.com/digit-span/dist/',
       blob,
       filename: 'digit-span.png',
     });
@@ -198,7 +192,6 @@ function gameOver(): void {
 function startRun(): void {
   overlay.classList.remove('show');
   startWrap.classList.add('hidden');
-  keypad.classList.remove('hidden');
   modeToggle.classList.add('locked');
   game.reset();
   renderHud();
