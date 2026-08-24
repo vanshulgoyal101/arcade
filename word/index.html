@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <script>try{var t=localStorage.getItem('arcade.theme')==='classic'?'classic':'refined';if(t==='classic')document.documentElement.setAttribute('data-theme','classic');addEventListener('DOMContentLoaded',function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='classic'?'#12141c':'#0c0d12')})}catch(e){}</script>
+  <script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(function(){})})}</script>
+  <script defer src="/assets/analytics.js?v=2"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#0c0d12" />
   <meta name="color-scheme" content="dark" />
@@ -16,14 +18,14 @@
   <meta name="keywords" content="word of the day, vocabulary builder, learn new words, vocabulary quiz, improve vocabulary, english words, word meanings, synonyms, free vocabulary game" />
   <meta name="author" content="Tiny Arcade" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
-  <link rel="canonical" href="https://games.vanshul.com/word/dist/" />
+  <link rel="canonical" href="https://games.vanshul.com/word/" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Tiny Arcade" />
   <meta property="og:title" content="Word of the Day — Free Vocabulary Builder" />
   <meta property="og:description" content="A new interesting word every day — meaning, examples, synonyms and origin. Guess the meaning for a streak, or play the endless vocabulary quiz." />
-  <meta property="og:url" content="https://games.vanshul.com/word/dist/" />
+  <meta property="og:url" content="https://games.vanshul.com/word/" />
   <meta property="og:locale" content="en_US" />
   <meta property="og:image" content="https://games.vanshul.com/assets/og/word.png" />
   <meta property="og:image:type" content="image/png" />
@@ -45,7 +47,7 @@
     "@context": "https://schema.org",
     "@type": ["WebApplication", "EducationalApplication"],
     "name": "Word of the Day",
-    "url": "https://games.vanshul.com/word/dist/",
+    "url": "https://games.vanshul.com/word/",
     "image": "https://games.vanshul.com/assets/og/word.png",
     "description": "Learn a new word every day — meaning, pronunciation, example sentences, synonyms and origin — with a daily meaning quiz and an endless vocabulary practice mode.",
     "applicationCategory": "EducationalApplication",
@@ -58,8 +60,30 @@
     "publisher": { "@type": "Organization", "name": "Tiny Arcade", "url": "https://games.vanshul.com/" }
   }
   </script>
-  <script type="module" crossorigin src="./assets/index-HXDlHjmH.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CCIuw6EK.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Tiny Arcade", "item": "https://games.vanshul.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Word of the Day", "item": "https://games.vanshul.com/word/" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "How does Word of the Day work?", "acceptedAnswer": { "@type": "Answer", "text": "Each day gives you a new word: guess its meaning from four options, then see the full definition, examples, synonyms and origin. Practice mode is an endless vocabulary quiz." } },
+      { "@type": "Question", "name": "Is Word of the Day free to play?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It is a free vocabulary builder with no download or sign-up, and it runs instantly in your browser." } },
+      { "@type": "Question", "name": "Does it help build vocabulary?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. The daily word plus the resurfacing Practice quiz help you learn and retain new words, and a streak tracks your daily habit." } },
+      { "@type": "Question", "name": "Does Word of the Day work on mobile?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It works in any modern mobile, tablet or desktop browser." } }
+    ]
+  }
+  </script>
+  <script type="module" crossorigin src="./assets/template-CSCAgt3w.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/template-CCIuw6EK.css">
 </head>
 <body>
   <div id="app">
@@ -73,8 +97,20 @@
         <li>Reveal examples, synonyms and the word’s origin.</li>
         <li>Practice mode: an endless meaning quiz across the whole word bank.</li>
       </ul>
-      <p>Word of the Day needs JavaScript. Explore more free games at <a href="../../index.html">Tiny Arcade</a>.</p>
+      <p>Word of the Day needs JavaScript. Explore more free games at <a href="/">Tiny Arcade</a>.</p>
     </noscript>
   </div>
+  <section class="about">
+    <details>
+      <summary>About Word of the Day — how to play &amp; tips</summary>
+      <div class="about-body">
+        <h2>How to play</h2>
+        <p>Meet a new word every day: guess its meaning from four options, then see the full definition, examples, synonyms and origin. Keep a daily streak going, or switch to Practice for an endless vocabulary quiz.</p>
+        <h2>Tips</h2>
+        <p>Read the example sentences — context locks a word in better than the definition alone. Practice mode resurfaces the words you miss so they stick.</p>
+        <p>More games: <a href="/">Tiny Arcade</a> · <a href="/where/">Where</a> · <a href="/flash/">Flash</a>.</p>
+      </div>
+    </details>
+  </section>
 </body>
 </html>
