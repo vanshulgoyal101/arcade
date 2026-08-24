@@ -12,7 +12,7 @@ sfx.setMuted(game.store.muted);
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
-    <a class="back" href="../../index.html">← Arcade</a>
+    <a class="back" href="/">← Arcade</a>
     <h1 class="title">🔢 Digit Span</h1>
     <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
@@ -177,7 +177,7 @@ function gameOver(): void {
     const outcome = await shareResult({
       title: 'Digit Span',
       text: digitShareText(reached, game.mode, game.best, newBest),
-      url: 'https://games.vanshul.com/digit-span/dist/',
+      url: 'https://games.vanshul.com/digit-span/',
       blob,
       filename: 'digit-span.png',
     });

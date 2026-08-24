@@ -12,7 +12,7 @@ sfx.setMuted(game.store.muted);
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
-    <a class="back" href="../../index.html">← Arcade</a>
+    <a class="back" href="/">← Arcade</a>
     <h1 class="title">🔊 Echo</h1>
     <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
@@ -223,7 +223,7 @@ function gameOver(): void {
     const outcome = await shareResult({
       title: 'Echo',
       text: echoShareText(reached, game.strict, game.pads, game.best, newBest),
-      url: 'https://games.vanshul.com/echo/dist/',
+      url: 'https://games.vanshul.com/echo/',
       blob,
       filename: 'echo.png',
     });

@@ -12,7 +12,7 @@ sfx.setMuted(game.store.muted);
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
-    <a class="back" href="../../index.html">← Arcade</a>
+    <a class="back" href="/">← Arcade</a>
     <h1 class="title">🎹 Interval</h1>
     <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
@@ -142,7 +142,7 @@ function endGame(newBest: boolean): void {
     const outcome = await shareResult({
       title: 'Interval',
       text: intervalShareText(game.score, best, newBest),
-      url: 'https://games.vanshul.com/interval/dist/',
+      url: 'https://games.vanshul.com/interval/',
       blob,
       filename: 'interval.png',
     });
