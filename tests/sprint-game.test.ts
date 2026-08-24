@@ -29,8 +29,17 @@ describe('sprint/typing stats', () => {
     expect(weak[0].count).toBeGreaterThanOrEqual(weak[weak.length - 1].count); // sorted
   });
 
-  it('tracks the best wpm per duration', () => {
+  it('clears weak-letter tracking on a new run', () => {
     const g = new SprintGame();
+    g.upcoming = ['the'];
+    g.begin(0);
+    g.submitWord('teh'); // records weak letters
+    expect(g.weakLetters().length).toBeGreaterThan(0);
+    g.reset();
+    expect(g.weakLetters()).toEqual([]);
+  });
+
+  it('tracks the best wpm per duration', () => {    const g = new SprintGame();
     g.setDuration(15);
     g.upcoming = ['a'];
     g.begin(0);

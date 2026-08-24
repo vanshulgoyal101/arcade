@@ -71,6 +71,7 @@ export class SprintGame {
     this.startedAt = 0;
     this.upcoming = [];
     this.typedHistory = [];
+    this.weak = {};
     this.lastSentence = -1;
     this.refill();
   }

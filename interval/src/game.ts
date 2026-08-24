@@ -50,6 +50,7 @@ export class IntervalGame {
     this.streak = 0;
     this.finished = false;
     this.recent = [];
+    this.weak = {};
     this.nextRound();
   }
 
