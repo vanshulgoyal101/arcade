@@ -23,6 +23,31 @@ export function yesterdayKey(): string {
   return todayKey(d);
 }
 
+// ---- daily streak ----
+export interface DailyStreak {
+  streak: number;
+  maxStreak: number;
+  lastKey: string;
+}
+
+/**
+ * Advance the daily-streak record for one day's result. Idempotent per day: if
+ * `today` was already completed the record is returned unchanged. A correct
+ * answer extends the streak when the previous completion was `yesterday`, else
+ * it starts a fresh streak of 1; a wrong answer resets the streak to 0. Always
+ * stamps `lastKey` = today and preserves the all-time `maxStreak`.
+ */
+export function nextDailyStreak(
+  record: DailyStreak,
+  correct: boolean,
+  today: string = todayKey(),
+  yesterday: string = yesterdayKey()
+): DailyStreak {
+  if (record.lastKey === today) return record;
+  const streak = correct ? (record.lastKey === yesterday ? record.streak + 1 : 1) : 0;
+  return { streak, maxStreak: Math.max(record.maxStreak, streak), lastKey: today };
+}
+
 // ---- seeded RNG (FNV-1a -> mulberry32) so the daily word is stable per date ----
 function hashSeed(s: string): number {
   let h = 2166136261;

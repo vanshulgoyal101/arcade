@@ -57,6 +57,10 @@ const pCombo = app.querySelector<HTMLDivElement>('#p-combo')!;
 
 let rafId = 0;
 let lastTick = 0;
+// True during the brief board-rebuild after a correct pick — blocks a second
+// tap from landing on the stale board (which would be graded as a wrong pick
+// and reset the combo). Cleared whenever a fresh board is built.
+let advancing = false;
 
 // ---- helpers ----
 function bump(el: HTMLElement): void {
@@ -95,6 +99,7 @@ function renderHud(): void {
 }
 
 function buildBoard(): void {
+  advancing = false;
   const { size, base, odd, oddIndex } = game.round;
   boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
   boardEl.innerHTML = '';
@@ -109,9 +114,10 @@ function buildBoard(): void {
 
 // ---- interactions ----
 function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
-  if (!game.playing) return;
+  if (!game.playing || advancing) return;
 
   if (isOdd) {
+    advancing = true;
     const { points, fast } = game.correctPick(performance.now());
     sfx.correct(game.combo);
     el.classList.add('correct');
