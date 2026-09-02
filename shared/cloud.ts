@@ -176,7 +176,9 @@ export async function getRank(game: string, score: number): Promise<RankInfo | n
   try {
     const [ahead, total] = await Promise.all([
       client.from('arcade_scores').select('user_id', { count: 'exact', head: true }).eq('game', game).gt('best', score),
-      client.from('arcade_scores').select('user_id', { count: 'exact', head: true }).eq('game', game),
+      // Field size counts only real scorers (best>0), matching the leaderboard —
+      // 0-best rows exist only as cross-device backups and shouldn't inflate rank.
+      client.from('arcade_scores').select('user_id', { count: 'exact', head: true }).eq('game', game).gt('best', 0),
     ]);
     const rank = (ahead.count || 0) + 1;
     // The player's own row may not be counted yet (submit in flight), so make
