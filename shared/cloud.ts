@@ -182,6 +182,7 @@ export async function restoreGame(slug: string): Promise<boolean> {
 }
 
 import { codedAvatarSvg } from './avatars';
+import { rankBadgeHtml } from './rank';
 
 function googleName(u: any): string {
   const m = u?.user_metadata || {};
@@ -352,6 +353,18 @@ try {
   addEventListener('online', () => void flushPending());
 } catch {
   /* ignore */
+}
+
+/**
+ * Look up the player's standing and drop the badge above a game-over modal's
+ * button row. Every game shows its rank the same way, so the lookup, the empty
+ * cases and the insertion point all live here.
+ */
+export function mountRank(modal: Element, game: string, score: number): void {
+  void getRank(game, score).then((info) => {
+    const badge = rankBadgeHtml(info);
+    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
+  });
 }
 
 /** Where `score` would place on `game`'s all-time board, plus the field size. */

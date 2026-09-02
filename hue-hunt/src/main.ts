@@ -5,7 +5,7 @@ import { loadStore, saveStore } from './storage';
 import * as sfx from './audio';
 import { hueShareText, hueShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { restoreGame, submitScore } from '../../shared/cloud';
+import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
 
 const game = new HueGame();
 sfx.setMuted(game.store.muted);
@@ -182,6 +182,7 @@ function endGame(): void {
     </div>
   `;
   overlay.classList.add('show');
+  mountRank(modal, 'hue-hunt', game.store.bestScore);
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(hueShareCard(game.round, game.score, reached, game.store.bestScore));
     const outcome = await shareResult({

@@ -6,9 +6,8 @@ import { WhereGame, type Mode } from './game';
 import { flagEmoji, type Difficulty } from './content';
 import { whereShareText, whereShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { restoreGame, submitScore, getRank } from '../../shared/cloud';
+import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
 import { loadStore } from './storage';
-import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new WhereGame();
 const MUTE_KEY = 'where.muted';
@@ -165,10 +164,7 @@ function endGame(newBest: boolean): void {
   `;
   overlay.classList.add('show');
   void submitScore('where', game.best);
-  getRank('where', game.best).then((r) => {
-    const badge = rankBadgeHtml(r);
-    if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
-  });
+  mountRank(modal, 'where', game.best);
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const flag = await loadFlagImage(game.target.code);
     const blob = await canvasToBlob(whereShareCard(game.score, game.mode, game.difficulty, best, game.target, flag));

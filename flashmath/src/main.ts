@@ -5,7 +5,7 @@ import { loadStore, saveStore } from './storage';
 import * as sfx from './audio';
 import { mathShareText, mathShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { restoreGame, submitScore } from '../../shared/cloud';
+import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
 
 const game = new MathGame();
 sfx.setMuted(game.store.muted);
@@ -193,6 +193,7 @@ function endGame(): void {
     </div>
   `;
   overlay.classList.add('show');
+  mountRank(modal, 'flashmath', game.store.bestScore);
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
     const blob = await canvasToBlob(mathShareCard(game.score, game.solved, game.level, game.store.bestScore));
     const outcome = await shareResult({

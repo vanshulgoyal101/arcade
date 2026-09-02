@@ -8,6 +8,7 @@ const submitScore = vi.fn();
 vi.mock('../shared/cloud', () => ({
   submitScore,
   getRank: vi.fn().mockResolvedValue(null),
+  mountRank: vi.fn(),
   cloudReady: vi.fn().mockResolvedValue(undefined),
   cloudProfile: () => null,
   cloudAvatarImage: () => null,

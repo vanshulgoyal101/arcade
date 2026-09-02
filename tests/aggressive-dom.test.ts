@@ -8,6 +8,7 @@ import { ANSWER_WORDS } from '../wordle/src/words';
 vi.mock('../shared/cloud', () => ({
   submitScore: vi.fn(),
   getRank: vi.fn().mockResolvedValue(null),
+  mountRank: vi.fn(),
   cloudReady: vi.fn().mockResolvedValue(undefined),
   cloudProfile: () => null,
   cloudAvatarImage: () => null,

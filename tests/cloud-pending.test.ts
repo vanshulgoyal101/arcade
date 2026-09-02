@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { readPending, queuePending, unqueuePending, submitScore, getRank } from '../shared/cloud';
+import { readPending, queuePending, unqueuePending, submitScore, getRank, mountRank } from '../shared/cloud';
 
 const KEY = 'arcade.pending.v1';
 // supabase-js persists the session here; cloud.ts reads it to tell "signed in on
@@ -120,5 +120,45 @@ describe('cloud/getRank when the backend is unreachable', () => {
     expect(await getRank('wordle', 12)).toBeNull();
     localStorage.setItem(SESSION_KEY, '{"access_token":"x"}');
     expect(await getRank('wordle', 0)).toBeNull();
+  });
+});
+
+describe('cloud/mountRank', () => {
+  const modalHtml = '<div id="m"><h2>Time!</h2><div class="row"><button>Again</button></div></div>';
+  const settle = async () => {
+    for (let i = 0; i < 10; i++) await new Promise((r) => setTimeout(r, 0));
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = modalHtml;
+  });
+
+  it('inserts the badge directly above the button row', async () => {
+    localStorage.setItem(SESSION_KEY, '{"access_token":"x"}');
+    const modal = document.querySelector('#m')!;
+    mountRank(modal, 'wordle', 12);
+    await settle();
+    const badge = modal.querySelector('.cloud-rank');
+    expect(badge).not.toBeNull();
+    expect(badge!.nextElementSibling!.className).toBe('row');
+    expect(badge!.textContent).toContain('Saved');
+  });
+
+  it('inserts nothing when there is no rank to show', async () => {
+    const modal = document.querySelector('#m')!; // guest: no session on this device
+    mountRank(modal, 'wordle', 12);
+    await settle();
+    expect(modal.querySelector('.cloud-rank')).toBeNull();
+    expect(modal.children.length).toBe(2);
+  });
+
+  it('never throws on a modal that has no button row', async () => {
+    document.body.innerHTML = '<div id="bare"></div>';
+    localStorage.setItem(SESSION_KEY, '{"access_token":"x"}');
+    const bare = document.querySelector('#bare')!;
+    expect(() => mountRank(bare, 'wordle', 12)).not.toThrow();
+    await settle();
+    expect(bare.innerHTML).toBe('');
   });
 });

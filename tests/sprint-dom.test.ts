@@ -4,6 +4,7 @@ import { mountGame, text, gameEnv } from './helpers/dom';
 vi.mock('../shared/cloud', () => ({
   submitScore: vi.fn(),
   getRank: vi.fn().mockResolvedValue(null),
+  mountRank: vi.fn(),
   cloudReady: vi.fn().mockResolvedValue(undefined),
   cloudProfile: () => null,
   cloudAvatarImage: () => null,
