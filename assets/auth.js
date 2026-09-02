@@ -18,7 +18,7 @@ const GAMES = [
   { slug: 'flashmath',  name: 'Flashmath',      emoji: '🧮', key: 'flashmath.v1', unit: 'pts',    best: (s) => num(s.bestScore) },
   { slug: 'sprint',     name: 'Sprint',         emoji: '⌨️', key: 'sprint.v1',    unit: 'wpm',    best: (s) => maxVal(s.best) },
   { slug: 'digit-span', name: 'Digit Span',     emoji: '🔢', key: 'digitspan.v1', unit: 'span',   best: (s) => maxVal(s.best) },
-  { slug: 'word',       name: 'Word of the Day', emoji: '📖', key: 'word.v1',     unit: 'pts',    best: (s) => num(s.practiceBest) },
+  { slug: 'word',       name: 'Word of the Day', emoji: '📖', key: 'word.v1',     unit: 'pts',    best: (s) => num(s.practiceBest), extra: (s) => num(s.daily?.maxStreak) > 0 || num(s.daily?.streak) > 0 || (Array.isArray(s.learnedIds) && s.learnedIds.length > 0) },
   { slug: 'wordle',     name: 'Wordle',         emoji: '🟩', key: 'wordle.v1',    unit: 'streak', best: (s) => num(s.maxStreak) },
 ];
 
@@ -195,7 +195,10 @@ async function uploadScores(user) {
     const s = readLocal(g.key);
     if (!s) continue;
     const best = num(g.best(s));
-    if (best <= 0) continue;
+    // Back up any game with real progress, even when the headline best is 0
+    // (e.g. a Word daily streak with no practice score), so nothing is lost on a
+    // new device. `best` still drives the leaderboard (0-best rows are filtered).
+    if (best <= 0 && !(g.extra && g.extra(s))) continue;
     rows.push({
       user_id: user.id, game: g.slug, best, data: s,
       display_name: pName(), avatar_url: pAvatar(),
@@ -210,8 +213,9 @@ async function restoreScores(overwrite = false) {
   for (const row of data) {
     const g = GAMES.find((x) => x.slug === row.game);
     if (!g || !row.data) continue;
-    // On an account switch we overwrite; otherwise cloud wins only when better.
-    if (overwrite || num(row.best) > localBest(g)) {
+    // Overwrite on an account switch; restore when this device has no local data
+    // for the game yet (fresh device); otherwise cloud wins only when better.
+    if (overwrite || !readLocal(g.key) || num(row.best) > localBest(g)) {
       try { localStorage.setItem(g.key, JSON.stringify(row.data)); } catch { /* ignore */ }
     }
   }

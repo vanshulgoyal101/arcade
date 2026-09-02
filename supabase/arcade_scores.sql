@@ -74,7 +74,7 @@ as $$
     select s.game, s.user_id, s.display_name, s.avatar_url, s.best,
            row_number() over (partition by s.game order by s.best desc, s.updated_at) as rn
     from public.arcade_scores s
-    where s.game = any(p_games)
+    where s.game = any(p_games) and s.best > 0
   ),
   me as (
     select game, best, rn from ranked where user_id = auth.uid()
