@@ -505,10 +505,11 @@ python3 -m http.server 8000
 
 ## 10. Tests
 
-A root-level **Vitest** project (`arcade/package.json`, `vitest.config.ts`) unit-tests
-the games' **pure logic** — the model/helper layer, not the DOM. Tests import each game's
-source TS modules directly and run under a `jsdom` environment so browser APIs used by
-game/storage code (`localStorage`, `document`) are available.
+A root-level **Vitest** project (`arcade/package.json`, `vitest.config.ts`) covers the games
+in two layers, both under a `jsdom` environment: a **logic layer** that imports each game's
+source TS modules directly (the model/helper layer), and a **DOM/interaction layer** that
+boots each game's real `main.ts` and drives it through the rendered UI — the same path a
+player's browser takes. Together they total **195 tests across 30 files**.
 
 ```bash
 cd arcade
@@ -517,7 +518,10 @@ npm test           # vitest run  — one-shot
 npm run test:watch # watch mode
 ```
 
-Coverage lives in `arcade/tests/` — **153 tests across 19 files**:
+### Logic layer
+
+Coverage lives in `arcade/tests/*.test.ts` — **153 tests** over each game's pure model plus
+the shared modules:
 
 | File | What it locks down |
 |------|--------------------|
@@ -541,9 +545,33 @@ Coverage lives in `arcade/tests/` — **153 tests across 19 files**:
 | `storage.test.ts` | `loadStore` migrations/sanitising: where `bestScore`→Hard, word `learnedIds` guard, wordle distribution pad/trim/coerce, flash/echo defaults |
 | `shared-format.test.ts` | `fmtScore` compact numbers (29000→29k, 999999→1M, exact-under-1000, NaN/Infinity) |
 
-> The tests are intentionally logic-only (no `main.ts`/CSS), so they run fast and don't
-> need a real browser. Run `npm test` after changing any `game.ts`, `color.ts`,
-> `rsvp.ts`, `storage.ts`, `share.ts`, or the `shared/` modules.
+### DOM / interaction layer
+
+Each `tests/<game>-dom.test.ts` (**42 tests**, one file per game) mounts the game's real
+`main.ts` into a `#app` element and interacts through the DOM — clicking tiles/options,
+pressing keys, typing words — asserting on what the player sees. This catches the class of
+regressions the logic tests can't: input handlers, guards and wiring that live in `main.ts`
+(e.g. the hue-hunt stale-board guard, the Word daily-streak flow, difficulty locks). It runs
+headless because the games self-render (`app.innerHTML = …`) and need no real browser.
+
+The shared harness `tests/helpers/dom.ts` makes this clean and deterministic:
+
+- **`mountGame(importer, seed?)`** — resets the DOM + `localStorage` (optionally seeding it),
+  freezes `requestAnimationFrame` (so timer loops don't self-advance), installs a
+  jsdom-parseable `CSS.escape`, resets the module registry and imports the game fresh.
+- **`gameEnv()`** — installs fake `setTimeout` timers per test (a game's transition
+  callbacks — next round, reveal, game-over — only fire when a test advances them, never
+  leaking onto a torn-down DOM) and resets the DOM after each test.
+- Helpers: `pointerdown`/`click` (games bind `pointerdown` on play surfaces, `click` on
+  buttons/toggles), `oddChild`/`plainChild` (find the odd tile by its unique background),
+  `text`. Games that reach the cloud (`shared/cloud`) are `vi.mock`ed; WebAudio no-ops in
+  jsdom on its own. Non-deterministic answers are handled by importing the game's own pure
+  logic (e.g. `dailyOptions()`) or by reading the DOM (e.g. solving flashmath's shown sum,
+  typing sprint's current word, using a known-valid Wordle guess).
+
+> Run `npm test` after changing any game logic **or** its `main.ts`; run `npm run test:watch`
+> while iterating. The first test in each DOM file is slower (Vite transforms the game module
+> + CSS on first import); the rest are fast.
 
 ---
 
