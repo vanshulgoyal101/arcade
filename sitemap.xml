@@ -3,77 +3,77 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://games.vanshul.com/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/hub.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/chromatic/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/chromatic.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/digit-span/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/digit-span.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/echo/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/echo.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/flash/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/flash.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/flashmath/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/flashmath.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/hue-hunt/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/hue-hunt.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/sprint/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/sprint.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/where/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/where.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/word/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/word.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/wordle/</loc>
-    <lastmod>2026-09-02</lastmod>
+    <lastmod>2026-09-03</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/wordle.png</image:loc></image:image>
