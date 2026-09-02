@@ -92,3 +92,25 @@ describe('game registry parity (hub auth.js vs shared/cloud.ts)', () => {
     expect(authSrc).not.toMatch(/p_games: GAMES\.map/);
   });
 });
+
+describe('server score caps vs what a game can actually score', () => {
+  const sql = readFileSync(root + 'supabase/arcade_scores.sql', 'utf8');
+  const capOf = (slug: string) => {
+    const m = new RegExp(`when '${slug}'\\s*then (\\d+)`).exec(sql);
+    return m ? Number(m[1]) : Number(/else (\d+)/.exec(sql)?.[1]);
+  };
+
+  it('lets Flash record its full adaptive range', () => {
+    // A cap below MAX_WPM silently truncates real reading speeds off the board:
+    // it clamped a genuine 665 wpm run to 500 before this was raised to 900.
+    const maxWpm = Number(/MAX_WPM = (\d+)/.exec(readFileSync(root + 'flash/src/game.ts', 'utf8'))![1]);
+    expect(maxWpm).toBeGreaterThan(0);
+    expect(capOf('flash')).toBeGreaterThanOrEqual(maxWpm);
+  });
+
+  it('still caps every game, so a forged score stays bounded', () => {
+    for (const slug of gameDirs) expect(capOf(slug)).toBeGreaterThan(0);
+    expect(capOf('echo')).toBeLessThanOrEqual(200);
+    expect(capOf('digit-span')).toBeLessThanOrEqual(200);
+  });
+});

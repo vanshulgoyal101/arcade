@@ -57,7 +57,7 @@ async function main() {
     );
     check('echo cap = 200', caps[0].echo === 200, caps[0].echo);
     check('wordle cap = 100000', caps[0].wordle === 100000, caps[0].wordle);
-    check('flash cap = 500', caps[0].flash === 500, caps[0].flash);
+    check('flash cap = 900 (matches MAX_WPM)', caps[0].flash === 900, caps[0].flash);
     check('default cap = 10000000', caps[0].other === 10000000, caps[0].other);
 
     console.log('arcade_scores_guard (direct upsert):');

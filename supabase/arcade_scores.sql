@@ -139,7 +139,9 @@ as $$
   select case p_game
     when 'echo'       then 200
     when 'digit-span' then 200
-    when 'flash'      then 500
+    -- Flash adapts up to MAX_WPM (900) in flash/src/game.ts; a lower cap here
+    -- silently truncates legitimate reading speeds off the leaderboard.
+    when 'flash'      then 900
     when 'sprint'     then 500
     when 'wordle'     then 100000
     else 10000000
