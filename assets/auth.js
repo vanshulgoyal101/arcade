@@ -24,7 +24,14 @@ const GAMES = [
   { slug: 'digit-span', name: 'Digit Span',     emoji: '🔢', key: 'digitspan.v1', unit: 'span',   best: (s) => maxVal(s.best) },
   { slug: 'word',       name: 'Word of the Day', emoji: '📖', key: 'word.v1',     unit: 'pts',    best: (s) => num(s.practiceBest), applyBest: (s, b) => { s.practiceBest = Math.max(num(s.practiceBest), b); }, extra: (s) => num(s.daily?.maxStreak) > 0 || num(s.daily?.streak) > 0 || (Array.isArray(s.learnedIds) && s.learnedIds.length > 0) },
   { slug: 'wordle',     name: 'Wordle',         emoji: '🟩', key: 'wordle.v1',    unit: 'streak', best: (s) => num(s.maxStreak),   applyBest: (s, b) => { s.maxStreak = Math.max(num(s.maxStreak), b); } },
+  // Deliberately not carded on the hub, but its local data still belongs to the
+  // signed-in account: it must sync, and be cleared when a different account
+  // signs in here. `hidden` keeps it out of the hub grid and the leaderboard.
+  { slug: 'interval',   name: 'Interval',       emoji: '🎹', key: 'interval.v1',  unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); }, hidden: true },
 ];
+
+// The games the hub actually shows (cards + leaderboard sections).
+const BOARD_GAMES = GAMES.filter((g) => !g.hidden);
 
 function num(v) { return typeof v === 'number' && isFinite(v) ? v : 0; }
 function maxVal(o) { return o && typeof o === 'object' ? Math.max(0, ...Object.values(o).map(num)) : 0; }
@@ -209,6 +216,9 @@ async function uploadScores(user) {
     });
   }
   if (rows.length) await supabase.from('arcade_scores').upsert(rows, { onConflict: 'user_id,game' });
+  // Every local best just went up, so any submits parked by a game while it was
+  // offline are now redundant. Key mirrors PENDING_KEY in shared/cloud.ts.
+  try { localStorage.removeItem('arcade.pending.v1'); } catch { /* ignore */ }
 }
 
 async function restoreScores(overwrite = false) {
@@ -384,12 +394,12 @@ async function loadLeaderboard() {
     // One round trip: the server returns every game's top 5 plus my own rank,
     // instead of ~20 separate REST calls that the browser throttles to 6 at a time.
     const { data, error } = await supabase.rpc('arcade_leaderboard', {
-      p_games: GAMES.map((g) => g.slug),
+      p_games: BOARD_GAMES.map((g) => g.slug),
       p_limit: 5,
     });
     if (error) throw error;
     const board = data || {};
-    lbBody.innerHTML = GAMES
+    lbBody.innerHTML = BOARD_GAMES
       .map((g) => {
         const info = board[g.slug] || {};
         const rows = info.top || [];

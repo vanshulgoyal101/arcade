@@ -17,6 +17,7 @@ export interface RankInfo {
   rank: number;
   total: number;
   signedOut?: boolean; // sentinel: not ranked because nobody is signed in here
+  offline?: boolean; // sentinel: signed in, but the board is unreachable right now
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -80,6 +81,51 @@ export interface CloudRow {
   data?: unknown;
 }
 
+// A submit that fails (offline, flaky link, or the SDK never loaded) would
+// otherwise only reach the cloud on a later signed-in *hub* visit — a player who
+// deep-links or installs a single game could stay off the leaderboard forever.
+// Failed submits are parked here and retried on the next game load / reconnect.
+const PENDING_KEY = 'arcade.pending.v1';
+
+/** Parked submits as `{ [game]: best }`. Exported for tests. */
+export function readPending(): Record<string, number> {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    const out: Record<string, number> = {};
+    // Ignore unknown slugs so a corrupt entry can't grow the queue unbounded.
+    for (const [game, best] of Object.entries(parsed)) if (LS_KEYS[game]) out[game] = n(best);
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function writePending(queue: Record<string, number>): void {
+  try {
+    if (Object.keys(queue).length) localStorage.setItem(PENDING_KEY, JSON.stringify(queue));
+    else localStorage.removeItem(PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Park a best for retry, keeping the highest per game. Exported for tests. */
+export function queuePending(game: string, best: number): void {
+  if (!LS_KEYS[game]) return;
+  const queue = readPending();
+  queue[game] = Math.max(n(queue[game]), Math.max(0, Math.floor(best) || 0));
+  writePending(queue);
+}
+
+/** Drop a game's parked submit once it lands. Exported for tests. */
+export function unqueuePending(game: string): void {
+  const queue = readPending();
+  if (!(game in queue)) return;
+  delete queue[game];
+  writePending(queue);
+}
+
 /**
  * Pure reconcile step (exported for tests): decide whether the cloud copy of a
  * game should replace the local one. Returns the blob to write to localStorage
@@ -115,6 +161,7 @@ export function reconcileRestore(slug: string, localRaw: string | null, row: Clo
  */
 export async function restoreGame(slug: string): Promise<boolean> {
   await init();
+  void flushPending(); // every game load is a chance to land an offline score
   if (!client || !user) return false;
   const key = LS_KEYS[slug];
   if (!key || !HEADLINE[slug]) return false;
@@ -226,38 +273,93 @@ export function cloudProfile(): CloudProfile | null {
  * daily streak). The server keeps the max best, so this never lowers a score.
  */
 export async function submitScore(game: string, best: number, opts?: { backup?: boolean }): Promise<void> {
-  await init();
-  if (!client || !user) return;
   if (!(best > 0) && !opts?.backup) return;
   const safeBest = Math.max(0, Math.floor(best) || 0);
+  await init();
+  if (!client || !user) {
+    // Signed in on this device but the SDK/session is unreachable (offline):
+    // park the score rather than dropping it. Guests aren't on the board at all.
+    if (hasStoredSession()) queuePending(game, safeBest);
+    return;
+  }
+  if (await push(game, safeBest)) unqueuePending(game);
+  else queuePending(game, safeBest);
+}
+
+/** One write attempt. Resolves `true` only when the score actually landed. */
+async function push(game: string, best: number): Promise<boolean> {
   const data = readBlob(game);
   try {
-    const rpc = await client.rpc('submit_score', { p_game: game, p_best: safeBest, p_data: data });
-    if (!rpc.error) return;
+    const rpc = await client.rpc('submit_score', { p_game: game, p_best: best, p_data: data });
+    if (!rpc?.error) return true;
   } catch {
-    /* fall through to direct upsert */
+    /* fall through to the direct upsert */
   }
   try {
-    await client.from('arcade_scores').upsert(
+    const res = await client.from('arcade_scores').upsert(
       {
         user_id: user.id,
         game,
-        best: safeBest,
+        best,
         data,
         display_name: profile?.name ?? googleName(user),
         avatar_url: profile?.avatar ?? null,
       },
       { onConflict: 'user_id,game' }
     );
+    return !res?.error;
+  } catch {
+    return false;
+  }
+}
+
+// supabase-js persists the session under `sb-<ref>-auth-token`. Reading it
+// directly tells us "signed in on this device" even when the SDK itself failed
+// to load, which is exactly the offline case we want to queue for.
+function hasStoredSession(): boolean {
+  if (user) return true;
+  try {
+    const ref = SUPABASE_URL.replace('https://', '').split('.')[0];
+    return localStorage.getItem(`sb-${ref}-auth-token`) != null;
+  } catch {
+    return false;
+  }
+}
+
+let flushing = false;
+
+/** Retry every parked submit. Safe to call often; runs one flush at a time. */
+export async function flushPending(): Promise<void> {
+  if (flushing) return;
+  const queue = readPending();
+  const games = Object.keys(queue);
+  if (!games.length) return;
+  flushing = true;
+  try {
+    await init();
+    if (!client || !user) return;
+    for (const game of games) if (await push(game, queue[game])) unqueuePending(game);
   } catch {
     /* ignore */
+  } finally {
+    flushing = false;
   }
+}
+
+try {
+  addEventListener('online', () => void flushPending());
+} catch {
+  /* ignore */
 }
 
 /** Where `score` would place on `game`'s all-time board, plus the field size. */
 export async function getRank(game: string, score: number): Promise<RankInfo | null> {
   await init();
-  if (!client || !(score > 0)) return null;
+  if (!(score > 0)) return null;
+  // Unreachable backend: submitScore has parked the score, so say so rather than
+  // showing nothing. Guests aren't on the board either way.
+  const parked: RankInfo | null = hasStoredSession() ? { rank: 0, total: 0, offline: true } : null;
+  if (!client) return parked;
   // Signed-out players aren't on the board — surface a sign-in nudge instead.
   if (!user) return { rank: 0, total: 0, signedOut: true };
   try {
@@ -272,6 +374,6 @@ export async function getRank(game: string, score: number): Promise<RankInfo | n
     // sure the field always includes them — rank can never exceed total.
     return { rank, total: Math.max(total.count || 0, rank) };
   } catch {
-    return null;
+    return parked;
   }
 }

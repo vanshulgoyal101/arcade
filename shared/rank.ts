@@ -31,6 +31,17 @@ export function rankBadgeHtml(info: RankInfo | null | undefined, label = 'Global
       `</button></div>`
     );
   }
+  // Offline but signed in: the score is saved locally and will be sent later, so
+  // reassure rather than showing an empty space where the rank normally sits.
+  if (info && info.offline) {
+    return (
+      `<div class="cloud-rank" style="text-align:center;margin:12px 0 0">` +
+      `<span style="${pill}">` +
+      `<span style="color:var(--accent,#fb7185);font-weight:800">Saved</span>` +
+      `<span style="color:var(--muted,#949cb0);font-weight:600">syncs when you’re back online</span>` +
+      `</span></div>`
+    );
+  }
   const t = rankText(info);
   if (!t) return '';
   return (

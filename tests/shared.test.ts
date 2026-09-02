@@ -43,6 +43,14 @@ describe('shared/rank · rankBadgeHtml', () => {
     expect(html).toContain('Global rank');
     expect(html).toContain('🥇 #1 of 50');
   });
+
+  it('reassures an offline player that the score is saved, with no fake rank', () => {
+    const html = rankBadgeHtml({ rank: 0, total: 0, offline: true });
+    expect(html).toContain('Saved');
+    expect(html).toContain('syncs when you’re back online');
+    expect(html).not.toContain('of 0');
+    expect(html).not.toContain('__arcadeSignIn'); // signing in needs a network
+  });
 });
 
 describe('shared/avatars · codedAvatarSvg', () => {
