@@ -509,18 +509,38 @@ A root-level **Vitest** project (`arcade/package.json`, `vitest.config.ts`) cove
 in two layers, both under a `jsdom` environment: a **logic layer** that imports each game's
 source TS modules directly (the model/helper layer), and a **DOM/interaction layer** that
 boots each game's real `main.ts` and drives it through the rendered UI — the same path a
-player's browser takes. Together they total **231 tests across 32 files**.
+player's browser takes. Together they total **282 tests across 35 files**. A third,
+**database layer** runs against the live project on demand (see below).
 
 ```bash
 cd arcade
 npm install        # installs vitest + jsdom (root only; separate from each game)
 npm test           # vitest run  — one-shot
 npm run test:watch # watch mode
+
+node scripts/db-test.mjs   # DB invariants against the live project (needs .env)
+node scripts/db-audit.mjs  # read-only integrity check of the live leaderboard
 ```
+
+### Database layer (live, on demand)
+
+Needs `SUPABASE_TOKEN` in the untracked `arcade/.env`; both talk to the Management API.
+
+- **`scripts/db-test.mjs`** asserts the server-side rules that protect the board: per-game
+  caps, and the `arcade_scores_guard` trigger (negative → 0, above-cap → clamped, `best`
+  monotonic across a lower upsert while `data` still updates, a >64 KB blob nulled), plus the
+  `best > 0` leaderboard filter. It writes only to a throwaway `__dbtest__` game slug and
+  deletes those rows in a `finally`, so real data is never touched.
+- **`scripts/db-audit.mjs`** changes nothing. For every stored row it recomputes the game's
+  headline metric from the saved blob and compares it to the ranked `best`, flagging any row
+  the board **under-reports** — i.e. a real score that never made it onto the leaderboard.
+  (`best` being *ahead* of the blob is normal: `best` is monotonic, so a device reset leaves a
+  stale blob that the client heals on next load.) This is how the truncated Flash cap was
+  found; worth re-running after any change to scoring, caps or the sync path.
 
 ### Logic layer
 
-Coverage lives in `arcade/tests/*.test.ts` — **153 tests** over each game's pure model plus
+Coverage lives in `arcade/tests/*.test.ts` — **211 tests** over each game's pure model plus
 the shared modules:
 
 | File | What it locks down |
@@ -544,6 +564,9 @@ the shared modules:
 | `shared-sfx.test.ts` | mute persistence (`loadMuted`/`saveMuted`, per-game keys), runtime mute flag |
 | `storage.test.ts` | `loadStore` migrations/sanitising: where `bestScore`→Hard, word `learnedIds` guard, wordle distribution pad/trim/coerce, flash/echo defaults |
 | `shared-format.test.ts` | `fmtScore` compact numbers (29000→29k, 999999→1M, exact-under-1000, NaN/Infinity) |
+| `cloud-sync.test.ts` | `reconcileRestore`: cloud wins only when strictly better, corrupt/missing local, headline heal per game, Where never inventing a Hard record, map games untouched |
+| `cloud-pending.test.ts` | offline submit queue (merge/max/drain, unknown-slug + corrupt data), and that a real submit parks itself when the backend is unreachable but a session exists |
+| `registry-parity.test.ts` | `auth.js` `GAMES` vs `cloud.ts` `LS_KEYS`/`HEADLINE` agree on key + best + heal for every game on disk; score caps sit at or above what a game can score |
 
 ### DOM / interaction layer
 
@@ -713,9 +736,10 @@ not just text, and degrades gracefully everywhere.
 
 ## 16. Cloud sync, sign-in & the leaderboard
 
-Sign-in, cross-device score sync and the public leaderboard are **hub-only** and entirely
-optional — every game works fully offline with `localStorage` alone. Because all games share
-one origin, signing in once on the hub covers every game.
+Sign-*in* is hub-only, but score sync is not: every game restores from and submits to the
+cloud on its own (see *Game side* below). All of it is optional — every game works fully
+offline with `localStorage` alone. Because all games share one origin, signing in once on the
+hub covers every game.
 
 ### Frontend — `assets/auth.js` (plain ES module, no build)
 
@@ -725,7 +749,15 @@ one origin, signing in once on the hub covers every game.
   the data; the secret `SUPABASE_TOKEN` lives only in the untracked `arcade/.env`.
 - **`GAMES` registry** — maps each slug to its `localStorage` key, display `unit`, and a
   `best(store)` reader. Every metric is “higher is better”. `localStorage` is the source of
-  truth on-device; the cloud is a mirror for restore + the leaderboard.
+  truth on-device; the cloud is a mirror for restore + the leaderboard. Single-metric games
+  also give an `applyBest(store, best)` that heals a stale blob up to the monotonic cloud
+  best; map-keyed games (echo/sprint/digit-span) omit it because there is no one field to
+  credit, and Where heals whichever *difficulty* is already leading so a restore can't invent
+  a record on a pool the player never played. A `hidden: true` entry (interval) syncs and is
+  cleared with the account but is left off the hub grid and leaderboard — registering every
+  game here is what stops one account inheriting another's local scores.
+  `tests/registry-parity.test.ts` fails if this registry and `shared/cloud.ts` ever disagree,
+  or if a game on disk is missing from either.
 - **Sync (`onUser`)** — on sign-in it `restoreScores()` then `uploadScores()`. `restoreScores`
   copies a cloud blob down when the cloud score is strictly better **or the device has no
   local data for that game yet** (fresh device / cleared cache), and overwrites everything on
@@ -748,6 +780,21 @@ one origin, signing in once on the hub covers every game.
 - **Cache-busting** — `auth.js` and `assets/style.css` are non-hashed, so bump their
   `?v=` in `index.html` on every edit (the service worker caches them cache-first).
 
+### Game side — `shared/cloud.ts` (bundled into all 11 games)
+
+- **`restoreGame(slug)` on load** — pulls the player's own blob and writes it to
+  `localStorage` when the cloud is better, or when this device has no usable local data
+  (missing *or* corrupt JSON). Resolves `true` so the game can reload its store and repaint.
+  The decision is the pure, unit-tested `reconcileRestore(slug, localRaw, row)`.
+- **`submitScore(slug, best)` at game-over**, plus `getRank()` for the rank badge.
+- **Offline retry queue** — a failed submit is parked in `arcade.pending.v1` (highest best per
+  game) and retried on the next game load and on the `online` event. Because an offline
+  browser can't load the SDK at all, “signed in on this device” is read straight from
+  supabase-js's own session key; guests never queue. Without this a score set offline only
+  ever reached the cloud on a later signed-in *hub* visit. A full hub `uploadScores()` clears
+  the queue. When the board is unreachable the rank badge says *“Saved · syncs when you're
+  back online”* rather than silently disappearing.
+
 ### Backend — `supabase/arcade_scores.sql` (source of truth, idempotent)
 
 Run this in the Supabase SQL editor after any change; it only touches `arcade_`-prefixed
@@ -767,8 +814,11 @@ objects. Summary:
 - **`arcade_profiles`** `(user_id, display_name, avatar, theme, updated_at)` with the same
   public-read / owner-write RLS.
 - **Server-side caps (defence in depth on every write path)** — `arcade_score_cap(game)`
-  (immutable) defines per-game maxima (echo/digit-span 200, flash/sprint 500, wordle 100k,
-  else 10M). `submit_score()` (SECURITY DEFINER) clamps and keeps `greatest(old, new)`. A
+  (immutable) defines per-game maxima (echo/digit-span 200, flash 900, sprint 500, wordle
+  100k, else 10M). Keep a cap **at or above what the game itself can score** — flash sat at
+  500 while `MAX_WPM` is 900, which silently truncated genuine runs off the board;
+  `tests/registry-parity.test.ts` now asserts this. `submit_score()` (SECURITY DEFINER)
+  clamps and keeps `greatest(old, new)`. A
   **`arcade_scores_guard`** BEFORE INSERT/UPDATE trigger clamps `best`, nulls a `data` blob
   over 64 KB, and bounds identity field lengths — so even a direct RLS-permitted upsert with
   a forged `best` is capped. On UPDATE it also keeps `best` **monotonic**
@@ -782,7 +832,6 @@ objects. Summary:
   player's streak reaches the cloud without waiting for the next hub visit.
 
 ### One-time dashboard setup
-
 1. Run `supabase/arcade_scores.sql` (and `supabase/analytics.sql`, §18) in the SQL editor.
 2. Create a Google OAuth Web client; set the redirect to
    `https://<project>.supabase.co/auth/v1/callback`; paste the client id/secret into
