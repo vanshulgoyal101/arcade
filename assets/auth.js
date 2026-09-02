@@ -9,17 +9,21 @@ const SUPABASE_KEY = 'sb_publishable_qFZySs9l19_7bISrvmLHIw_vwt-DUdx';
 
 // Each game's localStorage key + how to read its single headline best (all
 // "higher is better"). `data` (the whole blob) is what we sync for restore.
+// `applyBest(store, best)` heals a stale restored blob whose headline metric
+// regressed below the monotonic cloud `best` (e.g. after a device reset), so the
+// in-game best always matches the leaderboard. Omitted for the map-keyed games
+// (echo/sprint/digit-span) whose in-game best is per-config, not a single field.
 const GAMES = [
-  { slug: 'hue-hunt',   name: 'Hue Hunt',       emoji: '🎯', key: 'huehunt.v2',   unit: 'pts',    best: (s) => num(s.bestScore) },
-  { slug: 'where',      name: 'Where',          emoji: '🗺️', key: 'where.v1',     unit: 'pts',    best: (s) => Math.max(num(s.bestEasy), num(s.bestHard)) },
+  { slug: 'hue-hunt',   name: 'Hue Hunt',       emoji: '🎯', key: 'huehunt.v2',   unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); } },
+  { slug: 'where',      name: 'Where',          emoji: '🗺️', key: 'where.v1',     unit: 'pts',    best: (s) => Math.max(num(s.bestEasy), num(s.bestHard)), applyBest: (s, b) => { s.bestHard = Math.max(num(s.bestHard), b); } },
   { slug: 'echo',       name: 'Echo',           emoji: '🔊', key: 'echo.v2',      unit: 'lvl',    best: (s) => maxVal(s.best) },
-  { slug: 'chromatic',  name: 'Chromatic',      emoji: '🌈', key: 'chromatic.v2', unit: 'pts',    best: (s) => num(s.endlessBest) },
-  { slug: 'flash',      name: 'Flash',          emoji: '⚡', key: 'flash.v1',     unit: 'wpm',    best: (s) => num(s.bestWpm) },
-  { slug: 'flashmath',  name: 'Flashmath',      emoji: '🧮', key: 'flashmath.v1', unit: 'pts',    best: (s) => num(s.bestScore) },
+  { slug: 'chromatic',  name: 'Chromatic',      emoji: '🌈', key: 'chromatic.v2', unit: 'pts',    best: (s) => num(s.endlessBest), applyBest: (s, b) => { s.endlessBest = Math.max(num(s.endlessBest), b); } },
+  { slug: 'flash',      name: 'Flash',          emoji: '⚡', key: 'flash.v1',     unit: 'wpm',    best: (s) => num(s.bestWpm),     applyBest: (s, b) => { s.bestWpm = Math.max(num(s.bestWpm), b); } },
+  { slug: 'flashmath',  name: 'Flashmath',      emoji: '🧮', key: 'flashmath.v1', unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); } },
   { slug: 'sprint',     name: 'Sprint',         emoji: '⌨️', key: 'sprint.v1',    unit: 'wpm',    best: (s) => maxVal(s.best) },
   { slug: 'digit-span', name: 'Digit Span',     emoji: '🔢', key: 'digitspan.v1', unit: 'span',   best: (s) => maxVal(s.best) },
-  { slug: 'word',       name: 'Word of the Day', emoji: '📖', key: 'word.v1',     unit: 'pts',    best: (s) => num(s.practiceBest), extra: (s) => num(s.daily?.maxStreak) > 0 || num(s.daily?.streak) > 0 || (Array.isArray(s.learnedIds) && s.learnedIds.length > 0) },
-  { slug: 'wordle',     name: 'Wordle',         emoji: '🟩', key: 'wordle.v1',    unit: 'streak', best: (s) => num(s.maxStreak) },
+  { slug: 'word',       name: 'Word of the Day', emoji: '📖', key: 'word.v1',     unit: 'pts',    best: (s) => num(s.practiceBest), applyBest: (s, b) => { s.practiceBest = Math.max(num(s.practiceBest), b); }, extra: (s) => num(s.daily?.maxStreak) > 0 || num(s.daily?.streak) > 0 || (Array.isArray(s.learnedIds) && s.learnedIds.length > 0) },
+  { slug: 'wordle',     name: 'Wordle',         emoji: '🟩', key: 'wordle.v1',    unit: 'streak', best: (s) => num(s.maxStreak),   applyBest: (s, b) => { s.maxStreak = Math.max(num(s.maxStreak), b); } },
 ];
 
 function num(v) { return typeof v === 'number' && isFinite(v) ? v : 0; }
@@ -216,6 +220,9 @@ async function restoreScores(overwrite = false) {
     // Overwrite on an account switch; restore when this device has no local data
     // for the game yet (fresh device); otherwise cloud wins only when better.
     if (overwrite || !readLocal(g.key) || num(row.best) > localBest(g)) {
+      // Heal a stale blob whose headline dropped below the monotonic cloud best
+      // (e.g. after a device reset) so the in-game best matches the leaderboard.
+      if (g.applyBest) { try { g.applyBest(row.data, num(row.best)); } catch { /* ignore */ } }
       try { localStorage.setItem(g.key, JSON.stringify(row.data)); } catch { /* ignore */ }
     }
   }
