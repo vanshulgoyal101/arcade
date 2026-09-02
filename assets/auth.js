@@ -356,10 +356,11 @@ async function signIn() {
 
 async function signOut() {
   if (!confirm('Sign out of Tiny Arcade on this device?')) return;
-  // Clear this account's scores from the browser so the next person (or a
-  // different account) doesn't see them; they stay safe in the cloud.
-  clearLocalScores();
-  try { localStorage.removeItem(OWNER_KEY); } catch { /* ignore */ }
+  // Keep local scores on the device — wiping them here permanently loses any
+  // progress that isn't mirrored in the cloud (e.g. the Word daily streak, whose
+  // headline `best` is practiceBest and so isn't uploaded for daily-only players).
+  // OWNER_KEY is kept so that if a *different* account signs in next, onUser()
+  // still detects the switch and clears/replaces the scores then.
   await supabase.auth.signOut();
 }
 
