@@ -202,6 +202,12 @@ begin
     new.best := 0;
   end if;
   new.best := least(new.best, public.arcade_score_cap(new.game));
+  -- `best` is a personal best: never let any write path lower it. A direct
+  -- upsert replaces the whole row, so a stale or 0 `best` (e.g. a cross-device
+  -- backup row synced before the higher score) must not overwrite a better one.
+  if tg_op = 'UPDATE' and old.best is not null then
+    new.best := greatest(new.best, least(old.best, public.arcade_score_cap(new.game)));
+  end if;
   -- `data` is just the game's localStorage blob; cap it to blunt storage abuse.
   if new.data is not null and octet_length(new.data::text) > 65536 then
     new.data := null;
