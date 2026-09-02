@@ -75,6 +75,38 @@ const HEADLINE: Record<string, { best: (s: any) => number; apply?: (s: any, b: n
   wordle: { best: (s) => n(s.maxStreak), apply: (s, b) => { s.maxStreak = Math.max(n(s.maxStreak), b); } },
 };
 
+export interface CloudRow {
+  best?: number;
+  data?: unknown;
+}
+
+/**
+ * Pure reconcile step (exported for tests): decide whether the cloud copy of a
+ * game should replace the local one. Returns the blob to write to localStorage
+ * when the cloud wins — its best is strictly greater, or this device has no
+ * usable local data (missing OR corrupt JSON) — with the headline healed up to
+ * the cloud best. Returns null to keep local. Never throws.
+ */
+export function reconcileRestore(slug: string, localRaw: string | null, row: CloudRow | null): unknown | null {
+  const meta = HEADLINE[slug];
+  if (!meta || !row || row.data == null) return null;
+  let local: unknown = null;
+  if (localRaw) {
+    try {
+      local = JSON.parse(localRaw);
+    } catch {
+      local = null; // corrupt local — treat as empty so the cloud copy wins
+    }
+  }
+  const localBest = local ? meta.best(local) : 0;
+  if (!local || n(row.best) > localBest) {
+    const blob = row.data;
+    if (meta.apply) meta.apply(blob, n(row.best));
+    return blob;
+  }
+  return null;
+}
+
 /**
  * Fetch the signed-in player's saved blob for one game and write it to
  * localStorage when the cloud is better (or this device has no local data yet),
@@ -85,17 +117,13 @@ export async function restoreGame(slug: string): Promise<boolean> {
   await init();
   if (!client || !user) return false;
   const key = LS_KEYS[slug];
-  const meta = HEADLINE[slug];
-  if (!key || !meta) return false;
+  if (!key || !HEADLINE[slug]) return false;
   try {
     const { data } = await client.rpc('restore_my_scores');
-    const row = (data || []).find((r: any) => r.game === slug);
-    if (!row || !row.data) return false;
-    const raw = localStorage.getItem(key);
-    const localBest = raw ? meta.best(JSON.parse(raw)) : 0;
-    if (!raw || (row.best ?? 0) > localBest) {
-      if (meta.apply) meta.apply(row.data, row.best ?? 0);
-      localStorage.setItem(key, JSON.stringify(row.data));
+    const row: CloudRow | null = (data || []).find((r: any) => r.game === slug) || null;
+    const blob = reconcileRestore(slug, localStorage.getItem(key), row);
+    if (blob != null) {
+      localStorage.setItem(key, JSON.stringify(blob));
       return true;
     }
   } catch {
