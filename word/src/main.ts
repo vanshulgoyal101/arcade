@@ -218,6 +218,9 @@ function completeDaily(correct: boolean, word: string): void {
   store.daily.lastKey = next.lastKey;
   if (!store.learnedIds.includes(word)) store.learnedIds.push(word);
   saveStore(store);
+  // Back up the streak to the cloud now, so it survives even for players who
+  // only do the daily and never return to the hub (where the main sync runs).
+  void submitScore('word', store.practiceBest, { backup: true });
 }
 
 async function shareDaily(): Promise<void> {

@@ -138,14 +138,20 @@ export function cloudProfile(): CloudProfile | null {
 /**
  * Persist a personal best to the cloud. Prefers the validated `submit_score`
  * RPC (server-side clamping) and falls back to a direct upsert if the RPC
- * isn't deployed yet. No-op when signed out or the score isn't positive.
+ * isn't deployed yet. No-op when signed out.
+ *
+ * Pass `{ backup: true }` to sync the game's blob even when `best` is 0 — used
+ * to back up progress that isn't captured by the headline best (e.g. a Word
+ * daily streak). The server keeps the max best, so this never lowers a score.
  */
-export async function submitScore(game: string, best: number): Promise<void> {
+export async function submitScore(game: string, best: number, opts?: { backup?: boolean }): Promise<void> {
   await init();
-  if (!client || !user || !(best > 0)) return;
+  if (!client || !user) return;
+  if (!(best > 0) && !opts?.backup) return;
+  const safeBest = Math.max(0, Math.floor(best) || 0);
   const data = readBlob(game);
   try {
-    const rpc = await client.rpc('submit_score', { p_game: game, p_best: Math.floor(best), p_data: data });
+    const rpc = await client.rpc('submit_score', { p_game: game, p_best: safeBest, p_data: data });
     if (!rpc.error) return;
   } catch {
     /* fall through to direct upsert */
@@ -155,7 +161,7 @@ export async function submitScore(game: string, best: number): Promise<void> {
       {
         user_id: user.id,
         game,
-        best: Math.floor(best),
+        best: safeBest,
         data,
         display_name: profile?.name ?? googleName(user),
         avatar_url: profile?.avatar ?? null,
