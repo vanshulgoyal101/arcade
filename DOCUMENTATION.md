@@ -517,7 +517,7 @@ npm test           # vitest run  — one-shot
 npm run test:watch # watch mode
 ```
 
-Coverage lives in `arcade/tests/` — **152 tests across 19 files**:
+Coverage lives in `arcade/tests/` — **153 tests across 19 files**:
 
 | File | What it locks down |
 |------|--------------------|
@@ -526,7 +526,7 @@ Coverage lives in `arcade/tests/` — **152 tests across 19 files**:
 | `hue-hunt-game.test.ts` | `gridSize`/`colorDelta` curves, odd-tile in range, combo/multiplier, best-score recording |
 | `echo-game.test.ts` | `press()` result states, strict vs forgiving lives, speed ramp, per-config best |
 | `flashmath-game.test.ts` | operand ranges grow with level, clean division, combo/multiplier, no trivial products late |
-| `sprint-game.test.ts` | char-accurate scoring, weak-letter tracking (sorted), per-duration best |
+| `sprint-game.test.ts` | char-accurate scoring, weak-letter tracking (sorted) + reset on a new run, per-duration best |
 | `digit-span-game.test.ts` | forward/reverse recall, span growth, best per mode |
 | `interval-game.test.ts` | scoring/streak, lives-to-zero ends the run, strict new-best rule |
 | `where-game.test.ts` | no-repeat deck, easy→hard spill, per-difficulty best, `flagEmoji` |
@@ -695,14 +695,23 @@ one origin, signing in once on the hub covers every game.
 - **`GAMES` registry** — maps each slug to its `localStorage` key, display `unit`, and a
   `best(store)` reader. Every metric is “higher is better”. `localStorage` is the source of
   truth on-device; the cloud is a mirror for restore + the leaderboard.
-- **Sync (`onUser`)** — on sign-in it `restoreScores()` (cloud wins only when strictly
-  better, or fully overwrites on an account switch) then `uploadScores()`. An
-  `arcade.sync.owner` key records which account owns the local scores, so a different
-  account signing in on the same browser clears local first instead of inheriting them.
+- **Sync (`onUser`)** — on sign-in it `restoreScores()` then `uploadScores()`. `restoreScores`
+  copies a cloud blob down when the cloud score is strictly better **or the device has no
+  local data for that game yet** (fresh device / cleared cache), and overwrites everything on
+  an account switch. `uploadScores` backs up every game that has real progress — not only when
+  the headline `best > 0`, but also via an optional per-game `extra(store)` predicate (Word
+  uses it for a daily streak / learned words), so nothing that lives only in the blob is lost.
+- **Sign-out keeps local data** — signing out only ends the Supabase session; it does **not**
+  wipe `localStorage` (that would destroy progress not yet mirrored to the cloud). An
+  `arcade.sync.owner` key records which account owns the local scores, so if a *different*
+  account signs in on the same browser, `onUser` detects the switch and clears/replaces the
+  scores then — that (not sign-out) is what isolates a shared browser.
 - **Leaderboard** — one `supabase.rpc('arcade_leaderboard', { p_games, p_limit })` call
   returns everything (per-game top N + the caller's own best/rank), replacing ~20 REST
   round trips. All user text is escaped (`esc`), avatar URLs are gated to `http(s)`, and
-  coded SVG avatars come from a hard-coded whitelist — no XSS sink.
+  coded SVG avatars come from a hard-coded whitelist — no XSS sink. Only rows with
+  `best > 0` are ranked, so the `best = 0` cross-device backup rows never show or inflate a
+  field size (`getRank` in `shared/cloud.ts` filters its total count the same way).
 - **Profiles** — an editable display name + avatar (emoji, a coded `a:<id>` SVG, or the
   Google photo) + synced colour theme, via a profile modal.
 - **Cache-busting** — `auth.js` and `assets/style.css` are non-hashed, so bump their
@@ -723,7 +732,7 @@ objects. Summary:
   **`restore_my_scores()`** RPC.
 - **`arcade_leaderboard(p_games, p_limit)`** — STABLE SECURITY DEFINER; returns jsonb keyed
   by slug: `{ top: […], my_best, my_rank }` (rank via `row_number()`). Definer-level, but
-  only ever returns safe columns.
+  only ever returns safe columns, and only ranks rows with `best > 0`.
 - **`arcade_profiles`** `(user_id, display_name, avatar, theme, updated_at)` with the same
   public-read / owner-write RLS.
 - **Server-side caps (defence in depth on every write path)** — `arcade_score_cap(game)`
@@ -731,7 +740,15 @@ objects. Summary:
   else 10M). `submit_score()` (SECURITY DEFINER) clamps and keeps `greatest(old, new)`. A
   **`arcade_scores_guard`** BEFORE INSERT/UPDATE trigger clamps `best`, nulls a `data` blob
   over 64 KB, and bounds identity field lengths — so even a direct RLS-permitted upsert with
-  a forged `best` is capped. `arcade_profiles_guard` mirrors this for profiles.
+  a forged `best` is capped. On UPDATE it also keeps `best` **monotonic**
+  (`greatest(new.best, old.best)`), so no write path can ever lower a personal best — a
+  cross-device backup row synced at `best = 0` cannot clobber a higher cloud score.
+  `arcade_profiles_guard` mirrors the identity-bounding for profiles.
+- **Blob backup on the game side** — most games only call `submitScore` at game-over with a
+  positive best. Word also calls `submitScore('word', practiceBest, { backup: true })` when
+  the daily is completed: the `backup` flag lets `submitScore` sync the blob even at `best = 0`
+  (routed through `submit_score`, which keeps the max best and updates `data`), so a daily-only
+  player's streak reaches the cloud without waiting for the next hub visit.
 
 ### One-time dashboard setup
 
