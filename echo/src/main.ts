@@ -5,6 +5,7 @@ import { saveStore } from './storage';
 import * as sfx from './audio';
 import { echoShareText, echoShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
+import { submitScore } from '../../shared/cloud';
 
 const game = new EchoGame();
 sfx.setMuted(game.store.muted);
@@ -203,6 +204,7 @@ function gameOver(): void {
   sfx.gameOver();
   const reached = game.sequence.length - 1;
   const newBest = game.recordBest();
+  void submitScore('echo', Math.max(0, ...Object.values(game.store.best)));
   renderToggles();
   renderHud();
 

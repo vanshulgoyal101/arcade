@@ -5,6 +5,7 @@ import { saveStore } from './storage';
 import * as sfx from './audio';
 import { hueShareText, hueShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
+import { submitScore } from '../../shared/cloud';
 
 const game = new HueGame();
 sfx.setMuted(game.store.muted);
@@ -166,6 +167,7 @@ function loop(ts: number): void {
 function endGame(): void {
   cancelAnimationFrame(rafId);
   const newBest = game.end();
+  void submitScore('hue-hunt', game.store.bestScore);
   sfx.gameOver();
   const reached = game.level - 1;
   modal.innerHTML = `

@@ -5,6 +5,7 @@ import { saveStore } from './storage';
 import * as sfx from './audio';
 import { digitShareText, digitShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
+import { submitScore } from '../../shared/cloud';
 
 const game = new DigitGame();
 sfx.setMuted(game.store.muted);
@@ -157,6 +158,7 @@ function gameOver(): void {
   setKeypad(false);
   const reached = game.sequence.length - 1;
   const newBest = game.recordBest();
+  void submitScore('digit-span', Math.max(0, ...Object.values(game.store.best)));
   renderHud();
   modeToggle.classList.remove('locked');
   modal.innerHTML = `

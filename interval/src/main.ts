@@ -5,6 +5,7 @@ import { saveStore } from './storage';
 import * as sfx from './audio';
 import { intervalShareText, intervalShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
+import { submitScore } from '../../shared/cloud';
 
 const game = new IntervalGame();
 sfx.setMuted(game.store.muted);
@@ -123,6 +124,7 @@ function onAnswer(semis: number, btn: HTMLButtonElement): void {
 function endGame(newBest: boolean): void {
   sfx.gameOver();
   const best = game.store.bestScore;
+  void submitScore('interval', best);
   modal.innerHTML = `
     <h2>Out of lives</h2>
     <p class="sub">Score</p>
