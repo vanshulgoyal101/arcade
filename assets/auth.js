@@ -15,7 +15,7 @@ const SUPABASE_KEY = 'sb_publishable_qFZySs9l19_7bISrvmLHIw_vwt-DUdx';
 // (echo/sprint/digit-span) whose in-game best is per-config, not a single field.
 const GAMES = [
   { slug: 'hue-hunt',   name: 'Hue Hunt',       emoji: '🎯', key: 'huehunt.v2',   unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); } },
-  { slug: 'where',      name: 'Where',          emoji: '🗺️', key: 'where.v1',     unit: 'pts',    best: (s) => Math.max(num(s.bestEasy), num(s.bestHard)), applyBest: (s, b) => { s.bestHard = Math.max(num(s.bestHard), b); } },
+  { slug: 'where',      name: 'Where',          emoji: '🗺️', key: 'where.v1',     unit: 'pts',    best: (s) => Math.max(num(s.bestEasy), num(s.bestHard)), applyBest: (s, b) => { if (num(s.bestEasy) >= num(s.bestHard)) s.bestEasy = Math.max(num(s.bestEasy), b); else s.bestHard = Math.max(num(s.bestHard), b); } },
   { slug: 'echo',       name: 'Echo',           emoji: '🔊', key: 'echo.v2',      unit: 'lvl',    best: (s) => maxVal(s.best) },
   { slug: 'chromatic',  name: 'Chromatic',      emoji: '🌈', key: 'chromatic.v2', unit: 'pts',    best: (s) => num(s.endlessBest), applyBest: (s, b) => { s.endlessBest = Math.max(num(s.endlessBest), b); } },
   { slug: 'flash',      name: 'Flash',          emoji: '⚡', key: 'flash.v1',     unit: 'wpm',    best: (s) => num(s.bestWpm),     applyBest: (s, b) => { s.bestWpm = Math.max(num(s.bestWpm), b); } },

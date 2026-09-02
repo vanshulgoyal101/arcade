@@ -42,9 +42,21 @@ describe('cloud/reconcileRestore', () => {
     expect(reconcileRestore('not-a-game', null, row(10, { x: 1 }))).toBeNull();
   });
 
-  it('heals Where by bumping bestHard up to the cloud best', () => {
+  it('heals Where on the difficulty that is already leading', () => {
     const blob = reconcileRestore('where', raw({ bestEasy: 50, bestHard: 30 }), row(120, { bestEasy: 50, bestHard: 30 }));
-    expect(blob).toMatchObject({ bestEasy: 50, bestHard: 120 });
+    expect(blob).toMatchObject({ bestEasy: 120, bestHard: 30 });
+  });
+
+  it('never invents a Hard record for an Easy-only Where player', () => {
+    // The cloud best is max(easy, hard); crediting Hard with it would show an
+    // unbeatable record on a difficulty they never played.
+    const blob = reconcileRestore('where', null, row(200, { bestEasy: 200, bestHard: 0 }));
+    expect(blob).toMatchObject({ bestEasy: 200, bestHard: 0 });
+  });
+
+  it('heals Where on Hard when Hard is the leading difficulty', () => {
+    const blob = reconcileRestore('where', raw({ bestEasy: 10, bestHard: 80 }), row(200, { bestEasy: 10, bestHard: 80 }));
+    expect(blob).toMatchObject({ bestEasy: 10, bestHard: 200 });
   });
 
   it('does not downgrade Where when its local max already beats the cloud', () => {

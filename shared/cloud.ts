@@ -64,7 +64,9 @@ const maxVal = (o: unknown): number =>
 // blob when the cloud best wins but don't heal a single field.
 const HEADLINE: Record<string, { best: (s: any) => number; apply?: (s: any, b: number) => void }> = {
   'hue-hunt': { best: (s) => n(s.bestScore), apply: (s, b) => { s.bestScore = Math.max(n(s.bestScore), b); } },
-  where: { best: (s) => Math.max(n(s.bestEasy), n(s.bestHard)), apply: (s, b) => { s.bestHard = Math.max(n(s.bestHard), b); } },
+  // The cloud best is the max of the two difficulties, so heal whichever one is
+  // already leading — crediting the other would invent a score never played.
+  where: { best: (s) => Math.max(n(s.bestEasy), n(s.bestHard)), apply: (s, b) => { if (n(s.bestEasy) >= n(s.bestHard)) s.bestEasy = Math.max(n(s.bestEasy), b); else s.bestHard = Math.max(n(s.bestHard), b); } },
   echo: { best: (s) => maxVal(s.best) },
   chromatic: { best: (s) => n(s.endlessBest), apply: (s, b) => { s.endlessBest = Math.max(n(s.endlessBest), b); } },
   flash: { best: (s) => n(s.bestWpm), apply: (s, b) => { s.bestWpm = Math.max(n(s.bestWpm), b); } },
