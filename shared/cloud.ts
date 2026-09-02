@@ -36,6 +36,7 @@ const LS_KEYS: Record<string, string> = {
   flashmath: 'flashmath.v1',
   sprint: 'sprint.v1',
   'digit-span': 'digitspan.v1',
+  interval: 'interval.v1',
   word: 'word.v1',
   wordle: 'wordle.v1',
 };
@@ -49,6 +50,58 @@ function readBlob(game: string): unknown {
   } catch {
     return null;
   }
+}
+
+const n = (v: unknown): number => (typeof v === 'number' && isFinite(v) ? v : 0);
+const maxVal = (o: unknown): number =>
+  o && typeof o === 'object' ? Math.max(0, ...Object.values(o as Record<string, unknown>).map(n)) : 0;
+
+// How each game's headline best is read from its store, and (single-field games
+// only) how to heal a restored blob whose headline dropped below the monotonic
+// cloud best. Mirrors the hub's GAMES registry; kept here so a game can restore
+// its own progress on load. Map-keyed games (echo/sprint/digit-span) restore the
+// blob when the cloud best wins but don't heal a single field.
+const HEADLINE: Record<string, { best: (s: any) => number; apply?: (s: any, b: number) => void }> = {
+  'hue-hunt': { best: (s) => n(s.bestScore), apply: (s, b) => { s.bestScore = Math.max(n(s.bestScore), b); } },
+  where: { best: (s) => Math.max(n(s.bestEasy), n(s.bestHard)), apply: (s, b) => { s.bestHard = Math.max(n(s.bestHard), b); } },
+  echo: { best: (s) => maxVal(s.best) },
+  chromatic: { best: (s) => n(s.endlessBest), apply: (s, b) => { s.endlessBest = Math.max(n(s.endlessBest), b); } },
+  flash: { best: (s) => n(s.bestWpm), apply: (s, b) => { s.bestWpm = Math.max(n(s.bestWpm), b); } },
+  flashmath: { best: (s) => n(s.bestScore), apply: (s, b) => { s.bestScore = Math.max(n(s.bestScore), b); } },
+  sprint: { best: (s) => maxVal(s.best) },
+  'digit-span': { best: (s) => maxVal(s.best) },
+  interval: { best: (s) => n(s.bestScore), apply: (s, b) => { s.bestScore = Math.max(n(s.bestScore), b); } },
+  word: { best: (s) => n(s.practiceBest), apply: (s, b) => { s.practiceBest = Math.max(n(s.practiceBest), b); } },
+  wordle: { best: (s) => n(s.maxStreak), apply: (s, b) => { s.maxStreak = Math.max(n(s.maxStreak), b); } },
+};
+
+/**
+ * Fetch the signed-in player's saved blob for one game and write it to
+ * localStorage when the cloud is better (or this device has no local data yet),
+ * healing a stale headline up to the cloud best. Resolves `true` when local was
+ * updated so the caller can reload its store and repaint. No-op when signed out.
+ */
+export async function restoreGame(slug: string): Promise<boolean> {
+  await init();
+  if (!client || !user) return false;
+  const key = LS_KEYS[slug];
+  const meta = HEADLINE[slug];
+  if (!key || !meta) return false;
+  try {
+    const { data } = await client.rpc('restore_my_scores');
+    const row = (data || []).find((r: any) => r.game === slug);
+    if (!row || !row.data) return false;
+    const raw = localStorage.getItem(key);
+    const localBest = raw ? meta.best(JSON.parse(raw)) : 0;
+    if (!raw || (row.best ?? 0) > localBest) {
+      if (meta.apply) meta.apply(row.data, row.best ?? 0);
+      localStorage.setItem(key, JSON.stringify(row.data));
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
 }
 
 import { codedAvatarSvg } from './avatars';

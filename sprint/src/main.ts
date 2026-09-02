@@ -4,7 +4,8 @@ import * as sfx from '../../shared/sfx';
 import { SprintGame, DURATIONS, type Duration } from './game';
 import { sprintShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore, getRank } from '../../shared/cloud';
+import { restoreGame, submitScore, getRank } from '../../shared/cloud';
+import { loadStore } from './storage';
 import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new SprintGame();
@@ -271,3 +272,5 @@ restartBtn.addEventListener('click', () => {
 renderMute();
 renderBest();
 resetRun();
+// On load, pull this player's saved best down from the cloud (signed-in only).
+void restoreGame('sprint').then((updated) => { if (updated) { Object.assign(game.store, loadStore()); renderBest(); } });

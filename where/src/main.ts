@@ -6,7 +6,8 @@ import { WhereGame, type Mode } from './game';
 import { flagEmoji, type Difficulty } from './content';
 import { whereShareText, whereShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore, getRank } from '../../shared/cloud';
+import { restoreGame, submitScore, getRank } from '../../shared/cloud';
+import { loadStore } from './storage';
 import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new WhereGame();
@@ -229,3 +230,5 @@ muteBtn.addEventListener('click', () => {
 // ---- boot ----
 renderMute();
 startGame();
+// On load, pull this player's saved best down from the cloud (signed-in only).
+void restoreGame('where').then((updated) => { if (updated) { Object.assign(game.store, loadStore()); renderHud(); } });

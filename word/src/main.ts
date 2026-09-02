@@ -15,7 +15,7 @@ import type { Word } from './content';
 import { loadStore, saveStore } from './storage';
 import { dailyShareCard, practiceShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore, getRank } from '../../shared/cloud';
+import { restoreGame, submitScore, getRank } from '../../shared/cloud';
 import { rankBadgeHtml } from '../../shared/rank';
 
 const store = loadStore();
@@ -346,3 +346,5 @@ function practiceOver(newBest: boolean): void {
 // ---- boot ----
 renderMute();
 renderToday();
+// On load, pull this player's saved best down from the cloud (signed-in only).
+void restoreGame('word').then((updated) => { if (updated) { Object.assign(store, loadStore()); renderHud(); } });

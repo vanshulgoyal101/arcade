@@ -1,11 +1,11 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
 import { MathGame, ROUND_TIME, type Op } from './game';
-import { saveStore } from './storage';
+import { loadStore, saveStore } from './storage';
 import * as sfx from './audio';
 import { mathShareText, mathShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore } from '../../shared/cloud';
+import { restoreGame, submitScore } from '../../shared/cloud';
 
 const game = new MathGame();
 sfx.setMuted(game.store.muted);
@@ -226,3 +226,5 @@ muteBtn.addEventListener('click', () => {
 
 renderMute();
 start();
+// On load, pull this player's saved best down from the cloud (signed-in only).
+void restoreGame('flashmath').then((updated) => { if (updated) { Object.assign(game.store, loadStore()); renderHud(); } });

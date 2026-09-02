@@ -2,10 +2,10 @@ import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
 import * as sfx from '../../shared/sfx';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore, getRank } from '../../shared/cloud';
+import { restoreGame, submitScore, getRank } from '../../shared/cloud';
 import { rankBadgeHtml } from '../../shared/rank';
 import { WordleGame, WORD_LENGTH, MAX_GUESSES, type Tile } from './game';
-import { winPercent } from './storage';
+import { loadStore, winPercent } from './storage';
 import { wordleShareCard, shareResult, shareToast } from './share';
 
 const game = new WordleGame();
@@ -339,3 +339,5 @@ restartBtn.addEventListener('click', () => {
 // ---- boot ----
 renderMute();
 renderCurrentRow();
+// On load, pull this player's saved stats down from the cloud (signed-in only).
+void restoreGame('wordle').then((updated) => { if (updated) { Object.assign(game.store, loadStore()); } });

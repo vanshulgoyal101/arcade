@@ -6,7 +6,8 @@ import { RsvpPlayer, type Token } from './rsvp';
 import type { Passage } from './content';
 import { flashShareText, flashShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore, getRank } from '../../shared/cloud';
+import { restoreGame, submitScore, getRank } from '../../shared/cloud';
+import { loadStore } from './storage';
 import { rankBadgeHtml } from '../../shared/rank';
 
 const game = new FlashGame();
@@ -325,3 +326,5 @@ renderPicker();
 renderHud();
 renderLifetime();
 showPanel('ready');
+// On load, pull this player's saved best down from the cloud (signed-in only).
+void restoreGame('flash').then((updated) => { if (updated) { Object.assign(game.store, loadStore()); renderHud(); renderLifetime(); } });

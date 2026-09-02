@@ -5,9 +5,9 @@ import { toCss, contrastText, toHex, type RGB } from './color';
 import { Game, type Difficulty } from './game';
 import { endlessShareText, chromaticShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore, getRank } from '../../shared/cloud';
+import { restoreGame, submitScore, getRank } from '../../shared/cloud';
 import { rankBadgeHtml } from '../../shared/rank';
-import { saveStore } from './storage';
+import { loadStore, saveStore } from './storage';
 import * as sfx from './audio';
 
 const game = new Game();
@@ -286,3 +286,5 @@ muteBtn.addEventListener('click', () => {
 // ---- Boot ----
 renderMute();
 renderAll();
+// On load, pull this player's saved best down from the cloud (signed-in only).
+void restoreGame('chromatic').then((updated) => { if (updated) { Object.assign(game.store, loadStore()); renderAll(); } });

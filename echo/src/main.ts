@@ -1,11 +1,11 @@
 import './styles.css';
 import { makeDismissable } from '../../shared/overlay';
 import { EchoGame } from './game';
-import { saveStore } from './storage';
+import { loadStore, saveStore } from './storage';
 import * as sfx from './audio';
 import { echoShareText, echoShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { submitScore } from '../../shared/cloud';
+import { restoreGame, submitScore } from '../../shared/cloud';
 
 const game = new EchoGame();
 sfx.setMuted(game.store.muted);
@@ -286,3 +286,5 @@ renderMute();
 renderToggles();
 renderHud();
 buildPads();
+// On load, pull this player's saved best down from the cloud (signed-in only).
+void restoreGame('echo').then((updated) => { if (updated) { Object.assign(game.store, loadStore()); renderHud(); } });

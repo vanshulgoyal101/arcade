@@ -9,6 +9,7 @@ vi.mock('../shared/cloud', () => ({
   cloudAvatarImage: () => null,
   isSignedIn: () => false,
   signIn: vi.fn(),
+  restoreGame: vi.fn().mockResolvedValue(false),
 }));
 
 const load = () => mountGame(() => import('../where/src/main.ts'));
