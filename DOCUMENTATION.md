@@ -509,7 +509,7 @@ A root-level **Vitest** project (`arcade/package.json`, `vitest.config.ts`) cove
 in two layers, both under a `jsdom` environment: a **logic layer** that imports each game's
 source TS modules directly (the model/helper layer), and a **DOM/interaction layer** that
 boots each game's real `main.ts` and drives it through the rendered UI — the same path a
-player's browser takes. Together they total **195 tests across 30 files**.
+player's browser takes. Together they total **231 tests across 32 files**.
 
 ```bash
 cd arcade
@@ -547,12 +547,15 @@ the shared modules:
 
 ### DOM / interaction layer
 
-Each `tests/<game>-dom.test.ts` (**42 tests**, one file per game) mounts the game's real
-`main.ts` into a `#app` element and interacts through the DOM — clicking tiles/options,
-pressing keys, typing words — asserting on what the player sees. This catches the class of
-regressions the logic tests can't: input handlers, guards and wiring that live in `main.ts`
-(e.g. the hue-hunt stale-board guard, the Word daily-streak flow, difficulty locks). It runs
-headless because the games self-render (`app.innerHTML = …`) and need no real browser.
+Each `tests/<game>-dom.test.ts` (one file per game) mounts the game's real `main.ts` into a
+`#app` element and interacts through the DOM — clicking tiles/options, pressing keys, typing
+words — asserting on what the player sees. Two more files harden it further:
+`tests/aggressive-dom.test.ts` (restart cycles, input spam/boundaries, and corrupt/wrong-typed
+localStorage that must still boot) and `tests/shared-overlay.test.ts` (the shared
+`makeDismissable` result-overlay used by every game). Together the DOM layer is **78 tests**.
+This catches the class of regressions the logic tests can't: input handlers, guards and wiring
+that live in `main.ts` (e.g. the hue-hunt stale-board guard, the Word daily-streak flow,
+difficulty locks). It runs headless because the games self-render (`app.innerHTML = …`).
 
 The shared harness `tests/helpers/dom.ts` makes this clean and deterministic:
 

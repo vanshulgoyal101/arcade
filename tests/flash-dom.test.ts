@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { mountGame, click, gameEnv } from './helpers/dom';
+import { mountGame, click, pointerdown, text, gameEnv } from './helpers/dom';
 
 vi.mock('../shared/cloud', () => ({
   submitScore: vi.fn(),
@@ -38,5 +38,17 @@ describe('flash/dom', () => {
     click(app.querySelector('#startBtn')!);
     expect(hidden(app.querySelector('#panel-ready'))).toBe(true);
     expect(hidden(app.querySelector('#panel-reader'))).toBe(false);
+  });
+
+  it('plays a full round: read → quiz → submit counts the passage', async () => {
+    const app = await load();
+    click(app.querySelector('#startBtn')!);
+    await vi.advanceTimersByTimeAsync(120000); // countdown + every RSVP word → quiz
+    expect(hidden(app.querySelector('#panel-quiz'))).toBe(false);
+    app.querySelectorAll('.question').forEach((q) => pointerdown(q.querySelector('.option')!));
+    const submit = app.querySelector<HTMLButtonElement>('#submitBtn')!;
+    expect(submit.disabled).toBe(false); // enabled once every question is answered
+    click(submit);
+    expect(text(app.querySelector('#hud-done'))).toBe('1'); // one passage read
   });
 });
