@@ -435,6 +435,13 @@ covered by unit tests in [`tests/`](tests) alongside the original games.
 
 ### 8.6 Word of the Day (`word/`) 📖 — vocabulary
 
+> **Retired from the hub grid** (least played: 29 plays / 20 players). It is still live at
+> `/word/`, still linked from the Flash, Where and Wordle *About* sections, and still syncs
+> and clears with the signed-in account — only its card, leaderboard section and sitemap
+> entry are gone. To bring it back: uncomment the card in `index.html`, drop `hidden: true`
+> from its `assets/auth.js` entry, re-add it to the hub `ItemList` and remove `word/*` from
+> `sitemap.config.json`.
+
 - `content.ts` is a curated list of `Word` records (`word`, `say`, `pos`, `definition`,
   `examples`, `synonyms`, `origin`). `game.ts` derives a stable **daily word** from the date
   via a seeded RNG (`hashSeed` FNV-1a → `mulberry32`), so everyone sees the same word each
@@ -461,6 +468,24 @@ covered by unit tests in [`tests/`](tests) alongside the original games.
 - `storage.ts` tracks lifetime stats in `wordle.v1` (`played`, `wins`, `currentStreak`,
   `maxStreak`, a 7-slot guess `distribution`), shown in the 📊 stats panel. `best` surfaces
   `maxStreak`. Logic covered by [`tests/wordle-game.test.ts`](tests/wordle-game.test.ts).
+
+### 8.8 2048 (`2048/`) 🔢 — sliding number puzzle
+
+- The classic 4×4 merge puzzle. `game.ts` models the board as a flat 16-cell array (0 =
+  empty) and keeps every rule pure: `slideLine()` collapses one line (drop the gaps, then
+  merge each equal pair **once** — a tile that has just absorbed another cannot merge again
+  that move), `moveBoard()` applies it to all four rows/columns for a direction without
+  mutating its input, `hasMoves()` decides the end of the run, and `spawnTile()` drops a 2
+  (or a 4 one time in ten) into a free cell. The RNG is injected, so tests are deterministic.
+- Reaching **2048 does not end the run**: the win is announced once, then
+  `continueAfterWin()` lets you carry on for a bigger tile. The run ends only when the board
+  is full **and** no orthogonal neighbours match.
+- `main.ts` renders 16 `.cell` divs and sets `data-v` per tile, so the whole colour ramp
+  lives in CSS rather than in JS. Input is arrow keys, WASD, and pointer swipes (the board
+  sets `touch-action: none` so a vertical swipe plays the game instead of scrolling the page).
+- Persisted in `2048.v1` (`best` score, `bestTile`, `muted`); `best` is the headline metric on
+  the leaderboard. Covered by [`tests/2048-game.test.ts`](tests/2048-game.test.ts) and
+  [`tests/2048-dom.test.ts`](tests/2048-dom.test.ts).
 
 ---
 
@@ -509,7 +534,7 @@ A root-level **Vitest** project (`arcade/package.json`, `vitest.config.ts`) cove
 in two layers, both under a `jsdom` environment: a **logic layer** that imports each game's
 source TS modules directly (the model/helper layer), and a **DOM/interaction layer** that
 boots each game's real `main.ts` and drives it through the rendered UI — the same path a
-player's browser takes. Together they total **282 tests across 35 files**. A third,
+player's browser takes. Together they total **359 tests across 41 files**. A third,
 **database layer** runs against the live project on demand (see below).
 
 ```bash
@@ -540,7 +565,7 @@ Needs `SUPABASE_TOKEN` in the untracked `arcade/.env`; both talk to the Manageme
 
 ### Logic layer
 
-Coverage lives in `arcade/tests/*.test.ts` — **211 tests** over each game's pure model plus
+Coverage lives in `arcade/tests/*.test.ts` — **280 tests** over each game's pure model plus
 the shared modules:
 
 | File | What it locks down |
@@ -564,6 +589,7 @@ the shared modules:
 | `shared-sfx.test.ts` | mute persistence (`loadMuted`/`saveMuted`, per-game keys), runtime mute flag |
 | `storage.test.ts` | `loadStore` migrations/sanitising: where `bestScore`→Hard, word `learnedIds` guard, wordle distribution pad/trim/coerce, flash/echo defaults |
 | `shared-format.test.ts` | `fmtScore` compact numbers (29000→29k, 999999→1M, exact-under-1000, NaN/Infinity) |
+| `2048-game.test.ts` | line collapse + the no-double-merge rule, all four directions, no input mutation, lock detection, spawn distribution, win/continue, best score & tile |
 | `cloud-sync.test.ts` | `reconcileRestore`: cloud wins only when strictly better, corrupt/missing local, headline heal per game, Where never inventing a Hard record, map games untouched |
 | `cloud-pending.test.ts` | offline submit queue (merge/max/drain, unknown-slug + corrupt data), and that a real submit parks itself when the backend is unreachable but a session exists |
 | `registry-parity.test.ts` | `auth.js` `GAMES` vs `cloud.ts` `LS_KEYS`/`HEADLINE` agree on key + best + heal for every game on disk; score caps sit at or above what a game can score |
