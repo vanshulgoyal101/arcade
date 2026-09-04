@@ -33,7 +33,7 @@ export const ICON_STATS = iconBtn('<path d="M5 19V10M12 19V5M19 19v-7"/>');
 export const ICON_TROPHY = glyph(
   '<path d="M7 4h10v4a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z"/>' +
     '<path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3M12 13v3.2M9 19.5h6"/>',
-  16
+  16, '#facc15'
 );
 
 /** Toggle-ready mute glyph for a `renderMute()`-style handler. */
@@ -44,7 +44,7 @@ export function muteIcon(muted: boolean): string {
 // ---- lives (hearts) ----
 const HEART_D =
   'M12 20.3S4.8 15.6 2.4 11C1 8.3 2.3 5.3 5.2 4.6c2-.5 4.1.4 6.3 2.9 2.2-2.5 4.3-3.4 6.3-2.9 2.9.7 4.2 3.7 2.8 6.4-2.4 4.6-9.8 9.3-9.8 9.3z';
-const HEART_FULL = `<path d="${HEART_D}" fill="currentColor" stroke="none"/>`;
+const HEART_FULL = `<path d="${HEART_D}" fill="#fb7185" stroke="none"/>`;
 const HEART_EMPTY = `<path d="${HEART_D}"/>`;
 function heart(full: boolean): string {
   return (
