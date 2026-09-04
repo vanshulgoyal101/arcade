@@ -6,6 +6,7 @@ import * as sfx from './audio';
 import { intervalShareText, intervalShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { answerHtml } from '../../shared/reveal';
 import { ICON_INTERVAL, muteIcon, livesHtml, ICON_TROPHY } from '../../shared/icons';
 
 const game = new IntervalGame();
@@ -131,6 +132,10 @@ function endGame(newBest: boolean): void {
     <p class="sub">Score</p>
     <div class="big">${game.score}</div>
     <p class="sub">Best ${best}</p>
+    ${answerHtml(
+      'The last one was',
+      `${game.current.name} · ${noteName(game.rootMidi)} → ${noteName(game.rootMidi + game.current.semis)}`
+    )}
     ${newBest ? `<p class="newbest">${ICON_TROPHY} New best!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>

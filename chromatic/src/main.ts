@@ -169,10 +169,19 @@ function closeModal(): void {
 
 function openEndlessModal(): void {
   const best = game.store.endlessBest;
+  // A colour game should answer in colour: show the target beside the guess
+  // that ended the run, so "what was I aiming at?" is obvious.
+  const swatch = (c: RGB, label: string) =>
+    `<div style="flex:1"><div style="height:52px;border-radius:10px;background:${toCss(c)};border:1px solid var(--line)"></div>` +
+    `<div class="sub" style="margin-top:6px;font-size:.8rem">${label}</div>` +
+    `<div style="font-weight:700;font-size:.85rem">${toHex(c)}</div></div>`;
   modal.innerHTML = `
     <h2>Game Over</h2>
     <div class="ring" style="--p:100"><span>${fmtScore(game.score)}</span></div>
     <p class="hint" style="margin:0">Reached level ${game.level} · Best ${fmtScore(best)} ${ICON_TROPHY}</p>
+    <div style="display:flex;gap:12px;margin:14px 0 0">
+      ${swatch(game.target, 'Target')}${swatch(game.guess, 'You')}
+    </div>
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
       <button class="btn" id="m-retry">Play again</button>

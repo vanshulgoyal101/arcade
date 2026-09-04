@@ -63,6 +63,10 @@ let lastTick = 0;
 // tap from landing on the stale board (which would be graded as a wrong pick
 // and reset the combo). Cleared whenever a fresh board is built.
 let advancing = false;
+// Pending game-over reveal; cleared on restart so a stale timer can't drop the
+// results modal over a fresh round.
+let revealTimer = 0;
+const REVEAL_MS = 900;
 
 // ---- helpers ----
 function bump(el: HTMLElement): void {
@@ -170,6 +174,14 @@ function endGame(): void {
   const newBest = game.end();
   void submitScore('hue-hunt', game.store.bestScore);
   sfx.gameOver();
+  // Ring the tile they were hunting and hold it briefly, so the round doesn't
+  // end on an unanswered question before the modal covers the board.
+  boardEl.children[game.round.oddIndex]?.classList.add('reveal');
+  hintEl.textContent = 'That was the odd one out.';
+  revealTimer = window.setTimeout(() => showResults(newBest), REVEAL_MS);
+}
+
+function showResults(newBest: boolean): void {
   const reached = game.level - 1;
   modal.innerHTML = `
     <h2>Time!</h2>
@@ -199,6 +211,7 @@ function endGame(): void {
 }
 
 function start(): void {
+  clearTimeout(revealTimer);
   overlay.classList.remove('show');
   game.start(performance.now());
   renderHud();

@@ -50,6 +50,12 @@ export async function mountGame(
   (globalThis as { CSS?: { escape(s: string): string } }).CSS = {
     escape: (s: string) => String(s).replace(/["\\]/g, '\\$&'),
   };
+  // jsdom has no Web Animations API, so a game's decorative `el.animate(...)`
+  // throws — inside an async playback chain that surfaces only as a swallowed
+  // rejection which silently stalls the game. Stub just enough to keep going.
+  if (!Element.prototype.animate) {
+    Element.prototype.animate = (() => ({ finished: Promise.resolve(), cancel() {} })) as unknown as typeof Element.prototype.animate;
+  }
   vi.resetModules();
   await importer();
   return document.querySelector<HTMLElement>('#app')!;

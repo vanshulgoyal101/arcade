@@ -7,6 +7,7 @@ import { flagEmoji, type Difficulty } from './content';
 import { whereShareText, whereShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { answerHtml } from '../../shared/reveal';
 import { ICON_WHERE, muteIcon, livesHtml, ICON_TROPHY } from '../../shared/icons';
 import { loadStore } from './storage';
 
@@ -157,6 +158,10 @@ function endGame(newBest: boolean): void {
     <p class="sub">Score</p>
     <div class="big">${fmtScore(game.score)}</div>
     <p class="sub">${label} · Best ${fmtScore(best)}</p>
+    ${answerHtml(
+      game.mode === 'flag' ? 'That flag was' : `${game.target.capital} is the capital of`,
+      game.target.name
+    )}
     ${newBest ? `<p class="newbest">${ICON_TROPHY} New best!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>

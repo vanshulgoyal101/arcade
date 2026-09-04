@@ -6,6 +6,7 @@ import * as sfx from './audio';
 import { mathShareText, mathShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { answerHtml } from '../../shared/reveal';
 import { ICON_FLASHMATH, muteIcon, ICON_TROPHY } from '../../shared/icons';
 
 const game = new MathGame();
@@ -182,11 +183,13 @@ function endGame(): void {
   const newBest = game.end();
   void submitScore('flashmath', game.store.bestScore);
   sfx.gameOver();
+  const p = game.problem; // the one the clock ran out on
   modal.innerHTML = `
     <h2>Time!</h2>
     <p class="sub">Score</p>
     <div class="big">${game.score}</div>
     <p class="sub">${game.solved} solved · reached level ${game.level} · Best ${game.store.bestScore}</p>
+    ${answerHtml('The one on screen was', `${p.a} ${OP_LABEL[p.op]} ${p.b} = ${p.answer}`)}
     ${newBest ? `<p class="newbest">${ICON_TROPHY} New best score!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>

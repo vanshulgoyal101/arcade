@@ -16,6 +16,7 @@ import { loadStore, saveStore } from './storage';
 import { dailyShareCard, practiceShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { answerHtml } from '../../shared/reveal';
 import { ICON_WORD, muteIcon, livesHtml, ICON_TROPHY } from '../../shared/icons';
 
 const store = loadStore();
@@ -318,6 +319,7 @@ function practiceOver(newBest: boolean): void {
     <p class="sub">Score</p>
     <div class="big">${fmtScore(practice.score)}</div>
     <p class="sub">Best ${fmtScore(practice.best)}</p>
+    ${answerHtml('The word was', practice.round.word.word)}
     ${newBest ? `<p class="newbest">${ICON_TROPHY} New best!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>

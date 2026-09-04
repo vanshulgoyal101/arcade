@@ -67,6 +67,10 @@ const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 
 let acceptingInput = false;
 let playing = false;
+// Pending game-over reveal; cleared on restart so a stale timer can't drop the
+// results modal over a fresh round.
+let revealTimer = 0;
+const REVEAL_MS = 900;
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -209,6 +213,14 @@ function gameOver(): void {
   renderToggles();
   renderHud();
 
+  // Show the pad they were meant to hit before the modal covers the board.
+  const missed = game.sequence[game.inputIndex];
+  statusEl.textContent = 'That was the one you needed.';
+  void lightPad(missed, 620);
+  revealTimer = window.setTimeout(() => showGameOver(reached, newBest), REVEAL_MS);
+}
+
+function showGameOver(reached: number, newBest: boolean): void {
   modal.innerHTML = `
     <h2>Game Over</h2>
     <p class="sub">You remembered</p>
@@ -240,6 +252,7 @@ function gameOver(): void {
 }
 
 function startGame(): void {
+  clearTimeout(revealTimer);
   overlay.classList.remove('show');
   playing = true;
   game.reset();

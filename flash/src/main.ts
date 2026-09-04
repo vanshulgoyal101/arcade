@@ -279,6 +279,16 @@ function showResult(r: RoundResult): void {
       ? `▼ Easing to ${r.newWpm} wpm`
       : `Holding at ${r.newWpm} wpm`;
 
+  const missed = activePassage
+    ? activePassage.questions
+        .map((q, i) =>
+          answers[i] === q.answer
+            ? null
+            : `${q.q} <b style="color:var(--accent)">${q.options[q.answer]}</b>`
+        )
+        .filter(Boolean)
+    : [];
+
   modal.innerHTML = `
     <h2>${pct >= 85 ? 'Sharp! 🎯' : pct >= 60 ? 'Nicely done' : 'Keep training'}</h2>
     <p class="hint" style="margin:0">${r.correct}/${r.total} correct at ${r.wpm} wpm</p>
@@ -289,6 +299,18 @@ function showResult(r: RoundResult): void {
       <div class="stat-box"><div class="n">${r.streak}</div><div class="l">Streak</div></div>
     </div>
     <p class="speed-change ${up ? 'up' : down ? 'down' : ''}">${changeText}</p>
+    ${
+      missed.length
+        ? `<div style="text-align:left;margin:14px 0 0"><p class="sub" style="margin:0 0 6px">You missed</p>` +
+          missed
+            .map(
+              (m) =>
+                `<p class="hint" style="margin:0 0 6px;line-height:1.35"><span style="color:var(--muted)">${m}</span></p>`
+            )
+            .join('') +
+          `</div>`
+        : ''
+    }
     ${r.newBest ? `<p class="newbest">${ICON_TROPHY} New best speed!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
