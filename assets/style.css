@@ -332,6 +332,7 @@ a { color: inherit; text-decoration: none; }
   left: 12px;
   font-size: 1.4rem;
   line-height: 1;
+  color: var(--accent);
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .55));
 }
 .card-best {

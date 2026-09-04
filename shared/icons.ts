@@ -63,34 +63,38 @@ export function livesHtml(lives: number, total = 3): string {
 }
 
 // ---- per-game title glyph (topbar `<h1 class="title">`) ----
+// Each game's stylesheet defines its own --accent (and a classic-theme
+// variant), so the glyphs colour themselves and stay in sync with the theme.
+const ACCENT = 'var(--accent)';
+
 export const ICON_HUE_HUNT = glyph(
-  '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.4"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>', 20, '#f472b6'
+  '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.4"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>', 20, ACCENT
 );
 export const ICON_ECHO = glyph(
   '<path d="M8.5 8.8a4.6 4.6 0 0 0 0 6.4M15.5 8.8a4.6 4.6 0 0 1 0 6.4M5.3 5.6a9 9 0 0 0 0 12.8M18.7 5.6a9 9 0 0 1 0 12.8"/>' +
-    '<circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>', 20, '#22d3ee'
+    '<circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>', 20, ACCENT
 );
 export const ICON_CHROMATIC = glyph(
-  '<path d="M12 3.2c3.4 4 6.3 7.5 6.3 10.8a6.3 6.3 0 0 1-12.6 0c0-3.3 2.9-6.8 6.3-10.8z"/>', 20, '#facc15'
+  '<path d="M12 3.2c3.4 4 6.3 7.5 6.3 10.8a6.3 6.3 0 0 1-12.6 0c0-3.3 2.9-6.8 6.3-10.8z"/>', 20, ACCENT
 );
-export const ICON_FLASH = glyph('<path d="M13 2 4.5 13.5h5.7L9 22l9.5-12.5h-5.7z" fill="currentColor" stroke="none"/>', 20, '#fbbf24');
+export const ICON_FLASH = glyph('<path d="M13 2 4.5 13.5h5.7L9 22l9.5-12.5h-5.7z" fill="currentColor" stroke="none"/>', 20, ACCENT);
 export const ICON_FLASHMATH = glyph(
-  '<rect x="4" y="3" width="16" height="18" rx="2.4"/><path d="M7.3 8h9.4M7.3 12h9.4M7.3 16h5.6"/>', 20, '#a78bfa'
+  '<rect x="4" y="3" width="16" height="18" rx="2.4"/><path d="M7.3 8h9.4M7.3 12h9.4M7.3 16h5.6"/>', 20, ACCENT
 );
 export const ICON_SPRINT = glyph(
-  '<rect x="3" y="6" width="18" height="12" rx="2.2"/><path d="M6.6 10h.01M10 10h.01M13.4 10h.01M16.8 10h.01M6.6 14h10.6"/>', 20, '#fb7185'
+  '<rect x="3" y="6" width="18" height="12" rx="2.2"/><path d="M6.6 10h.01M10 10h.01M13.4 10h.01M16.8 10h.01M6.6 14h10.6"/>', 20, ACCENT
 );
-export const ICON_DIGIT_SPAN = glyph('<path d="M9 3.5 6.4 20.5M17.6 3.5 15 20.5M4 9h16M3 15h16"/>', 20, '#60a5fa');
+export const ICON_DIGIT_SPAN = glyph('<path d="M9 3.5 6.4 20.5M17.6 3.5 15 20.5M4 9h16M3 15h16"/>', 20, ACCENT);
 export const ICON_INTERVAL = glyph(
   '<path d="M9 18V5.3L19 3v13"/><circle cx="6.8" cy="18" r="2.4" fill="currentColor" stroke="none"/>' +
-    '<circle cx="16.8" cy="16" r="2.4" fill="currentColor" stroke="none"/>', 20, '#f9a8d4'
+    '<circle cx="16.8" cy="16" r="2.4" fill="currentColor" stroke="none"/>', 20, ACCENT
 );
 export const ICON_WHERE = glyph(
-  '<path d="M12 21S5.5 15 5.5 10A6.5 6.5 0 0 1 12 3.5 6.5 6.5 0 0 1 18.5 10c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>', 20, '#34d399'
+  '<path d="M12 21S5.5 15 5.5 10A6.5 6.5 0 0 1 12 3.5 6.5 6.5 0 0 1 18.5 10c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>', 20, ACCENT
 );
 export const ICON_WORD = glyph(
-  '<path d="M12 5.6c-2-1.6-5-2.1-8-1.6v14c3-.5 6 0 8 1.6 2-1.6 5-2.1 8-1.6V4c-3-.5-6 0-8 1.6z"/><path d="M12 5.6v14"/>', 20, '#f9a8d4'
+  '<path d="M12 5.6c-2-1.6-5-2.1-8-1.6v14c3-.5 6 0 8 1.6 2-1.6 5-2.1 8-1.6V4c-3-.5-6 0-8 1.6z"/><path d="M12 5.6v14"/>', 20, ACCENT
 );
 export const ICON_WORDLE = glyph(
-  '<rect x="3" y="9" width="5.4" height="5.4" rx="1"/><rect x="9.3" y="9" width="5.4" height="5.4" rx="1" fill="currentColor" stroke="none"/><rect x="15.6" y="9" width="5.4" height="5.4" rx="1"/>', 20, '#a3e635'
+  '<rect x="3" y="9" width="5.4" height="5.4" rx="1"/><rect x="9.3" y="9" width="5.4" height="5.4" rx="1" fill="currentColor" stroke="none"/><rect x="15.6" y="9" width="5.4" height="5.4" rx="1"/>', 20, ACCENT
 );
