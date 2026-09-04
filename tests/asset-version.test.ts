@@ -13,8 +13,17 @@ const sha = (name: string) =>
 // icons. These digests pin content to version: bump both together, never one.
 const VERSIONED = [
   { file: 'assets/style.css', version: 9, digest: '7a1744924c567e35' },
-  { file: 'assets/auth.js', version: 19, digest: '0165d4a5d128b74f' },
+  { file: 'assets/auth.js', version: 20, digest: 'e567b75264d152c0' },
 ] as const;
+
+// assets/games.js is imported by module specifier rather than from index.html,
+// by both importers, so its ?v= is pinned where those imports live.
+const SHARED_MODULE = {
+  file: 'assets/games.js',
+  version: 1,
+  digest: '35f43b476994c8f0',
+  importers: ['assets/auth.js', 'stats/index.html'],
+} as const;
 
 const hub = read('index.html');
 
@@ -43,6 +52,22 @@ describe('versioned hub assets', () => {
     const found = read('404.html').match(/assets\/style\.css\?v=(\d+)/);
     expect(found, '404.html does not load style.css with a ?v=').not.toBeNull();
     expect(Number(found![1])).toBe(style.version);
+  });
+
+  it(`${SHARED_MODULE.file} is imported at the same ?v= everywhere`, () => {
+    for (const importer of SHARED_MODULE.importers) {
+      const found = read(importer).match(/games\.js\?v=(\d+)/);
+      expect(found, `${importer} does not import games.js with a ?v=`).not.toBeNull();
+      expect(Number(found![1]), `${importer} pins a different games.js version`).toBe(SHARED_MODULE.version);
+    }
+  });
+
+  it(`${SHARED_MODULE.file} content matches its pinned version`, () => {
+    expect(
+      sha(SHARED_MODULE.file),
+      `${SHARED_MODULE.file} changed but is still imported as ?v=${SHARED_MODULE.version}. ` +
+        `Bump the ?v= in ${SHARED_MODULE.importers.join(' and ')}, then update this digest.`
+    ).toBe(SHARED_MODULE.digest);
   });
 });
 

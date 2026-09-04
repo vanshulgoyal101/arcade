@@ -37,22 +37,39 @@
     .chip.on { color: #10131c; background: var(--accent); border-color: var(--accent); font-weight: 800; }
     .rl { color: var(--muted); font-weight: 500; font-size: .82rem; }
     .msg { color: var(--muted); background: var(--bg-soft); border: 1px solid var(--line); border-radius: 14px; padding: 24px; text-align: center; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 26px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
     .card { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-    .card .n { font-size: 1.9rem; font-weight: 900; letter-spacing: -.02em; }
+    .card .n { font-size: 1.9rem; font-weight: 900; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
     .card .l { color: var(--muted); font-size: .78rem; margin-top: 2px; }
-    section { margin-bottom: 30px; }
-    section h2 { font-size: 1rem; margin: 0 0 12px; }
-    .row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: .85rem; }
-    .row .k { width: 120px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
-    .bar { flex: 1; background: var(--bg-soft); border-radius: 6px; overflow: hidden; height: 22px; position: relative; border: 1px solid var(--line); }
-    .bar > span { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 6px; min-width: 2px; }
-    .row .v { width: 56px; flex: none; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .hours { display: grid; grid-template-columns: repeat(24, 1fr); grid-template-rows: 130px; gap: 3px; }
-    .hours .h { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 4px 4px 0 0; position: relative; }
-    .hours .h > span { position: absolute; inset: auto 0 0 0; background: var(--accent); border-radius: 4px 4px 0 0; }
-    .hlabels { display: grid; grid-template-columns: repeat(24, 1fr); gap: 3px; margin-top: 4px; color: var(--muted); font-size: .58rem; text-align: center; }
-    .foot { color: var(--muted); font-size: .75rem; margin-top: 8px; }
+    /* Today's counts are absolute, not part of the selected window — keep them
+       out of the cards so the two kinds of number are never confused. */
+    .today { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 2px 0; color: var(--muted); font-size: .82rem; }
+    .today b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+    section { margin-top: 32px; }
+    section h2 { font-size: 1rem; margin: 0 0 14px; }
+
+    /* Ranked horizontal bars (plays per game). */
+    .row { display: grid; grid-template-columns: minmax(0, 148px) 1fr 48px; align-items: center; gap: 12px; margin-bottom: 8px; font-size: .85rem; }
+    .row .k { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .row .k b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar { background: var(--bg-soft); border-radius: 7px; height: 20px; position: relative; overflow: hidden; }
+    .bar > span { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 7px; min-width: 3px; }
+    .row .v { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* One column chart for every time series (by hour, last 30 days), so the
+       bars and their labels share a single grid instead of two in lockstep. */
+    .cols { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
+    .col { display: grid; grid-template-rows: 120px auto; gap: 7px; min-width: 0; }
+    .col-bar { position: relative; background: var(--bg-soft); border-radius: 5px; }
+    .col-bar > span { position: absolute; inset: auto 0 0 0; background: var(--accent); border-radius: 5px; min-height: 3px; }
+    .col-l { color: var(--muted); font-size: .62rem; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .peak { color: var(--muted); font-size: .75rem; margin: 10px 0 0; }
+    .foot { color: var(--muted); font-size: .75rem; margin-top: 34px; }
+    @media (max-width: 560px) {
+      .cols { gap: 2px; }
+      .col { grid-template-rows: 96px auto; }
+      .row { grid-template-columns: minmax(0, 108px) 1fr 40px; gap: 8px; }
+    }
   </style>
 </head>
 <body>
@@ -67,31 +84,16 @@
 
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+    import { gameIcon, gameName } from '../assets/games.js?v=1';
     const SUPABASE_URL = 'https://tmngedsmgcgbkbkmsnsw.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qFZySs9l19_7bISrvmLHIw_vwt-DUdx';
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     const root = document.getElementById('root');
     const actions = document.getElementById('actions');
     const esc = (s) => String(s ?? '').replace(/[&<>"'`]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]));
+    const nf = new Intl.NumberFormat('en-IN');
 
     // slug -> [icon, display name] for friendlier "Plays per game" labels.
-    function ic(inner) { return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true">${inner}</svg>`; }
-    const GAME_META = {
-      'hue-hunt': [ic('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.4"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>'), 'Hue Hunt'],
-      where: [ic('<path d="M12 21S5.5 15 5.5 10A6.5 6.5 0 0 1 12 3.5 6.5 6.5 0 0 1 18.5 10c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>'), 'Where'],
-      echo: [ic('<path d="M8.5 8.8a4.6 4.6 0 0 0 0 6.4M15.5 8.8a4.6 4.6 0 0 1 0 6.4M5.3 5.6a9 9 0 0 0 0 12.8M18.7 5.6a9 9 0 0 1 0 12.8"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>'), 'Echo'],
-      flash: ['<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="none" style="vertical-align:-2px" aria-hidden="true"><path d="M13 2 4.5 13.5h5.7L9 22l9.5-12.5h-5.7z"/></svg>', 'Flash'],
-      chromatic: [ic('<path d="M12 3.2c3.4 4 6.3 7.5 6.3 10.8a6.3 6.3 0 0 1-12.6 0c0-3.3 2.9-6.8 6.3-10.8z"/>'), 'Chromatic'],
-      flashmath: [ic('<rect x="4" y="3" width="16" height="18" rx="2.4"/><path d="M7.3 8h9.4M7.3 12h9.4M7.3 16h5.6"/>'), 'Flashmath'],
-      wordle: [ic('<rect x="3" y="9" width="5.4" height="5.4" rx="1"/><rect x="9.3" y="9" width="5.4" height="5.4" rx="1" fill="currentColor" stroke="none"/><rect x="15.6" y="9" width="5.4" height="5.4" rx="1"/>'), 'Wordle'],
-      'digit-span': [ic('<path d="M9 3.5 6.4 20.5M17.6 3.5 15 20.5M4 9h16M3 15h16"/>'), 'Digit Span'],
-      word: [ic('<path d="M12 5.6c-2-1.6-5-2.1-8-1.6v14c3-.5 6 0 8 1.6 2-1.6 5-2.1 8-1.6V4c-3-.5-6 0-8 1.6z"/><path d="M12 5.6v14"/>'), 'Word of the Day'],
-      sprint: [ic('<rect x="3" y="6" width="18" height="12" rx="2.2"/><path d="M6.6 10h.01M10 10h.01M13.4 10h.01M16.8 10h.01M6.6 14h10.6"/>'), 'Sprint'],
-      interval: [ic('<path d="M9 18V5.3L19 3v13"/><circle cx="6.8" cy="18" r="2.4" fill="currentColor" stroke="none"/><circle cx="16.8" cy="16" r="2.4" fill="currentColor" stroke="none"/>'), 'Interval'],
-      hub: [ic('<path d="M6 10a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v3a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4v-3z"/><path d="M9 11v3M7.5 12.5h3M16 12h.01M18 14h.01"/>'), 'Hub'],
-    };
-    const gameLabel = (slug) => { const m = GAME_META[slug]; return m ? { icon: m[0], text: m[1] } : { text: slug || '—' }; };
-
     // Time-range filter for the windowed figures (null = all time).
     const RANGES = [['24h', 1], ['7 days', 7], ['30 days', 30], ['All', null]];
     let currentDays = null;
@@ -106,16 +108,27 @@
         supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
     }
 
-    function bars(items, fmt, label) {
+    /** Ranked horizontal bars: `items` are pre-sorted {slug, value}. */
+    function bars(items, label) {
       const max = Math.max(1, ...items.map((i) => i.value));
       return items.map((i) => {
-        const f = fmt(i);
-        const icon = typeof f === 'object' ? f.icon || '' : '';
-        const text = typeof f === 'object' ? f.text : f;
-        return `<div class="row"><span class="k">${icon}${esc(text)}</span>` +
-          `<div class="bar" role="img" aria-label="${esc(text)}: ${i.value}"><span style="width:${(i.value / max) * 100}%"></span></div>` +
-          `<span class="v">${i.value}</span></div>`;
+        const name = gameName(i.slug);
+        return `<div class="row"><span class="k">${gameIcon(i.slug, 15)}<b>${esc(name)}</b></span>` +
+          `<div class="bar" role="img" aria-label="${esc(name)}: ${i.value}"><span style="width:${(i.value / max) * 100}%"></span></div>` +
+          `<span class="v">${nf.format(i.value)}</span></div>`;
       }).join('') || `<div class="msg">No ${label} yet.</div>`;
+    }
+
+    /** One column chart for every time series. `items` are {label, value, title}. */
+    function columns(items, labelEvery = 1) {
+      const max = Math.max(1, ...items.map((i) => i.value));
+      const cols = items.map((i, idx) =>
+        `<div class="col"><div class="col-bar" role="img" aria-label="${esc(i.title)}: ${i.value}" title="${esc(i.title)} · ${i.value}">` +
+        `<span style="height:${(i.value / max) * 100}%"></span></div>` +
+        `<div class="col-l">${idx % labelEvery === 0 ? esc(i.label) : ''}</div></div>`).join('');
+      const peak = items.reduce((a, b) => (b.value > a.value ? b : a), items[0]);
+      return `<div class="cols">${cols}</div>` +
+        (peak && peak.value ? `<p class="peak">Busiest: <b>${esc(peak.title)}</b> · ${nf.format(peak.value)}</p>` : '');
     }
 
     // Gap-free rolling 30-day series (missing days zero-filled) with readable labels.
@@ -125,29 +138,35 @@
       for (let i = 29; i >= 0; i--) {
         const dt = new Date(Date.now() - i * 86400000);
         const key = dt.toISOString().slice(0, 10);
-        out.push({ label: dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }), value: map.get(key) || 0 });
+        out.push({
+          label: String(dt.getDate()),
+          title: dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+          value: map.get(key) || 0,
+        });
       }
       return out;
     }
 
     function render(s) {
       const byHour = Array.from({ length: 24 }, (_, h) => (s.by_hour || []).find((x) => x.hour === h) || { hour: h, visits: 0, plays: 0 });
-      const hmax = Math.max(1, ...byHour.map((x) => (x.visits || 0) + (x.plays || 0)));
-      const perGame = (s.per_game || []).map((g) => ({ slug: g.game, value: g.plays || 0 }));
+      const hours = byHour.map((x) => ({
+        label: String(x.hour),
+        title: `${String(x.hour).padStart(2, '0')}:00`,
+        value: (x.visits || 0) + (x.plays || 0),
+      }));
+      const perGame = (s.per_game || [])
+        .map((g) => ({ slug: g.game, value: g.plays || 0 }))
+        .sort((a, b) => b.value - a.value);
       root.innerHTML =
         `${rangesBar()}<div class="cards">
-          <div class="card"><div class="n">${s.total_visits}</div><div class="l">Visits</div></div>
-          <div class="card"><div class="n">${s.unique_visitors}</div><div class="l">Unique visitors</div></div>
-          <div class="card"><div class="n">${s.total_plays}</div><div class="l">Plays</div></div>
-          <div class="card"><div class="n">${s.visits_today}</div><div class="l">Visits today</div></div>
-          <div class="card"><div class="n">${s.plays_today}</div><div class="l">Plays today</div></div>
+          <div class="card"><div class="n">${nf.format(s.total_visits)}</div><div class="l">Visits</div></div>
+          <div class="card"><div class="n">${nf.format(s.unique_visitors)}</div><div class="l">Unique visitors</div></div>
+          <div class="card"><div class="n">${nf.format(s.total_plays)}</div><div class="l">Plays</div></div>
         </div>
-        <section><h2>Plays per game <span class="rl">· ${rangeLabel()}</span></h2>${bars(perGame, (i) => gameLabel(i.slug), 'plays')}</section>
-        <section><h2>By hour of day <span class="rl">· ${rangeLabel()}</span></h2>
-          <div class="hours">${byHour.map((x) => `<div class="h" title="${x.hour}:00 — ${x.visits}v ${x.plays}p"><span style="height:${(((x.visits || 0) + (x.plays || 0)) / hmax) * 100}%"></span></div>`).join('')}</div>
-          <div class="hlabels">${byHour.map((x) => `<div>${x.hour % 3 === 0 ? x.hour : ''}</div>`).join('')}</div>
-        </section>
-        <section><h2>Last 30 days</h2>${bars(last30(s.by_day), (i) => i.label, 'activity')}</section>`;
+        <p class="today">Today so far · <span><b>${nf.format(s.visits_today)}</b> visits</span><span><b>${nf.format(s.plays_today)}</b> plays</span></p>
+        <section><h2>Plays per game <span class="rl">· ${rangeLabel()}</span></h2>${bars(perGame, 'plays')}</section>
+        <section><h2>By hour of day <span class="rl">· ${rangeLabel()}</span></h2>${columns(hours, 3)}</section>
+        <section><h2>Last 30 days <span class="rl">· not filtered</span></h2>${columns(last30(s.by_day), 5)}</section>`;
       actions.innerHTML = `<span class="upd">Updated ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span><button class="btn ghost" id="out">Sign out</button>`;
       document.getElementById('out').onclick = () => supabase.auth.signOut();
       root.querySelectorAll('.chip').forEach((b) => (b.onclick = () => {
