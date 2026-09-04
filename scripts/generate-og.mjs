@@ -30,6 +30,7 @@ const cards = [
   { slug: 'where',      accent: '#54a0ff', title: 'Where',       subtitle: 'Guess the country by flag & capital' },
   { slug: 'word',       accent: '#f78fb3', title: 'Word of the Day', subtitle: 'Grow your vocabulary, one word a day' },
   { slug: 'wordle',     accent: '#6aaa64', title: 'Wordle',      subtitle: 'Guess the five-letter word — unlimited' },
+  { slug: '2048',       accent: '#f0a04b', title: '2048',        subtitle: 'Slide, merge, reach the 2048 tile' },
 ];
 
 const svgFor = ({ accent, title, subtitle, eyebrow = 'TINY ARCADE' }) => `

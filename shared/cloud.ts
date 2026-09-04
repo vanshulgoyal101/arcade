@@ -40,6 +40,7 @@ const LS_KEYS: Record<string, string> = {
   interval: 'interval.v1',
   word: 'word.v1',
   wordle: 'wordle.v1',
+  2048: '2048.v1',
 };
 
 function readBlob(game: string): unknown {
@@ -76,6 +77,7 @@ const HEADLINE: Record<string, { best: (s: any) => number; apply?: (s: any, b: n
   interval: { best: (s) => n(s.bestScore), apply: (s, b) => { s.bestScore = Math.max(n(s.bestScore), b); } },
   word: { best: (s) => n(s.practiceBest), apply: (s, b) => { s.practiceBest = Math.max(n(s.practiceBest), b); } },
   wordle: { best: (s) => n(s.maxStreak), apply: (s, b) => { s.maxStreak = Math.max(n(s.maxStreak), b); } },
+  2048: { best: (s) => n(s.best), apply: (s, b) => { s.best = Math.max(n(s.best), b); } },
 };
 
 export interface CloudRow {

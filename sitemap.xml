@@ -9,6 +9,13 @@
     <image:image><image:loc>https://games.vanshul.com/assets/og/hub.png</image:loc></image:image>
   </url>
   <url>
+    <loc>https://games.vanshul.com/2048/</loc>
+    <lastmod>2026-09-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/2048.png</image:loc></image:image>
+  </url>
+  <url>
     <loc>https://games.vanshul.com/chromatic/</loc>
     <lastmod>2026-09-04</lastmod>
     <changefreq>weekly</changefreq>
@@ -63,13 +70,6 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/where.png</image:loc></image:image>
-  </url>
-  <url>
-    <loc>https://games.vanshul.com/word/</loc>
-    <lastmod>2026-09-04</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-    <image:image><image:loc>https://games.vanshul.com/assets/og/word.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/wordle/</loc>

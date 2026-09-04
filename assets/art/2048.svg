@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" width="400" height="260" role="img" aria-label="">
+  <defs>
+    <linearGradient id="g2048" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0a04b"/>
+      <stop offset="1" stop-color="#edc22e"/>
+    </linearGradient>
+    <filter id="glow2048" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="400" height="260" fill="#0c0d12"/>
+
+  <g transform="translate(128 34)">
+    <rect x="-10" y="-10" width="164" height="212" rx="18" fill="#14161d" stroke="#262a36"/>
+
+    <g fill="#ffffff" opacity=".05">
+      <rect x="0"  y="52"  width="68" height="44" rx="9"/>
+      <rect x="76" y="104" width="68" height="44" rx="9"/>
+      <rect x="0"  y="156" width="68" height="44" rx="9"/>
+      <rect x="76" y="156" width="68" height="44" rx="9"/>
+    </g>
+
+    <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="800" text-anchor="middle">
+      <rect x="0" y="0" width="68" height="44" rx="9" fill="#edcf72"/>
+      <text x="34" y="30" font-size="18" fill="#ffffff">1024</text>
+
+      <rect x="76" y="0" width="68" height="44" rx="9" fill="url(#g2048)" filter="url(#glow2048)"/>
+      <text x="110" y="30" font-size="18" fill="#3b3324">2048</text>
+
+      <rect x="76" y="52" width="68" height="44" rx="9" fill="#f2b179"/>
+      <text x="110" y="82" font-size="20" fill="#ffffff">64</text>
+
+      <rect x="0" y="104" width="68" height="44" rx="9" fill="#f67c5f"/>
+      <text x="34" y="134" font-size="20" fill="#ffffff">256</text>
+    </g>
+  </g>
+
+  <g fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#f0a04b" opacity=".55">
+      <path d="M84 130h30"/><path d="M104 120l10 10-10 10"/>
+    </g>
+    <g stroke="#edc22e" opacity=".28">
+      <path d="M300 130h30"/><path d="M320 120l10 10-10 10"/>
+    </g>
+  </g>
+</svg>

@@ -29,11 +29,11 @@ function parseAuth() {
 /** slug -> same shape, from the game-side LS_KEYS + HEADLINE maps. */
 function parseCloud() {
   const keys: Record<string, string> = {};
-  for (const m of block(cloudSrc, 'const LS_KEYS').matchAll(/^\s*'?([a-z-]+)'?:\s*'([^']+)',/gm)) keys[m[1]] = m[2];
+  for (const m of block(cloudSrc, 'const LS_KEYS').matchAll(/^\s*'?([a-z0-9-]+)'?:\s*'([^']+)',/gm)) keys[m[1]] = m[2];
 
   const out: Record<string, { key: string; best: string[]; heal: string[]; maxVal: boolean }> = {};
   for (const line of block(cloudSrc, 'const HEADLINE').split('\n')) {
-    const m = /^\s*'?([a-z-]+)'?:\s*\{\s*best:/.exec(line);
+    const m = /^\s*'?([a-z0-9-]+)'?:\s*\{\s*best:/.exec(line);
     if (!m) continue;
     const best = line.split('best:')[1].split('apply:')[0];
     const heal = line.includes('apply:') ? line.split('apply:')[1] : '';

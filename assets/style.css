@@ -39,6 +39,7 @@
 .card[data-game="where"],      .lb-game[data-game="where"]      { --accent: #60a5fa; }
 .card[data-game="word"],       .lb-game[data-game="word"]       { --accent: #f472b6; }
 .card[data-game="wordle"],     .lb-game[data-game="wordle"]     { --accent: #6aaa64; }
+.card[data-game="2048"],       .lb-game[data-game="2048"]       { --accent: #f0a04b; }
 
 :root[data-theme="classic"] .card[data-game="hue-hunt"],   :root[data-theme="classic"] .lb-game[data-game="hue-hunt"]   { --accent: #ff6b6b; }
 :root[data-theme="classic"] .card[data-game="echo"],       :root[data-theme="classic"] .lb-game[data-game="echo"]       { --accent: #4ecdc4; }
@@ -51,6 +52,7 @@
 :root[data-theme="classic"] .card[data-game="where"],      :root[data-theme="classic"] .lb-game[data-game="where"]      { --accent: #54a0ff; }
 :root[data-theme="classic"] .card[data-game="word"],       :root[data-theme="classic"] .lb-game[data-game="word"]       { --accent: #f78fb3; }
 :root[data-theme="classic"] .card[data-game="wordle"],     :root[data-theme="classic"] .lb-game[data-game="wordle"]     { --accent: #6aaa64; }
+:root[data-theme="classic"] .card[data-game="2048"],       :root[data-theme="classic"] .lb-game[data-game="2048"]       { --accent: #edc22e; }
 
 * { box-sizing: border-box; }
 

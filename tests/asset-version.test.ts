@@ -12,16 +12,16 @@ const sha = (name: string) =>
 // visitors keep the old copy indefinitely — the bug that shipped monochrome
 // icons. These digests pin content to version: bump both together, never one.
 const VERSIONED = [
-  { file: 'assets/style.css', version: 9, digest: '7a1744924c567e35' },
-  { file: 'assets/auth.js', version: 20, digest: 'e567b75264d152c0' },
+  { file: 'assets/style.css', version: 10, digest: '6c76ca16e42d61df' },
+  { file: 'assets/auth.js', version: 21, digest: '2d6e678c38ac3860' },
 ] as const;
 
 // assets/games.js is imported by module specifier rather than from index.html,
 // by both importers, so its ?v= is pinned where those imports live.
 const SHARED_MODULE = {
   file: 'assets/games.js',
-  version: 1,
-  digest: '35f43b476994c8f0',
+  version: 2,
+  digest: 'f3b506ad2e783d2a',
   importers: ['assets/auth.js', 'stats/index.html'],
 } as const;
 

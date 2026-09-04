@@ -13,8 +13,10 @@ const gameDirs = readdirSync(root, { withFileTypes: true })
   .map((d) => d.name)
   .sort();
 
-/** Every `d="…"` in a chunk of SVG markup, in order. */
-const paths = (svg: string) => [...svg.matchAll(/d="([^"]+)"/g)].map((m) => m[1]);
+/** Every geometry value in a chunk of SVG markup, in order. Covers <rect> and
+ *  <circle> too — comparing only `d` would silently pass icons drawn as shapes. */
+const paths = (svg: string) =>
+  [...svg.matchAll(/\s(?:d|cx|cy|r|x|y|width|height|rx|ry)="([^"]+)"/g)].map((m) => m[1]);
 /** slug -> the ICON_* constant body in shared/icons.ts. */
 const constName = (slug: string) => 'ICON_' + slug.toUpperCase().replace(/-/g, '_');
 

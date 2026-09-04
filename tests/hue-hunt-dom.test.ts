@@ -32,6 +32,22 @@ describe('hue-hunt/dom', () => {
     expect(board.querySelector('.wrong')).toBeNull();
   });
 
+  it('locks the board during the wrong-answer reset', async () => {
+    const app = await load();
+    const board = app.querySelector('#board')!;
+
+    pointerdown(plainChild(board)); // wrong -> combo reset and transition lock
+    const scoreAfterMiss = text(app.querySelector('#score'));
+    pointerdown(oddChild(board)); // must not score during the miss animation
+
+    expect(text(app.querySelector('#score'))).toBe(scoreAfterMiss);
+    expect(text(app.querySelector('#combo'))).toBe('x1');
+
+    await vi.advanceTimersByTimeAsync(320);
+    pointerdown(oddChild(board));
+    expect(Number(text(app.querySelector('#score')))).toBeGreaterThan(Number(scoreAfterMiss));
+  });
+
   it('accepts the next pick after the board rebuilds', async () => {
     const app = await load();
     const board = app.querySelector('#board')!;

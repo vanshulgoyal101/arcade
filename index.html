@@ -49,7 +49,7 @@
   <link rel="preconnect" href="https://esm.sh" crossorigin />
   <link rel="preconnect" href="https://tmngedsmgcgbkbkmsnsw.supabase.co" crossorigin />
   <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2" crossorigin />
-  <link rel="stylesheet" href="assets/style.css?v=9" />
+  <link rel="stylesheet" href="assets/style.css?v=10" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%230c0d12'/><g fill='none' stroke='%23fb7185' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M6 10a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v3a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4v-3z'/><path d='M9 11v3M7.5 12.5h3M16 12h.01M18 14h.01'/></g></svg>" />
   <link rel="manifest" href="/site.webmanifest" />
   <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
@@ -93,7 +93,7 @@
           { "@type": "ListItem", "position": 6, "name": "Sprint", "url": "https://games.vanshul.com/sprint/" },
           { "@type": "ListItem", "position": 7, "name": "Digit Span", "url": "https://games.vanshul.com/digit-span/" },
           { "@type": "ListItem", "position": 8, "name": "Where", "url": "https://games.vanshul.com/where/" },
-          { "@type": "ListItem", "position": 9, "name": "Word of the Day", "url": "https://games.vanshul.com/word/" },
+          { "@type": "ListItem", "position": 9, "name": "2048", "url": "https://games.vanshul.com/2048/" },
           { "@type": "ListItem", "position": 10, "name": "Wordle", "url": "https://games.vanshul.com/wordle/" }
         ]
       }
@@ -174,11 +174,23 @@
       <span class="tag">memory · forward/reverse</span>
     </a>
 
+    <!-- Word of the Day is retired from the grid (least played) but still live at
+         /word/ and still synced. Restore by uncommenting this card, dropping
+         `hidden: true` from its assets/auth.js entry and re-adding it to the
+         ItemList above and sitemap.config.json.
     <a class="card" data-game="word" href="word/">
       <div class="card-art"><img src="assets/art/word.svg" alt="" loading="lazy" width="400" height="220" /><span class="card-emoji"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5.6c-2-1.6-5-2.1-8-1.6v14c3-.5 6 0 8 1.6 2-1.6 5-2.1 8-1.6V4c-3-.5-6 0-8 1.6z"/><path d="M12 5.6v14"/></svg></span></div>
       <h2>Word of the Day</h2>
       <p>Grow your vocabulary. Meet an interesting new word each day — meaning, examples, synonyms and origin — then guess the meaning or take the endless quiz.</p>
       <span class="tag">vocabulary · daily · quiz</span>
+    </a>
+    -->
+
+    <a class="card" data-game="2048" href="2048/">
+      <div class="card-art"><img src="assets/art/2048.svg" alt="" loading="lazy" width="400" height="220" /><span class="card-emoji"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6" fill="currentColor" stroke="none"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6" fill="currentColor" stroke="none"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.6"/></svg></span></div>
+      <h2>2048</h2>
+      <p>Slide the board, merge matching tiles and chase the 2048 tile. One corner, one plan — the run ends when nothing can move. Then keep going for 4096.</p>
+      <span class="tag">puzzle · numbers · strategy</span>
     </a>
 
     <a class="card" data-game="flash" href="flash/">
@@ -242,7 +254,7 @@
       apply();
     })();
   </script>
-  <script type="module" src="assets/auth.js?v=20"></script>
+  <script type="module" src="assets/auth.js?v=21"></script>
   <script>
     // "Surprise me": jump straight into a random game.
     (function () {

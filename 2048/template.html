@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>try{var t=localStorage.getItem('arcade.theme')==='classic'?'classic':'refined';if(t==='classic')document.documentElement.setAttribute('data-theme','classic');addEventListener('DOMContentLoaded',function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='classic'?'#12141c':'#0c0d12')})}catch(e){}</script>
+  <script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(function(){})})}</script>
+  <script defer src="/assets/analytics.js?v=2"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c0d12" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="2048" />
+  <meta name="application-name" content="2048" />
+
+  <title>2048 — Free Online Sliding Puzzle | Merge Tiles, No Download</title>
+  <meta name="description" content="Play 2048 free in your browser. Swipe or use the arrow keys to slide tiles, merge matching numbers and build the 2048 tile — then keep going for 4096. No download, no sign-up, high score saved on your device." />
+  <meta name="keywords" content="2048 game, play 2048 online, 2048 free, sliding tile puzzle, merge numbers game, 2048 unblocked, number puzzle game, free html5 puzzle" />
+  <meta name="author" content="Tiny Arcade" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+  <link rel="canonical" href="https://games.vanshul.com/2048/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Tiny Arcade" />
+  <meta property="og:title" content="2048 — Free Online Sliding Puzzle" />
+  <meta property="og:description" content="Slide, merge, and build the 2048 tile. A free browser puzzle with no download — your best score is saved on your device." />
+  <meta property="og:url" content="https://games.vanshul.com/2048/" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:image" content="https://games.vanshul.com/assets/og/2048.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="2048 — slide and merge the tiles" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="2048 — Free Online Sliding Puzzle" />
+  <meta name="twitter:description" content="Slide, merge, and build the 2048 tile. Free, instant, no download." />
+  <meta name="twitter:image" content="https://games.vanshul.com/assets/og/2048.png" />
+  <meta name="twitter:image:alt" content="2048 — slide and merge the tiles" />
+
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%230c0d12'/><g fill='none' stroke='%23f0a04b' stroke-width='1.6' color='%23f0a04b'><rect x='3.5' y='3.5' width='7.5' height='7.5' rx='1.6'/><rect x='13' y='3.5' width='7.5' height='7.5' rx='1.6' fill='currentColor' stroke='none'/><rect x='3.5' y='13' width='7.5' height='7.5' rx='1.6' fill='currentColor' stroke='none'/><rect x='13' y='13' width='7.5' height='7.5' rx='1.6'/></g></svg>" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "2048",
+    "url": "https://games.vanshul.com/2048/",
+    "image": "https://games.vanshul.com/assets/og/2048.png",
+    "description": "A free browser version of the 2048 sliding puzzle: slide the board, merge matching tiles and combine your way to the 2048 tile.",
+    "genre": ["Puzzle", "Strategy", "Number"],
+    "applicationCategory": "Game",
+    "operatingSystem": "Any (modern web browser)",
+    "gamePlatform": ["Web browser", "Desktop", "Mobile"],
+    "inLanguage": "en",
+    "isAccessibleForFree": true,
+    "playMode": "SinglePlayer",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "availability": "https://schema.org/InStock" },
+    "author": { "@type": "Organization", "name": "Tiny Arcade", "url": "https://games.vanshul.com/" },
+    "publisher": { "@type": "Organization", "name": "Tiny Arcade", "url": "https://games.vanshul.com/" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Tiny Arcade", "item": "https://games.vanshul.com/" },
+      { "@type": "ListItem", "position": 2, "name": "2048", "item": "https://games.vanshul.com/2048/" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "How do you play 2048?", "acceptedAnswer": { "@type": "Answer", "text": "Slide the whole board left, right, up or down with the arrow keys or a swipe. Tiles showing the same number merge into their sum, and a new 2 or 4 appears after every move that changes the board. Keep merging until you build the 2048 tile." } },
+      { "@type": "Question", "name": "When does a game of 2048 end?", "acceptedAnswer": { "@type": "Answer", "text": "The run ends when the board is completely full and no neighbouring tiles match, so no move would change anything. Reaching 2048 does not end the game — you can keep playing for a bigger tile." } },
+      { "@type": "Question", "name": "Is this 2048 free to play?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. It is completely free, needs no download or sign-up, and runs instantly in your browser. Your best score is saved on your device, and syncs across devices if you sign in on the arcade hub." } },
+      { "@type": "Question", "name": "What is a good strategy for 2048?", "acceptedAnswer": { "@type": "Answer", "text": "Pick one corner and keep your largest tile there, then only ever slide in the two directions that hold it in place. Build a descending row along that edge so tiles merge in a chain instead of scattering." } }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <noscript>
+      <h1>2048 — Free Online Sliding Puzzle</h1>
+      <p>2048 is a free browser puzzle. Slide the board with the arrow keys or a swipe: tiles with the same number merge into their sum, and a new tile appears after every move. Combine your way up to the 2048 tile — then keep going.</p>
+      <h2>How to play</h2>
+      <ul>
+        <li>Swipe or press an arrow key to slide every tile in that direction.</li>
+        <li>Two tiles with the same number merge into one tile worth their sum.</li>
+        <li>The game ends when the board is full and no neighbours match.</li>
+      </ul>
+      <p>2048 needs JavaScript. Explore more free games at <a href="/">Tiny Arcade</a>.</p>
+    </noscript>
+  </div>
+  <section class="about">
+    <details>
+      <summary>About 2048 — how to play &amp; tips</summary>
+      <div class="about-body">
+        <h2>How to play</h2>
+        <p>Every arrow key or swipe slides the whole board that way. Tiles showing the same number merge into their sum, and a fresh 2 (or occasionally a 4) drops into a free cell after any move that changed something. Reaching the 2048 tile wins — but you can keep playing for 4096 and beyond.</p>
+        <h2>Tips</h2>
+        <p>Choose a corner and never let your biggest tile leave it: if you keep it bottom-left, use only left and down, and reach for up as a last resort. Build a descending staircase along that edge so a single slide chains several merges at once. Keeping the board tidy matters more than chasing every merge — a full board with no matching neighbours is what ends the run.</p>
+        <p>More games: <a href="/">Tiny Arcade</a> · <a href="/wordle/">Wordle</a> · <a href="/flashmath/">Flashmath</a>.</p>
+      </div>
+    </details>
+  </section>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

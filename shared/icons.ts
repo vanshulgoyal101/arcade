@@ -98,3 +98,6 @@ export const ICON_WORD = glyph(
 export const ICON_WORDLE = glyph(
   '<rect x="3" y="9" width="5.4" height="5.4" rx="1"/><rect x="9.3" y="9" width="5.4" height="5.4" rx="1" fill="currentColor" stroke="none"/><rect x="15.6" y="9" width="5.4" height="5.4" rx="1"/>', 20, ACCENT
 );
+export const ICON_2048 = glyph(
+  '<rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6" fill="currentColor" stroke="none"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6" fill="currentColor" stroke="none"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.6"/>', 20, ACCENT
+);

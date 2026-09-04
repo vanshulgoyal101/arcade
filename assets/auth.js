@@ -8,7 +8,7 @@ const SUPABASE_URL = 'https://tmngedsmgcgbkbkmsnsw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_qFZySs9l19_7bISrvmLHIw_vwt-DUdx';
 
 // Game names + glyphs live in one place, shared with the stats page.
-import { gameIcon, gameName } from './games.js?v=1';
+import { gameIcon, gameName } from './games.js?v=2';
 
 // Podium medal (rank 1/2/3), coloured gold/silver/bronze via currentColor.
 const MEDAL_COLOR = ['#facc15', '#cbd5e1', '#c2793d'];
@@ -29,8 +29,12 @@ const GAMES = [
   { slug: 'flashmath',  key: 'flashmath.v1', unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); } },
   { slug: 'sprint',     key: 'sprint.v1',    unit: 'wpm',    best: (s) => maxVal(s.best) },
   { slug: 'digit-span', key: 'digitspan.v1', unit: 'span',   best: (s) => maxVal(s.best) },
-  { slug: 'word',       key: 'word.v1',      unit: 'pts',    best: (s) => num(s.practiceBest), applyBest: (s, b) => { s.practiceBest = Math.max(num(s.practiceBest), b); }, extra: (s) => num(s.daily?.maxStreak) > 0 || num(s.daily?.streak) > 0 || (Array.isArray(s.learnedIds) && s.learnedIds.length > 0) },
   { slug: 'wordle',     key: 'wordle.v1',    unit: 'streak', best: (s) => num(s.maxStreak),   applyBest: (s, b) => { s.maxStreak = Math.max(num(s.maxStreak), b); } },
+  { slug: '2048',       key: '2048.v1',      unit: 'pts',    best: (s) => num(s.best),        applyBest: (s, b) => { s.best = Math.max(num(s.best), b); } },
+  // Retired from the hub grid (least played), but still live at its own URL and
+  // still synced/cleared with the account. `extra` keeps a daily-only player's
+  // streak backed up even when the headline practice best is 0.
+  { slug: 'word',       key: 'word.v1',      unit: 'pts',    best: (s) => num(s.practiceBest), applyBest: (s, b) => { s.practiceBest = Math.max(num(s.practiceBest), b); }, extra: (s) => num(s.daily?.maxStreak) > 0 || num(s.daily?.streak) > 0 || (Array.isArray(s.learnedIds) && s.learnedIds.length > 0), hidden: true },
   // Deliberately not carded on the hub, but its local data still belongs to the
   // signed-in account: it must sync, and be cleared when a different account
   // signs in here. `hidden` keeps it out of the hub grid and the leaderboard.

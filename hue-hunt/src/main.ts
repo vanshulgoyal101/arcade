@@ -146,10 +146,14 @@ function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
     renderHud();
     setTimeout(buildBoard, 60);
   } else {
+    advancing = true;
     game.wrongPick();
     sfx.wrong();
     el.classList.add('wrong');
-    setTimeout(() => el.classList.remove('wrong'), 300);
+    setTimeout(() => {
+      el.classList.remove('wrong');
+      advancing = false;
+    }, 300);
     renderHud();
   }
 }

@@ -3,7 +3,7 @@
   "scanDir": ".",
   "outFile": "sitemap.xml",
   "include": ["index.html", "*/index.html"],
-  "exclude": ["404.html", "stats/*", "interval/*", "node_modules/**", ".git/**", "tests/**", "scripts/**", "shared/**", "supabase/**"],
+  "exclude": ["404.html", "stats/*", "interval/*", "word/*", "node_modules/**", ".git/**", "tests/**", "scripts/**", "shared/**", "supabase/**"],
   "extraRoutes": [],
   "defaultChangefreq": "weekly",
   "updateRobots": true

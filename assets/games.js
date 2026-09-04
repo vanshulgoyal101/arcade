@@ -52,6 +52,10 @@ export const GAME_ART = {
     name: 'Wordle',
     path: '<rect x="3" y="9" width="5.4" height="5.4" rx="1"/><rect x="9.3" y="9" width="5.4" height="5.4" rx="1" fill="currentColor" stroke="none"/><rect x="15.6" y="9" width="5.4" height="5.4" rx="1"/>',
   },
+  2048: {
+    name: '2048',
+    path: '<rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.6"/><rect x="13" y="3.5" width="7.5" height="7.5" rx="1.6" fill="currentColor" stroke="none"/><rect x="3.5" y="13" width="7.5" height="7.5" rx="1.6" fill="currentColor" stroke="none"/><rect x="13" y="13" width="7.5" height="7.5" rx="1.6"/>',
+  },
   // Not a game: the analytics beacon reports hub visits under this slug.
   hub: {
     name: 'Hub',
