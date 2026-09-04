@@ -6,6 +6,7 @@ import { Game, type Difficulty } from './game';
 import { endlessShareText, chromaticShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { ICON_CHROMATIC, muteIcon, livesHtml, ICON_TROPHY } from '../../shared/icons';
 import { loadStore, saveStore } from './storage';
 import * as sfx from './audio';
 
@@ -18,7 +19,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="/">← Arcade</a>
-    <h1 class="title">🌈 Chromatic</h1>
+    <h1 class="title">${ICON_CHROMATIC} Chromatic</h1>
     <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
   </div>
 
@@ -102,14 +103,14 @@ function showToast(msg: string): void {
 }
 
 function renderMute(): void {
-  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+  muteBtn.innerHTML = muteIcon(sfx.isMuted());
 }
 
 function renderHud(): void {
   hud.innerHTML = `
     <div class="pill"><span class="k">Level</span><span class="v">${game.level}</span></div>
     <div class="pill"><span class="k">Score</span><span class="v">${fmtScore(game.score)}</span></div>
-    <div class="pill"><span class="k">Lives</span><span class="v hearts">${'❤️'.repeat(game.lives)}${'🖤'.repeat(Math.max(0, 3 - game.lives))}</span></div>
+    <div class="pill"><span class="k">Lives</span><span class="v hearts">${livesHtml(game.lives, 3)}</span></div>
     <div class="pill"><span class="k">Best</span><span class="v">${fmtScore(game.store.endlessBest)}</span></div>
   `;
 }
@@ -171,7 +172,7 @@ function openEndlessModal(): void {
   modal.innerHTML = `
     <h2>Game Over</h2>
     <div class="ring" style="--p:100"><span>${fmtScore(game.score)}</span></div>
-    <p class="hint" style="margin:0">Reached level ${game.level} · Best ${fmtScore(best)} 🏆</p>
+    <p class="hint" style="margin:0">Reached level ${game.level} · Best ${fmtScore(best)} ${ICON_TROPHY}</p>
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
       <button class="btn" id="m-retry">Play again</button>

@@ -7,6 +7,7 @@ import { flagEmoji, type Difficulty } from './content';
 import { whereShareText, whereShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { ICON_WHERE, muteIcon, livesHtml, ICON_TROPHY } from '../../shared/icons';
 import { loadStore } from './storage';
 
 const game = new WhereGame();
@@ -17,7 +18,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="/">← Arcade</a>
-    <h1 class="title">🗺️ Where</h1>
+    <h1 class="title">${ICON_WHERE} Where</h1>
     <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
   </div>
 
@@ -35,7 +36,7 @@ app.innerHTML = `
   <div class="hud">
     <div class="pill"><span class="k">Score</span><span class="v" id="score">0</span></div>
     <div class="pill"><span class="k">Streak</span><span class="v" id="streak">0</span></div>
-    <div class="pill"><span class="k">Lives</span><span class="v hearts" id="lives">❤️❤️❤️</span></div>
+    <div class="pill"><span class="k">Lives</span><span class="v hearts" id="lives"></span></div>
     <div class="pill"><span class="k">Best</span><span class="v" id="best">0</span></div>
   </div>
 
@@ -72,7 +73,7 @@ function setDiffLocked(locked: boolean): void {
 }
 
 function renderMute(): void {
-  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+  muteBtn.innerHTML = muteIcon(sfx.isMuted());
 }
 function showToast(m: string): void {
   toast.textContent = m;
@@ -82,7 +83,7 @@ function showToast(m: string): void {
 function renderHud(): void {
   scoreEl.textContent = fmtScore(game.score);
   streakEl.textContent = String(game.streak);
-  livesEl.textContent = '❤️'.repeat(game.lives) + '🖤'.repeat(Math.max(0, 3 - game.lives));
+  livesEl.innerHTML = livesHtml(game.lives, 3);
   bestEl.textContent = fmtScore(game.best);
 }
 
@@ -156,7 +157,7 @@ function endGame(newBest: boolean): void {
     <p class="sub">Score</p>
     <div class="big">${fmtScore(game.score)}</div>
     <p class="sub">${label} · Best ${fmtScore(best)}</p>
-    ${newBest ? '<p class="newbest">🏆 New best!</p>' : ''}
+    ${newBest ? `<p class="newbest">${ICON_TROPHY} New best!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
       <button class="btn" id="m-again">Play again</button>

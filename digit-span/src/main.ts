@@ -6,6 +6,7 @@ import * as sfx from './audio';
 import { digitShareText, digitShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { ICON_DIGIT_SPAN, muteIcon, ICON_TROPHY } from '../../shared/icons';
 
 const game = new DigitGame();
 sfx.setMuted(game.store.muted);
@@ -14,7 +15,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="/">← Arcade</a>
-    <h1 class="title">🔢 Digit Span</h1>
+    <h1 class="title">${ICON_DIGIT_SPAN} Digit Span</h1>
     <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
@@ -77,7 +78,7 @@ function showToast(m: string): void {
   setTimeout(() => toast.classList.remove('show'), 1500);
 }
 function renderMute(): void {
-  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+  muteBtn.innerHTML = muteIcon(sfx.isMuted());
 }
 function renderHud(): void {
   spanEl.textContent = String(game.level);
@@ -167,7 +168,7 @@ function gameOver(): void {
     <div class="big">${reached}</div>
     <p class="sub">digits · ${game.mode} · Best ${game.best}</p>
     <p class="seqline">Sequence: ${game.expected().join(' ')}</p>
-    ${newBest ? '<p class="newbest">🏆 New best!</p>' : ''}
+    ${newBest ? `<p class="newbest">${ICON_TROPHY} New best!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
       <button class="btn" id="m-again">Play again</button>

@@ -3,6 +3,7 @@ import { makeDismissable } from '../../shared/overlay';
 import * as sfx from '../../shared/sfx';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { ICON_WORDLE, ICON_STATS, muteIcon } from '../../shared/icons';
 import { WordleGame, WORD_LENGTH, MAX_GUESSES, type Tile } from './game';
 import { loadStore, winPercent } from './storage';
 import { wordleShareCard, shareResult, shareToast } from './share';
@@ -22,10 +23,10 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="/">← Arcade</a>
-    <h1 class="title">🟩 Wordle</h1>
+    <h1 class="title">${ICON_WORDLE} Wordle</h1>
     <div class="topbar-btns">
       <button class="icon-btn" id="restart" title="New word" aria-label="New word"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
-      <button class="icon-btn" id="stats" title="Statistics" aria-label="Statistics">📊</button>
+      <button class="icon-btn" id="stats" title="Statistics" aria-label="Statistics">${ICON_STATS}</button>
       <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
     </div>
   </div>
@@ -93,7 +94,7 @@ function makeKey(key: string, label: string, extra = ''): HTMLButtonElement {
 
 // ---- rendering ----
 function renderMute(): void {
-  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+  muteBtn.innerHTML = muteIcon(sfx.isMuted());
 }
 
 function showToast(msg: string): void {

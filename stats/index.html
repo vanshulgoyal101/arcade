@@ -58,7 +58,7 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>📊 Tiny Arcade — Stats</h1>
+      <h1><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="vertical-align:-4px" aria-hidden="true"><path d="M5 19V10M12 19V5M19 19v-7"/></svg> Tiny Arcade — Stats</h1>
       <div class="hdr-actions"><span id="actions"></span><a class="back" href="/index.html">← Arcade</a></div>
     </header>
     <div id="root"><div class="msg">Loading…</div></div>
@@ -74,14 +74,23 @@
     const actions = document.getElementById('actions');
     const esc = (s) => String(s ?? '').replace(/[&<>"'`]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]));
 
-    // slug -> [emoji, display name] for friendlier "Plays per game" labels.
+    // slug -> [icon, display name] for friendlier "Plays per game" labels.
+    function ic(inner) { return `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true">${inner}</svg>`; }
     const GAME_META = {
-      'hue-hunt': ['🎨', 'Hue Hunt'], where: ['🗺️', 'Where'], echo: ['🔊', 'Echo'],
-      flash: ['⚡', 'Flash'], chromatic: ['🌈', 'Chromatic'], flashmath: ['🧮', 'Flashmath'],
-      wordle: ['🟩', 'Wordle'], 'digit-span': ['🔢', 'Digit Span'], word: ['📖', 'Word of the Day'],
-      sprint: ['⌨️', 'Sprint'], interval: ['🎹', 'Interval'], hub: ['🕹️', 'Hub'],
+      'hue-hunt': [ic('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.4"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>'), 'Hue Hunt'],
+      where: [ic('<path d="M12 21S5.5 15 5.5 10A6.5 6.5 0 0 1 12 3.5 6.5 6.5 0 0 1 18.5 10c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>'), 'Where'],
+      echo: [ic('<path d="M8.5 8.8a4.6 4.6 0 0 0 0 6.4M15.5 8.8a4.6 4.6 0 0 1 0 6.4M5.3 5.6a9 9 0 0 0 0 12.8M18.7 5.6a9 9 0 0 1 0 12.8"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>'), 'Echo'],
+      flash: ['<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="none" style="vertical-align:-2px" aria-hidden="true"><path d="M13 2 4.5 13.5h5.7L9 22l9.5-12.5h-5.7z"/></svg>', 'Flash'],
+      chromatic: [ic('<path d="M12 3.2c3.4 4 6.3 7.5 6.3 10.8a6.3 6.3 0 0 1-12.6 0c0-3.3 2.9-6.8 6.3-10.8z"/>'), 'Chromatic'],
+      flashmath: [ic('<rect x="4" y="3" width="16" height="18" rx="2.4"/><path d="M7.3 8h9.4M7.3 12h9.4M7.3 16h5.6"/>'), 'Flashmath'],
+      wordle: [ic('<rect x="3" y="9" width="5.4" height="5.4" rx="1"/><rect x="9.3" y="9" width="5.4" height="5.4" rx="1" fill="currentColor" stroke="none"/><rect x="15.6" y="9" width="5.4" height="5.4" rx="1"/>'), 'Wordle'],
+      'digit-span': [ic('<path d="M9 3.5 6.4 20.5M17.6 3.5 15 20.5M4 9h16M3 15h16"/>'), 'Digit Span'],
+      word: [ic('<path d="M12 5.6c-2-1.6-5-2.1-8-1.6v14c3-.5 6 0 8 1.6 2-1.6 5-2.1 8-1.6V4c-3-.5-6 0-8 1.6z"/><path d="M12 5.6v14"/>'), 'Word of the Day'],
+      sprint: [ic('<rect x="3" y="6" width="18" height="12" rx="2.2"/><path d="M6.6 10h.01M10 10h.01M13.4 10h.01M16.8 10h.01M6.6 14h10.6"/>'), 'Sprint'],
+      interval: [ic('<path d="M9 18V5.3L19 3v13"/><circle cx="6.8" cy="18" r="2.4" fill="currentColor" stroke="none"/><circle cx="16.8" cy="16" r="2.4" fill="currentColor" stroke="none"/>'), 'Interval'],
+      hub: [ic('<path d="M6 10a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v3a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4v-3z"/><path d="M9 11v3M7.5 12.5h3M16 12h.01M18 14h.01"/>'), 'Hub'],
     };
-    const gameLabel = (slug) => { const m = GAME_META[slug]; return m ? m[0] + ' ' + m[1] : (slug || '—'); };
+    const gameLabel = (slug) => { const m = GAME_META[slug]; return m ? { icon: m[0], text: m[1] } : { text: slug || '—' }; };
 
     // Time-range filter for the windowed figures (null = all time).
     const RANGES = [['24h', 1], ['7 days', 7], ['30 days', 30], ['All', null]];
@@ -100,9 +109,11 @@
     function bars(items, fmt, label) {
       const max = Math.max(1, ...items.map((i) => i.value));
       return items.map((i) => {
-        const name = fmt(i);
-        return `<div class="row"><span class="k">${esc(name)}</span>` +
-          `<div class="bar" role="img" aria-label="${esc(name)}: ${i.value}"><span style="width:${(i.value / max) * 100}%"></span></div>` +
+        const f = fmt(i);
+        const icon = typeof f === 'object' ? f.icon || '' : '';
+        const text = typeof f === 'object' ? f.text : f;
+        return `<div class="row"><span class="k">${icon}${esc(text)}</span>` +
+          `<div class="bar" role="img" aria-label="${esc(text)}: ${i.value}"><span style="width:${(i.value / max) * 100}%"></span></div>` +
           `<span class="v">${i.value}</span></div>`;
       }).join('') || `<div class="msg">No ${label} yet.</div>`;
     }

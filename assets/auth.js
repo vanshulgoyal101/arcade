@@ -7,6 +7,27 @@ const SUPABASE_URL = 'https://tmngedsmgcgbkbkmsnsw.supabase.co';
 // Publishable (public) key — safe to ship; row-level security guards the data.
 const SUPABASE_KEY = 'sb_publishable_qFZySs9l19_7bISrvmLHIw_vwt-DUdx';
 
+// Minimal line-style icon set (inline SVG, no icon-font dependency) — mirrors
+// shared/icons.ts used by the TS games; duplicated here because this hub
+// script has no build step and can't import a .ts module at runtime.
+function ic(inner, size) { return `<svg viewBox="0 0 24 24" width="${size || 18}" height="${size || 18}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px" aria-hidden="true">${inner}</svg>`; }
+const ICON = {
+  'hue-hunt': ic('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.4"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>'),
+  where: ic('<path d="M12 21S5.5 15 5.5 10A6.5 6.5 0 0 1 12 3.5 6.5 6.5 0 0 1 18.5 10c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>'),
+  echo: ic('<path d="M8.5 8.8a4.6 4.6 0 0 0 0 6.4M15.5 8.8a4.6 4.6 0 0 1 0 6.4M5.3 5.6a9 9 0 0 0 0 12.8M18.7 5.6a9 9 0 0 1 0 12.8"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>'),
+  chromatic: ic('<path d="M12 3.2c3.4 4 6.3 7.5 6.3 10.8a6.3 6.3 0 0 1-12.6 0c0-3.3 2.9-6.8 6.3-10.8z"/>'),
+  flash: `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none" style="vertical-align:-3px" aria-hidden="true"><path d="M13 2 4.5 13.5h5.7L9 22l9.5-12.5h-5.7z"/></svg>`,
+  flashmath: ic('<rect x="4" y="3" width="16" height="18" rx="2.4"/><path d="M7.3 8h9.4M7.3 12h9.4M7.3 16h5.6"/>'),
+  sprint: ic('<rect x="3" y="6" width="18" height="12" rx="2.2"/><path d="M6.6 10h.01M10 10h.01M13.4 10h.01M16.8 10h.01M6.6 14h10.6"/>'),
+  'digit-span': ic('<path d="M9 3.5 6.4 20.5M17.6 3.5 15 20.5M4 9h16M3 15h16"/>'),
+  word: ic('<path d="M12 5.6c-2-1.6-5-2.1-8-1.6v14c3-.5 6 0 8 1.6 2-1.6 5-2.1 8-1.6V4c-3-.5-6 0-8 1.6z"/><path d="M12 5.6v14"/>'),
+  wordle: ic('<rect x="3" y="9" width="5.4" height="5.4" rx="1"/><rect x="9.3" y="9" width="5.4" height="5.4" rx="1" fill="currentColor" stroke="none"/><rect x="15.6" y="9" width="5.4" height="5.4" rx="1"/>'),
+  interval: ic('<path d="M9 18V5.3L19 3v13"/><circle cx="6.8" cy="18" r="2.4" fill="currentColor" stroke="none"/><circle cx="16.8" cy="16" r="2.4" fill="currentColor" stroke="none"/>'),
+};
+// Podium medal (rank 1/2/3), coloured gold/silver/bronze via currentColor.
+const MEDAL_COLOR = ['#facc15', '#cbd5e1', '#c2793d'];
+function medalIcon(rank) { return `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;color:${MEDAL_COLOR[rank - 1]}" aria-hidden="true"><circle cx="12" cy="9" r="5.2"/><path d="M9 13.5 7 21l5-2.4 5 2.4-2-7.5"/></svg>`; }
+
 // Each game's localStorage key + how to read its single headline best (all
 // "higher is better"). `data` (the whole blob) is what we sync for restore.
 // `applyBest(store, best)` heals a stale restored blob whose headline metric
@@ -14,20 +35,20 @@ const SUPABASE_KEY = 'sb_publishable_qFZySs9l19_7bISrvmLHIw_vwt-DUdx';
 // in-game best always matches the leaderboard. Omitted for the map-keyed games
 // (echo/sprint/digit-span) whose in-game best is per-config, not a single field.
 const GAMES = [
-  { slug: 'hue-hunt',   name: 'Hue Hunt',       emoji: '🎯', key: 'huehunt.v2',   unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); } },
-  { slug: 'where',      name: 'Where',          emoji: '🗺️', key: 'where.v1',     unit: 'pts',    best: (s) => Math.max(num(s.bestEasy), num(s.bestHard)), applyBest: (s, b) => { if (num(s.bestEasy) >= num(s.bestHard)) s.bestEasy = Math.max(num(s.bestEasy), b); else s.bestHard = Math.max(num(s.bestHard), b); } },
-  { slug: 'echo',       name: 'Echo',           emoji: '🔊', key: 'echo.v2',      unit: 'lvl',    best: (s) => maxVal(s.best) },
-  { slug: 'chromatic',  name: 'Chromatic',      emoji: '🌈', key: 'chromatic.v2', unit: 'pts',    best: (s) => num(s.endlessBest), applyBest: (s, b) => { s.endlessBest = Math.max(num(s.endlessBest), b); } },
-  { slug: 'flash',      name: 'Flash',          emoji: '⚡', key: 'flash.v1',     unit: 'wpm',    best: (s) => num(s.bestWpm),     applyBest: (s, b) => { s.bestWpm = Math.max(num(s.bestWpm), b); } },
-  { slug: 'flashmath',  name: 'Flashmath',      emoji: '🧮', key: 'flashmath.v1', unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); } },
-  { slug: 'sprint',     name: 'Sprint',         emoji: '⌨️', key: 'sprint.v1',    unit: 'wpm',    best: (s) => maxVal(s.best) },
-  { slug: 'digit-span', name: 'Digit Span',     emoji: '🔢', key: 'digitspan.v1', unit: 'span',   best: (s) => maxVal(s.best) },
-  { slug: 'word',       name: 'Word of the Day', emoji: '📖', key: 'word.v1',     unit: 'pts',    best: (s) => num(s.practiceBest), applyBest: (s, b) => { s.practiceBest = Math.max(num(s.practiceBest), b); }, extra: (s) => num(s.daily?.maxStreak) > 0 || num(s.daily?.streak) > 0 || (Array.isArray(s.learnedIds) && s.learnedIds.length > 0) },
-  { slug: 'wordle',     name: 'Wordle',         emoji: '🟩', key: 'wordle.v1',    unit: 'streak', best: (s) => num(s.maxStreak),   applyBest: (s, b) => { s.maxStreak = Math.max(num(s.maxStreak), b); } },
+  { slug: 'hue-hunt',   name: 'Hue Hunt',       icon: ICON['hue-hunt'], key: 'huehunt.v2',   unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); } },
+  { slug: 'where',      name: 'Where',          icon: ICON.where, key: 'where.v1',     unit: 'pts',    best: (s) => Math.max(num(s.bestEasy), num(s.bestHard)), applyBest: (s, b) => { if (num(s.bestEasy) >= num(s.bestHard)) s.bestEasy = Math.max(num(s.bestEasy), b); else s.bestHard = Math.max(num(s.bestHard), b); } },
+  { slug: 'echo',       name: 'Echo',           icon: ICON.echo, key: 'echo.v2',      unit: 'lvl',    best: (s) => maxVal(s.best) },
+  { slug: 'chromatic',  name: 'Chromatic',      icon: ICON.chromatic, key: 'chromatic.v2', unit: 'pts',    best: (s) => num(s.endlessBest), applyBest: (s, b) => { s.endlessBest = Math.max(num(s.endlessBest), b); } },
+  { slug: 'flash',      name: 'Flash',          icon: ICON.flash, key: 'flash.v1',     unit: 'wpm',    best: (s) => num(s.bestWpm),     applyBest: (s, b) => { s.bestWpm = Math.max(num(s.bestWpm), b); } },
+  { slug: 'flashmath',  name: 'Flashmath',      icon: ICON.flashmath, key: 'flashmath.v1', unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); } },
+  { slug: 'sprint',     name: 'Sprint',         icon: ICON.sprint, key: 'sprint.v1',    unit: 'wpm',    best: (s) => maxVal(s.best) },
+  { slug: 'digit-span', name: 'Digit Span',     icon: ICON['digit-span'], key: 'digitspan.v1', unit: 'span',   best: (s) => maxVal(s.best) },
+  { slug: 'word',       name: 'Word of the Day', icon: ICON.word, key: 'word.v1',     unit: 'pts',    best: (s) => num(s.practiceBest), applyBest: (s, b) => { s.practiceBest = Math.max(num(s.practiceBest), b); }, extra: (s) => num(s.daily?.maxStreak) > 0 || num(s.daily?.streak) > 0 || (Array.isArray(s.learnedIds) && s.learnedIds.length > 0) },
+  { slug: 'wordle',     name: 'Wordle',         icon: ICON.wordle, key: 'wordle.v1',    unit: 'streak', best: (s) => num(s.maxStreak),   applyBest: (s, b) => { s.maxStreak = Math.max(num(s.maxStreak), b); } },
   // Deliberately not carded on the hub, but its local data still belongs to the
   // signed-in account: it must sync, and be cleared when a different account
   // signs in here. `hidden` keeps it out of the hub grid and the leaderboard.
-  { slug: 'interval',   name: 'Interval',       emoji: '🎹', key: 'interval.v1',  unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); }, hidden: true },
+  { slug: 'interval',   name: 'Interval',       icon: ICON.interval, key: 'interval.v1',  unit: 'pts',    best: (s) => num(s.bestScore),   applyBest: (s, b) => { s.bestScore = Math.max(num(s.bestScore), b); }, hidden: true },
 ];
 
 // The games the hub actually shows (cards + leaderboard sections).
@@ -49,9 +70,10 @@ function fmtScore(n) {
 function isUrl(a) { return typeof a === 'string' && /^https?:/.test(a); }
 function isSvgAv(a) { return typeof a === 'string' && a.slice(0, 2) === 'a:' && AV[a.slice(2)]; }
 function avatarHtml(a, cls) {
+  a = a || 'a:panda'; // bespoke SVG avatar fallback (no more emoji placeholder)
   if (isUrl(a)) return `<img class="${cls}" src="${esc(a)}" alt="" referrerpolicy="no-referrer" />`;
   if (isSvgAv(a)) return `<span class="${cls} av-svg"><svg viewBox="0 0 64 64" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">${AV[a.slice(2)]}</svg></span>`;
-  return `<span class="${cls} av-emoji">${esc(a || '🎮')}</span>`;
+  return `<span class="${cls} av-emoji">${esc(a)}</span>`;
 }
 
 // Hand-drawn flat character avatars (self-contained SVG, no external assets).
@@ -133,7 +155,7 @@ function googleName(user) {
 }
 function googleAvatar(user) { return user.user_metadata?.avatar_url || null; }
 function pName() { return profile?.display_name || (currentUser ? googleName(currentUser) : 'Player'); }
-function pAvatar() { return profile?.avatar || (currentUser ? googleAvatar(currentUser) : null) || '🎮'; }
+function pAvatar() { return profile?.avatar || (currentUser ? googleAvatar(currentUser) : null) || 'a:panda'; }
 
 // Remember the profile per-device so the chip paints the right name/avatar
 // instantly on the next load, instead of flashing the Google identity while the
@@ -157,7 +179,7 @@ async function loadProfile(user) {
     .eq('user_id', user.id)
     .maybeSingle();
   if (data && (data.display_name || data.avatar)) {
-    profile = { display_name: data.display_name || googleName(user), avatar: data.avatar || googleAvatar(user) || '🎮', theme: data.theme || null };
+    profile = { display_name: data.display_name || googleName(user), avatar: data.avatar || googleAvatar(user) || 'a:panda', theme: data.theme || null };
   } else {
     // First sign-in: seed a profile from the Google identity.
     profile = { display_name: googleName(user), avatar: googleAvatar(user) || pickRandomAvatar(), theme: null };
@@ -186,7 +208,7 @@ function applyTheme(theme) {
 }
 
 async function saveProfile(name, avatar) {
-  profile = { display_name: (name || '').trim().slice(0, 24) || googleName(currentUser), avatar: avatar || '🎮' };
+  profile = { display_name: (name || '').trim().slice(0, 24) || googleName(currentUser), avatar: avatar || 'a:panda' };
   cacheProfile(currentUser.id);
   await supabase.from('arcade_profiles').upsert(
     { user_id: currentUser.id, display_name: profile.display_name, avatar: profile.avatar, updated_at: new Date().toISOString() },
@@ -307,7 +329,7 @@ function openProfile() {
     `<label class="pf-label" for="pfName">Display name</label>` +
     `<input id="pfName" class="pf-input" type="text" maxlength="24" value="${esc(pName())}" placeholder="Your name" />` +
     `<div class="pf-label-row"><span class="pf-label">Avatar</span>` +
-    `<button type="button" id="pfRandom" class="pf-random">🎲 Random</button></div>` +
+    `<button type="button" id="pfRandom" class="pf-random"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" style="vertical-align:-2px" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="8.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1" fill="currentColor" stroke="none"/></svg> Random</button></div>` +
     `<div class="pf-avatars" id="pfAvatars">` +
     options.map((o) => `<button type="button" class="pf-av${o === current ? ' sel' : ''}" data-av="${esc(o)}">${avatarHtml(o, 'pf-av-inner')}</button>`).join('') +
     `</div>` +
@@ -410,11 +432,11 @@ async function loadLeaderboard() {
               .map((r, i) => {
                 const you = uid && r.user_id === uid;
                 const rank = i < 3
-                  ? `<span class="lb-rank lb-medal">${['🥇', '🥈', '🥉'][i]}</span>`
+                  ? `<span class="lb-rank lb-medal">${medalIcon(i + 1)}</span>`
                   : `<span class="lb-rank">${i + 1}</span>`;
                 return (
                   `<li class="${you ? 'lb-you' : ''}">${rank}` +
-                  `${avatarHtml(r.avatar_url || '🎮', 'lb-av')}` +
+                  `${avatarHtml(r.avatar_url, 'lb-av')}` +
                   `<span class="lb-who">${esc(r.display_name || 'Player')}${you ? '<span class="lb-tag">You</span>' : ''}</span>` +
                   `<span class="lb-score">${fmtScore(r.best)} ${esc(g.unit)}</span></li>`
                 );
@@ -430,11 +452,11 @@ async function loadLeaderboard() {
               `<span class="lb-score">${fmtScore(myBest)} ${esc(g.unit)}</span></li>`
             : '';
         const lead = rows.length
-          ? `<span class="lb-lead">🥇 ${esc(rows[0].display_name || 'Player')} · ${fmtScore(rows[0].best)} ${esc(g.unit)}</span>`
+          ? `<span class="lb-lead">${medalIcon(1)} ${esc(rows[0].display_name || 'Player')} · ${fmtScore(rows[0].best)} ${esc(g.unit)}</span>`
           : `<span class="lb-lead lb-lead-empty">No scores yet</span>`;
         return (
           `<details class="lb-game" data-game="${esc(g.slug)}">` +
-          `<summary class="lb-head"><span class="lb-game-name">${g.emoji} ${esc(g.name)}</span>` +
+          `<summary class="lb-head"><span class="lb-game-name">${g.icon} ${esc(g.name)}</span>` +
           `<span class="lb-head-right">${lead}<span class="lb-caret">▾</span></span></summary>` +
           `<ol>${list}${mine}</ol></details>`
         );

@@ -7,6 +7,7 @@ import type { Passage } from './content';
 import { flashShareText, flashShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { ICON_FLASH, muteIcon, ICON_TROPHY } from '../../shared/icons';
 import { loadStore } from './storage';
 
 const game = new FlashGame();
@@ -20,7 +21,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="/">← Arcade</a>
-    <h1 class="title">⚡ Flash</h1>
+    <h1 class="title">${ICON_FLASH} Flash</h1>
     <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
   </div>
 
@@ -112,7 +113,7 @@ let activePassage: Passage | null = null;
 let answers: number[] = [];
 
 function renderMute(): void {
-  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+  muteBtn.innerHTML = muteIcon(sfx.isMuted());
 }
 muteBtn.addEventListener('click', () => {
   const next = !sfx.isMuted();
@@ -288,7 +289,7 @@ function showResult(r: RoundResult): void {
       <div class="stat-box"><div class="n">${r.streak}</div><div class="l">Streak</div></div>
     </div>
     <p class="speed-change ${up ? 'up' : down ? 'down' : ''}">${changeText}</p>
-    ${r.newBest ? '<p class="newbest">🏆 New best speed!</p>' : ''}
+    ${r.newBest ? `<p class="newbest">${ICON_TROPHY} New best speed!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
       <button class="btn" id="m-next">Next passage</button>

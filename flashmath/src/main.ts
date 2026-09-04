@@ -6,6 +6,7 @@ import * as sfx from './audio';
 import { mathShareText, mathShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { ICON_FLASHMATH, muteIcon, ICON_TROPHY } from '../../shared/icons';
 
 const game = new MathGame();
 sfx.setMuted(game.store.muted);
@@ -14,7 +15,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="/">← Arcade</a>
-    <h1 class="title">🧮 Flashmath</h1>
+    <h1 class="title">${ICON_FLASHMATH} Flashmath</h1>
     <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
@@ -91,7 +92,7 @@ function popup(text: string, color: string): void {
   setTimeout(() => p.remove(), 800);
 }
 function renderMute(): void {
-  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+  muteBtn.innerHTML = muteIcon(sfx.isMuted());
 }
 function renderHud(): void {
   levelEl.textContent = String(game.level);
@@ -186,7 +187,7 @@ function endGame(): void {
     <p class="sub">Score</p>
     <div class="big">${game.score}</div>
     <p class="sub">${game.solved} solved · reached level ${game.level} · Best ${game.store.bestScore}</p>
-    ${newBest ? '<p class="newbest">🏆 New best score!</p>' : ''}
+    ${newBest ? `<p class="newbest">${ICON_TROPHY} New best score!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
       <button class="btn" id="m-again">Play again</button>

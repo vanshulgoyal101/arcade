@@ -1,11 +1,13 @@
 // Makes a full-screen `.overlay` (with a `.modal` child) dismissable the way users
-// expect — click/tap the backdrop, press Escape, or use an injected ✕ button — and,
+// expect — click/tap the backdrop, press Escape, or use an injected close button — and,
 // when a restart callback is given, reveals a persistent "Play again" pill after the
 // result modal is dismissed so the player is never stranded at a frozen end screen.
 //
 // The injected controls live outside the modal and inherit the theme's CSS vars, so
 // no per-game markup or CSS is needed. `onReplay` only fires from a dismissed result
 // modal (i.e. the game is already over), so triggering a restart from it is safe.
+
+import { ICON_CLOSE } from './icons';
 
 export function makeDismissable(overlay: HTMLElement, onReplay?: () => void): void {
   let replay: HTMLButtonElement | null = null;
@@ -57,7 +59,7 @@ export function makeDismissable(overlay: HTMLElement, onReplay?: () => void): vo
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.setAttribute('aria-label', 'Close');
-  btn.textContent = '✕';
+  btn.innerHTML = ICON_CLOSE;
   Object.assign(btn.style, {
     position: 'absolute',
     top: '10px',
@@ -80,7 +82,7 @@ export function makeDismissable(overlay: HTMLElement, onReplay?: () => void): vo
   });
   btn.addEventListener('click', close);
 
-  // Anchor the ✕ to the modal card's corner (not the screen corner, where it
+  // Anchor the close button to the modal card's corner (not the screen corner, where it
   // would collide with a game's topbar buttons). Games reset modal.innerHTML
   // each time they open the result, wiping the button, so re-attach on show.
   const modal = overlay.querySelector<HTMLElement>('.modal');

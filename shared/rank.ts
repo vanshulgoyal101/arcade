@@ -16,6 +16,17 @@ export function rankText(info: RankInfo | null | undefined): string {
   return `#${info.rank} of ${info.total} · top ${pct}%`;
 }
 
+// Minimal line-style medal for the rendered top-3 badge below (rankText above
+// stays emoji-based — it's a plain-text formatter also used standalone).
+const MEDAL_COLOR = ['#facc15', '#cbd5e1', '#c2793d']; // gold, silver, bronze
+function medalIcon(rank: number): string {
+  return (
+    `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" ` +
+    `stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;color:${MEDAL_COLOR[rank - 1]}" aria-hidden="true">` +
+    `<circle cx="12" cy="9" r="5.2"/><path d="M9 13.5 7 21l5-2.4 5 2.4-2-7.5"/></svg>`
+  );
+}
+
 /** A ready-to-insert badge (or empty string). Self-styled via theme vars. */
 export function rankBadgeHtml(info: RankInfo | null | undefined, label = 'Global rank'): string {
   const pill =
@@ -40,6 +51,16 @@ export function rankBadgeHtml(info: RankInfo | null | undefined, label = 'Global
       `<span style="color:var(--accent,#fb7185);font-weight:800">Saved</span>` +
       `<span style="color:var(--muted,#949cb0);font-weight:600">syncs when you’re back online</span>` +
       `</span></div>`
+    );
+  }
+  // Podium ranks get a coloured medal icon instead of rankText's emoji prefix.
+  if (info && info.rank >= 1 && info.rank <= 3 && info.total) {
+    return (
+      `<div class="cloud-rank" style="text-align:center;margin:12px 0 0">` +
+      `<span style="${pill}">` +
+      `<span style="color:var(--muted,#949cb0);font-weight:600">${label}</span>` +
+      `<span style="display:inline-flex;align-items:center;gap:5px;color:var(--accent,#fb7185);font-weight:800">` +
+      `${medalIcon(info.rank)}#${info.rank} of ${info.total}</span></span></div>`
     );
   }
   const t = rankText(info);

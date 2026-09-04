@@ -41,7 +41,9 @@ describe('shared/rank · rankBadgeHtml', () => {
   it('renders the label and rank text for a ranked player', () => {
     const html = rankBadgeHtml({ rank: 1, total: 50 }, 'Global rank');
     expect(html).toContain('Global rank');
-    expect(html).toContain('🥇 #1 of 50');
+    expect(html).toContain('#1 of 50');
+    expect(html).toContain('<svg'); // medal icon, not an emoji
+    expect(html).not.toContain('🥇');
   });
 
   it('reassures an offline player that the score is saved, with no fake rank', () => {

@@ -6,6 +6,7 @@ import * as sfx from './audio';
 import { echoShareText, echoShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { ICON_ECHO, muteIcon, livesHtml, ICON_TROPHY } from '../../shared/icons';
 
 const game = new EchoGame();
 sfx.setMuted(game.store.muted);
@@ -14,7 +15,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="/">← Arcade</a>
-    <h1 class="title">🔊 Echo</h1>
+    <h1 class="title">${ICON_ECHO} Echo</h1>
     <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
@@ -31,7 +32,7 @@ app.innerHTML = `
 
   <div class="hud">
     <div class="pill"><span class="k">Level</span><span class="v" id="level">0</span></div>
-    <div class="pill"><span class="k">Lives</span><span class="v hearts" id="lives">❤️❤️❤️</span></div>
+    <div class="pill"><span class="k">Lives</span><span class="v hearts" id="lives"></span></div>
     <div class="pill"><span class="k">Best</span><span class="v" id="best">0</span></div>
   </div>
 
@@ -76,7 +77,7 @@ function showToast(msg: string): void {
 }
 
 function renderMute(): void {
-  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+  muteBtn.innerHTML = muteIcon(sfx.isMuted());
 }
 
 function renderToggles(): void {
@@ -93,7 +94,7 @@ function renderToggles(): void {
 function renderHud(): void {
   levelEl.textContent = String(game.level);
   const total = game.strict ? 1 : 3;
-  livesEl.textContent = '❤️'.repeat(game.lives) + '🖤'.repeat(Math.max(0, total - game.lives));
+  livesEl.innerHTML = livesHtml(game.lives, total);
   bestEl.textContent = String(game.best);
 }
 
@@ -213,7 +214,7 @@ function gameOver(): void {
     <p class="sub">You remembered</p>
     <div class="big">${reached}</div>
     <p class="sub">steps · ${game.strict ? 'Strict' : 'Forgiving'} · ${game.pads}-pad · Best ${game.best}</p>
-    ${newBest ? '<p class="newbest">🏆 New best!</p>' : ''}
+    ${newBest ? `<p class="newbest">${ICON_TROPHY} New best!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
       <button class="btn" id="m-again">Play again</button>

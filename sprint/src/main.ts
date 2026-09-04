@@ -5,6 +5,7 @@ import { SprintGame, DURATIONS, type Duration } from './game';
 import { sprintShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { ICON_SPRINT, muteIcon, ICON_TROPHY } from '../../shared/icons';
 import { loadStore } from './storage';
 
 const game = new SprintGame();
@@ -15,7 +16,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="/">← Arcade</a>
-    <h1 class="title">⌨️ Sprint</h1>
+    <h1 class="title">${ICON_SPRINT} Sprint</h1>
     <div class="topbar-actions">
       <button class="icon-btn" id="restart" title="Restart" aria-label="Restart"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
       <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
@@ -64,7 +65,7 @@ const VISIBLE = 18;
 let rafId = 0;
 
 function renderMute(): void {
-  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+  muteBtn.innerHTML = muteIcon(sfx.isMuted());
 }
 
 function showToast(msg: string): void {
@@ -149,7 +150,7 @@ function endRun(now: number): void {
         .join('&nbsp;&nbsp;')}</p>`
     : '';
   modal.innerHTML = `
-    <h2>${newBest ? 'New record! 🏆' : 'Time!'}</h2>
+    <h2>${newBest ? `New record! ${ICON_TROPHY}` : 'Time!'}</h2>
     <div class="stat-grid">
       <div class="stat-box"><div class="n">${stats.wpm}</div><div class="l">WPM</div></div>
       <div class="stat-box"><div class="n">${stats.accuracy}%</div><div class="l">Accuracy</div></div>

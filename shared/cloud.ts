@@ -225,7 +225,7 @@ async function init(): Promise<void> {
           .maybeSingle();
         profile = {
           name: p?.display_name || googleName(user),
-          avatar: p?.avatar || user.user_metadata?.avatar_url || '🎮',
+          avatar: p?.avatar || user.user_metadata?.avatar_url || 'a:panda',
         };
         preloadAvatar(profile.avatar);
       }

@@ -6,6 +6,7 @@ import * as sfx from './audio';
 import { hueShareText, hueShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { ICON_HUE_HUNT, muteIcon, ICON_TROPHY } from '../../shared/icons';
 
 const game = new HueGame();
 sfx.setMuted(game.store.muted);
@@ -14,7 +15,7 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <div class="topbar">
     <a class="back" href="/">← Arcade</a>
-    <h1 class="title">🎯 Hue Hunt</h1>
+    <h1 class="title">${ICON_HUE_HUNT} Hue Hunt</h1>
     <button class="icon-btn" id="mute" title="Toggle sound"></button>
   </div>
 
@@ -89,7 +90,7 @@ function scorePopup(x: number, y: number, text: string, color: string): void {
 }
 
 function renderMute(): void {
-  muteBtn.textContent = sfx.isMuted() ? '🔇' : '🔊';
+  muteBtn.innerHTML = muteIcon(sfx.isMuted());
 }
 
 function renderHud(): void {
@@ -175,7 +176,7 @@ function endGame(): void {
     <p class="sub">Score</p>
     <div class="big">${game.score}</div>
     <p class="sub">Reached level ${reached} · Best ${game.store.bestScore}</p>
-    ${newBest ? '<p class="newbest">🏆 New best score!</p>' : ''}
+    ${newBest ? `<p class="newbest">${ICON_TROPHY} New best score!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
       <button class="btn" id="m-again">Play again</button>
