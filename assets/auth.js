@@ -202,7 +202,7 @@ function applyTheme(theme) {
   if (m) m.setAttribute('content', theme === 'classic' ? '#12141c' : '#0c0d12');
   const btn = document.getElementById('themeBtn');
   if (btn) {
-    btn.textContent = theme === 'classic' ? '🎨 New colours' : '🎨 Classic colours';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-4a2 2 0 0 1-2-2V8a5 5 0 0 0-3-5Z"/><circle cx="7.5" cy="11" r=".8" fill="currentColor"/><circle cx="10" cy="7.5" r=".8" fill="currentColor"/><circle cx="15" cy="6.5" r=".8" fill="currentColor"/></svg> ${theme === 'classic' ? 'New colours' : 'Classic colours'}`;
     btn.setAttribute('aria-pressed', String(theme === 'classic'));
   }
 }
