@@ -103,9 +103,13 @@ html, body {
 
 /* `scale` is its own property, so these never clobber the translate above. */
 .tile.fresh { animation: appear .16s ease; }
-.tile.merged { animation: pop .18s ease; }
-@keyframes appear { from { scale: .4; opacity: 0; } }
-@keyframes pop { 50% { scale: 1.16; } }
+.tile.merged { animation: pop .14s cubic-bezier(.22, .8, .32, 1); }
+@keyframes appear { from { scale: .72; opacity: 0; } }
+@keyframes pop {
+  0% { scale: .96; }
+  55% { scale: 1.04; }
+  100% { scale: 1; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .tile { transition: none; }

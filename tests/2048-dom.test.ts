@@ -71,8 +71,12 @@ describe('2048/dom', () => {
   it('moves on a swipe as soon as it passes the threshold', async () => {
     const app = await load();
     const before = tiles(app).join('|');
-    swipe(app, -60, 0);
-    vi.advanceTimersByTime(200);
+    // A single direction can legitimately be a no-op depending on the random
+    // starting cells; four directions guarantee at least one valid move.
+    for (const [dx, dy] of [[-60, 0], [0, -60], [60, 0], [0, 60]]) {
+      swipe(app, dx, dy);
+      vi.advanceTimersByTime(200);
+    }
     expect(tiles(app).join('|')).not.toBe(before);
   });
 
@@ -82,6 +86,18 @@ describe('2048/dom', () => {
     swipe(app, 4, 3);
     vi.advanceTimersByTime(200);
     expect(tiles(app).join('|')).toBe(before);
+  });
+
+  it('completes a flick that leaves the board mid-gesture', async () => {
+    const app = await load();
+    const board = app.querySelector('#board')!;
+    const before = tiles(app).join('|');
+    board.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100 }));
+    // Starting near an edge, the finger exits the board before the threshold.
+    board.dispatchEvent(new MouseEvent('pointerleave', { bubbles: true, clientX: 94, clientY: 100 }));
+    board.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 20, clientY: 100 }));
+    vi.advanceTimersByTime(200);
+    expect(tiles(app).join('|')).not.toBe(before);
   });
 
   it('restarts to a fresh two-tile board', async () => {

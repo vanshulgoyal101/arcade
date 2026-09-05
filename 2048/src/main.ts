@@ -185,6 +185,9 @@ boardEl.addEventListener('pointerdown', (e) => {
   swiping = true;
   startX = e.clientX;
   startY = e.clientY;
+  // Keep receiving moves after the pointer leaves the board, so a flick that
+  // starts near an edge still counts. Touch captures implicitly; mouse doesn't.
+  boardEl.setPointerCapture?.(e.pointerId);
 });
 boardEl.addEventListener('pointermove', (e) => {
   if (!swiping) return;
@@ -197,7 +200,6 @@ boardEl.addEventListener('pointermove', (e) => {
 const endSwipe = (): void => { swiping = false; };
 boardEl.addEventListener('pointerup', endSwipe);
 boardEl.addEventListener('pointercancel', endSwipe);
-boardEl.addEventListener('pointerleave', endSwipe);
 
 // ---- end of run ----
 function showWin(): void {
