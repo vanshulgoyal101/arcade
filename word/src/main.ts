@@ -25,6 +25,7 @@ sfx.setMuted(sfx.loadMuted(MUTE_KEY));
 let mode: Mode = 'today';
 const practice = new PracticeGame(store.practiceBest);
 let practiceLock = false;
+let viewId = 0;
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
@@ -75,6 +76,11 @@ function showToast(msg: string): void {
   window.setTimeout(() => toast.classList.remove('show'), 1600);
 }
 
+function onView(ms: number, fn: () => void): void {
+  const id = viewId;
+  window.setTimeout(() => { if (id === viewId) fn(); }, ms);
+}
+
 function esc(s: string): string {
   return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
 }
@@ -114,7 +120,10 @@ function switchTab(next: Mode): void {
   tabs.querySelectorAll<HTMLButtonElement>('.tab').forEach((b) => {
     b.classList.toggle('active', b.dataset.tab === mode);
   });
-  if (mode === 'today') renderToday();
+  if (mode === 'today') {
+    viewId++;
+    renderToday();
+  }
   else startPractice();
 }
 
@@ -184,11 +193,11 @@ function answerToday(i: number, opts: Option[], w: Word, optionsEl: HTMLDivEleme
     if (idx === correctIndex) b.classList.add('correct');
     else if (idx === i) b.classList.add('wrong');
   });
-  window.setTimeout(() => (correct ? sfx.correct(store.daily.streak) : sfx.wrong()), 120);
+  onView(120, () => (correct ? sfx.correct(store.daily.streak) : sfx.wrong()));
 
   completeDaily(correct, w.word);
 
-  window.setTimeout(() => {
+  onView(700, () => {
     const card = view.querySelector<HTMLDivElement>('.card')!;
     const extra = document.createElement('div');
     extra.className = 'reveal-anim';
@@ -208,7 +217,7 @@ function answerToday(i: number, opts: Option[], w: Word, optionsEl: HTMLDivEleme
     view.appendChild(actions);
     actions.querySelector<HTMLButtonElement>('#share')!.onclick = shareDaily;
     actions.querySelector<HTMLButtonElement>('#toPractice')!.onclick = () => switchTab('practice');
-  }, 700);
+  });
 }
 
 function completeDaily(correct: boolean, word: string): void {
@@ -238,6 +247,7 @@ async function shareDaily(): Promise<void> {
 
 // ---- Practice ----
 function startPractice(): void {
+  viewId++;
   overlay.classList.remove('show');
   practiceLock = false;
   practice.reset();
@@ -275,7 +285,7 @@ function answerPractice(i: number, optionsEl: HTMLDivElement): void {
     if (idx === res.correctIndex) b.classList.add('correct');
     else if (idx === i && !res.correct) b.classList.add('wrong');
   });
-  window.setTimeout(() => (res.correct ? sfx.correct(practice.streak) : sfx.wrong()), 120);
+  onView(120, () => (res.correct ? sfx.correct(practice.streak) : sfx.wrong()));
   renderHud();
 
   // Reveal the word's full meaning so every round teaches something.
@@ -284,16 +294,16 @@ function answerPractice(i: number, optionsEl: HTMLDivElement): void {
   extra.className = 'reveal-anim';
   extra.innerHTML = details(answered);
   card.appendChild(extra);
-  window.setTimeout(() => sfx.reveal(), 220);
+  onView(220, () => sfx.reveal());
 
   const hint = view.querySelector<HTMLParagraphElement>('.hint');
   if (hint) hint.textContent = res.correct ? 'Correct! 🎉' : 'Not quite — now you know it.';
 
   if (res.over) {
-    window.setTimeout(() => {
+    onView(900, () => {
       sfx.gameOver();
       practiceOver(res.newBest);
-    }, 900);
+    });
     return;
   }
 

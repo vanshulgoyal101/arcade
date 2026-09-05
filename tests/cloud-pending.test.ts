@@ -35,6 +35,23 @@ describe('cloud/pending submit queue', () => {
     expect(readPending()).toEqual({ flash: 80 });
   });
 
+  it('does not let an older in-flight upload delete a newer queued best', () => {
+    queuePending('wordle', 10); // the value a flush starts uploading
+    queuePending('wordle', 12); // scored while that request is in flight
+    unqueuePending('wordle', 10); // the older request succeeds
+    expect(readPending()).toEqual({ wordle: 12 });
+  });
+
+  it('clears a parked best once an equal or higher upload lands', () => {
+    queuePending('wordle', 10);
+    unqueuePending('wordle', 10);
+    expect(readPending()).toEqual({});
+
+    queuePending('wordle', 10);
+    unqueuePending('wordle', 12);
+    expect(readPending()).toEqual({});
+  });
+
   it('removes the storage key entirely once the queue drains', () => {
     queuePending('wordle', 3);
     unqueuePending('wordle');
@@ -143,6 +160,15 @@ describe('cloud/mountRank', () => {
     expect(badge).not.toBeNull();
     expect(badge!.nextElementSibling!.className).toBe('row');
     expect(badge!.textContent).toContain('Saved');
+  });
+
+  it('lets only the latest overlapping rank request write to a modal', async () => {
+    localStorage.setItem(SESSION_KEY, '{"access_token":"x"}');
+    const modal = document.querySelector('#m')!;
+    mountRank(modal, 'wordle', 10);
+    mountRank(modal, 'wordle', 12);
+    await settle();
+    expect(modal.querySelectorAll('.cloud-rank').length).toBe(1);
   });
 
   it('inserts nothing when there is no rank to show', async () => {

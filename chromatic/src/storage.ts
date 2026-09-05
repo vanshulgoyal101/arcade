@@ -1,5 +1,7 @@
 // Persistent state: endless best score.
 
+import { isRecord, storedBoolean, storedInt } from '../../shared/stored';
+
 export interface Store {
   endlessBest: number;
   muted: boolean;
@@ -16,10 +18,11 @@ export function loadStore(): Store {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return structuredClone(DEFAULT);
-    const parsed = JSON.parse(raw) as Partial<Store>;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return structuredClone(DEFAULT);
     return {
-      endlessBest: parsed.endlessBest ?? 0,
-      muted: parsed.muted ?? false,
+      endlessBest: storedInt(parsed.endlessBest),
+      muted: storedBoolean(parsed.muted),
     };
   } catch {
     return structuredClone(DEFAULT);

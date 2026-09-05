@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mountGame, text, gameEnv } from './helpers/dom';
 
 const load = () => mountGame(() => import('../flashmath/src/main.ts'));
@@ -49,5 +49,43 @@ describe('flashmath/dom', () => {
     }
     expect(Number(text(app.querySelector('#score')))).toBeGreaterThan(0);
     expect(text(app.querySelector('#level'))).toBe('4'); // level 1 → 4 after 3 solves
+  });
+
+  async function loadWithFrame(): Promise<{ app: HTMLElement; expire: () => void }> {
+    document.body.innerHTML = '<div id="app"></div>';
+    localStorage.clear();
+    let frame: FrameRequestCallback | null = null;
+    globalThis.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      frame = cb;
+      return 1;
+    }) as typeof requestAnimationFrame;
+    globalThis.cancelAnimationFrame = (() => {}) as typeof cancelAnimationFrame;
+    vi.resetModules();
+    await import('../flashmath/src/main.ts');
+    return {
+      app: document.querySelector<HTMLElement>('#app')!,
+      expire: () => frame?.(performance.now() + 60_000),
+    };
+  }
+
+  it('starts a replay with an empty answer', async () => {
+    const { app, expire } = await loadWithFrame();
+    typeNumber(123);
+    expire();
+    app.querySelector<HTMLButtonElement>('#m-again')!.click();
+    expect(text(app.querySelector('#answer'))).toBe('');
+  });
+
+  it('does not let an old wrong-answer timer erase new-run input', async () => {
+    const { app, expire } = await loadWithFrame();
+    typeNumber(solve(text(app.querySelector('#problem'))) + 1);
+    key('Enter'); // arms the 300ms wrong-answer cleanup
+    expire();
+    app.querySelector<HTMLButtonElement>('#m-again')!.click();
+    typeNumber(7);
+
+    await vi.advanceTimersByTimeAsync(350);
+
+    expect(text(app.querySelector('#answer'))).toBe('7');
   });
 });

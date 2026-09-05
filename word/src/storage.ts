@@ -1,5 +1,7 @@
 // Persistent state for Word of the Day: daily streak + practice best.
 
+import { isRecord, storedInt, storedString, storedStrings } from '../../shared/stored';
+
 export interface DailyRecord {
   streak: number;
   maxStreak: number;
@@ -18,22 +20,22 @@ function freshDefaults(): WordStore {
   return { daily: { streak: 0, maxStreak: 0, lastKey: '' }, practiceBest: 0, learnedIds: [] };
 }
 
-const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
-
 export function loadStore(): WordStore {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return freshDefaults();
     // `p.learned` is the legacy numeric field — deliberately dropped in favour of learnedIds.
-    const p = JSON.parse(raw) as { daily?: Partial<DailyRecord>; practiceBest?: unknown; learnedIds?: unknown };
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return freshDefaults();
+    const daily = isRecord(parsed.daily) ? parsed.daily : {};
     return {
       daily: {
-        streak: num(p.daily?.streak),
-        maxStreak: num(p.daily?.maxStreak),
-        lastKey: typeof p.daily?.lastKey === 'string' ? p.daily.lastKey : '',
+        streak: storedInt(daily.streak),
+        maxStreak: storedInt(daily.maxStreak),
+        lastKey: storedString(daily.lastKey, '', 10),
       },
-      practiceBest: num(p.practiceBest),
-      learnedIds: Array.isArray(p.learnedIds) ? p.learnedIds.filter((x): x is string => typeof x === 'string') : [],
+      practiceBest: storedInt(parsed.practiceBest),
+      learnedIds: storedStrings(parsed.learnedIds),
     };
   } catch {
     return freshDefaults();

@@ -1,5 +1,7 @@
 // Persistent high scores for Flashmath.
 
+import { isRecord, storedBoolean, storedInt } from '../../shared/stored';
+
 export interface MathStore {
   bestScore: number;
   bestSolved: number;
@@ -13,7 +15,13 @@ export function loadStore(): MathStore {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULT };
-    return { ...DEFAULT, ...(JSON.parse(raw) as Partial<MathStore>) };
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return { ...DEFAULT };
+    return {
+      bestScore: storedInt(parsed.bestScore),
+      bestSolved: storedInt(parsed.bestSolved),
+      muted: storedBoolean(parsed.muted),
+    };
   } catch {
     return { ...DEFAULT };
   }

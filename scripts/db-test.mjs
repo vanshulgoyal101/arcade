@@ -92,13 +92,28 @@ async function main() {
     r = (await q(`select data from public.arcade_scores where game='${TG}' and user_id='${u1}'`))[0];
     check('an oversized (>64KB) data blob is nulled', r.data === null, r.data);
 
+    // non-object JSON can never be a game store → nulled
+    for (const bad of [`'5'::jsonb`, `'"bad"'::jsonb`, `'[]'::jsonb`]) {
+      await q(
+        `insert into public.arcade_scores (user_id, game, best, data) values ('${u1}','${TG}',1,${bad}) on conflict (user_id,game) do update set data=excluded.data`
+      );
+      r = (await q(`select data from public.arcade_scores where game='${TG}' and user_id='${u1}'`))[0];
+      check(`a ${bad} data blob is nulled`, r.data === null, r.data);
+    }
+
     console.log('arcade_leaderboard (best>0 filter):');
     if (u2) {
       await q(`delete from public.arcade_scores where game='${TG}'`);
       await q(`insert into public.arcade_scores (user_id, game, best, data) values ('${u1}','${TG}',5,${lit({})})`);
+      await q(`insert into public.arcade_scores (user_id, game, best, data) values ('${u2}','${TG}',5,${lit({})})`);
+      let lb = await q(`select public.arcade_leaderboard(array['${TG}'], 5) as j`);
+      let top = lb[0].j[TG].top;
+      check('equal scores share the same competition rank', top.length === 2 && top.every((x) => x.rank === 1), top);
+
+      await q(`delete from public.arcade_scores where game='${TG}' and user_id='${u2}'`);
       await q(`insert into public.arcade_scores (user_id, game, best, data) values ('${u2}','${TG}',0,${lit({})})`);
-      const lb = await q(`select public.arcade_leaderboard(array['${TG}'], 5) as j`);
-      const top = lb[0].j[TG].top;
+      lb = await q(`select public.arcade_leaderboard(array['${TG}'], 5) as j`);
+      top = lb[0].j[TG].top;
       check('leaderboard top excludes the best=0 backup row', top.length === 1 && top[0].best === 5, top);
     } else {
       console.log('  (skipped: needs a second user)');

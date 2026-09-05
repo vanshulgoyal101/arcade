@@ -72,12 +72,13 @@ set search_path = public
 as $$
   with ranked as (
     select s.game, s.user_id, s.display_name, s.avatar_url, s.best,
-           row_number() over (partition by s.game order by s.best desc, s.updated_at) as rn
+           rank() over (partition by s.game order by s.best desc) as place,
+           row_number() over (partition by s.game order by s.best desc, s.updated_at, s.user_id) as rn
     from public.arcade_scores s
     where s.game = any(p_games) and s.best > 0
   ),
   me as (
-    select game, best, rn from ranked where user_id = auth.uid()
+    select game, best, place from ranked where user_id = auth.uid()
   )
   select coalesce(jsonb_object_agg(gg, payload), '{}'::jsonb)
   from (
@@ -86,10 +87,10 @@ as $$
         'top', coalesce((
           select jsonb_agg(jsonb_build_object(
                    'user_id', r.user_id, 'display_name', r.display_name,
-                   'avatar_url', r.avatar_url, 'best', r.best) order by r.rn)
+                   'avatar_url', r.avatar_url, 'best', r.best, 'rank', r.place) order by r.rn)
           from ranked r where r.game = gg and r.rn <= p_limit), '[]'::jsonb),
         'my_best', (select best from me where me.game = gg),
-        'my_rank', (select rn   from me where me.game = gg)
+        'my_rank', (select place from me where me.game = gg)
       ) as payload
     from unnest(p_games) as u(gg)
   ) x;
@@ -210,8 +211,11 @@ begin
   if tg_op = 'UPDATE' and old.best is not null then
     new.best := greatest(new.best, least(old.best, public.arcade_score_cap(new.game)));
   end if;
-  -- `data` is just the game's localStorage blob; cap it to blunt storage abuse.
-  if new.data is not null and octet_length(new.data::text) > 65536 then
+  -- A store is always a JSON object. Reject scalars/arrays from malformed or
+  -- forged clients, and cap valid blobs to blunt storage abuse.
+  if new.data is not null and (
+    jsonb_typeof(new.data) <> 'object' or octet_length(new.data::text) > 65536
+  ) then
     new.data := null;
   end if;
   -- Bound the free-text identity fields so a direct upsert can't store an

@@ -242,6 +242,40 @@ describe('2048/Game', () => {
     expect(g.store.bestTile).toBe(64);
   });
 
+  it('records progress during the run instead of waiting for game over', () => {
+    const g = new Game(() => 0.5);
+    g.start();
+    g.board = b([2, 2, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]);
+
+    g.move('left');
+
+    expect(g.store.best).toBe(4);
+    expect(g.store.bestTile).toBe(4);
+    expect(JSON.parse(localStorage.getItem('2048.v1')!)).toMatchObject({ best: 4, bestTile: 4 });
+  });
+
+  it('still reports a new record at game over after saving it live', () => {
+    const g = new Game(() => 0.5);
+    g.start();
+    g.board = b([2, 2, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]);
+    g.move('left');
+
+    expect(g.store.best).toBe(4);
+    expect(g.end()).toBe(true);
+  });
+
+  it("keeps a run's best when restart is pressed before game over", () => {
+    const g = new Game(() => 0.5);
+    g.start();
+    g.board = b([4, 4, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]);
+    g.move('left');
+
+    g.start();
+
+    expect(g.store.best).toBe(8);
+    expect(g.store.bestTile).toBe(8);
+  });
+
   it('never lowers a stored best', () => {
     const g = new Game(() => 0.5);
     g.start();

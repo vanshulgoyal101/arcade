@@ -480,11 +480,14 @@ covered by unit tests in [`tests/`](tests) alongside the original games.
 - Reaching **2048 does not end the run**: the win is announced once, then
   `continueAfterWin()` lets you carry on for a bigger tile. The run ends only when the board
   is full **and** no orthogonal neighbours match.
-- `main.ts` renders 16 `.cell` divs and sets `data-v` per tile, so the whole colour ramp
-  lives in CSS rather than in JS. Input is arrow keys, WASD, and pointer swipes (the board
-  sets `touch-action: none` so a vertical swipe plays the game instead of scrolling the page).
-- Persisted in `2048.v1` (`best` score, `bestTile`, `muted`); `best` is the headline metric on
-  the leaderboard. Covered by [`tests/2048-game.test.ts`](tests/2048-game.test.ts) and
+- `main.ts` renders a static 16-cell grid plus an absolutely-positioned tile layer. A move's
+  `{from,to}` records drive 120ms transform transitions; merge/spawn scale animations remain
+  independent of position. Input is arrow keys, WASD, and threshold-triggered pointer swipes
+  with capture, so an edge flick completes rather than waiting for pointer-up or being lost.
+- Persisted in `2048.v1` (`best` score, `bestTile`, `muted`). Progress is saved on every new
+  record (a run can last indefinitely), synchronously queued, then cloud-submitted after a
+  short debounce; closing or restarting before board lock cannot lose the record. `best` is
+  the leaderboard metric. Covered by [`tests/2048-game.test.ts`](tests/2048-game.test.ts) and
   [`tests/2048-dom.test.ts`](tests/2048-dom.test.ts).
 
 ---
@@ -534,7 +537,7 @@ A root-level **Vitest** project (`arcade/package.json`, `vitest.config.ts`) cove
 in two layers, both under a `jsdom` environment: a **logic layer** that imports each game's
 source TS modules directly (the model/helper layer), and a **DOM/interaction layer** that
 boots each game's real `main.ts` and drives it through the rendered UI — the same path a
-player's browser takes. Together they total **359 tests across 41 files**. A third,
+player's browser takes. Together they total **436 tests across 43 files**. A third,
 **database layer** runs against the live project on demand (see below).
 
 ```bash
@@ -565,7 +568,7 @@ Needs `SUPABASE_TOKEN` in the untracked `arcade/.env`; both talk to the Manageme
 
 ### Logic layer
 
-Coverage lives in `arcade/tests/*.test.ts` — **280 tests** over each game's pure model plus
+Coverage lives in `arcade/tests/*.test.ts` — **347 tests** over each game's pure model plus
 the shared modules:
 
 | File | What it locks down |
@@ -587,7 +590,8 @@ the shared modules:
 | `shared.test.ts` | `rankText`/`rankBadgeHtml` medals + percentile + sign-in nudge, `codedAvatarSvg` whitelist |
 | `shared-card.test.ts` | `withAlpha` hex→rgba (3/6-digit, no-hash), `roundRect` corner arcs + radius clamp |
 | `shared-sfx.test.ts` | mute persistence (`loadMuted`/`saveMuted`, per-game keys), runtime mute flag |
-| `storage.test.ts` | `loadStore` migrations/sanitising: where `bestScore`→Hard, word `learnedIds` guard, wordle distribution pad/trim/coerce, flash/echo defaults |
+| `storage.test.ts` | Every game store's runtime boundary: finite non-negative counters, strict booleans, allow-listed writable best maps, prototype-key rejection, migrations, corrupt roots and clean defaults via `shared/stored.ts` |
+| `auth-sync.test.ts` | Executes the exact no-build `auth.js` functions with injected Supabase dependencies: upload errors retain retries, account switches clear owned data only after restore succeeds, malformed blobs are ignored, and profile failures cannot overwrite cached identity |
 | `shared-format.test.ts` | `fmtScore` compact numbers (29000→29k, 999999→1M, exact-under-1000, NaN/Infinity) |
 | `2048-game.test.ts` | line collapse + the no-double-merge rule, all four directions, no input mutation, lock detection, spawn distribution, win/continue, best score & tile |
 | `cloud-sync.test.ts` | `reconcileRestore`: cloud wins only when strictly better, corrupt/missing local, headline heal per game, Where never inventing a Hard record, map games untouched |
@@ -835,7 +839,9 @@ objects. Summary:
   updated_at`). A player restores their own blob through the SECURITY DEFINER
   **`restore_my_scores()`** RPC.
 - **`arcade_leaderboard(p_games, p_limit)`** — STABLE SECURITY DEFINER; returns jsonb keyed
-  by slug: `{ top: […], my_best, my_rank }` (rank via `row_number()`). Definer-level, but
+  by slug: `{ top: […], my_best, my_rank }`. Equal scores share a competition rank via
+  `rank()`; a separate deterministic `row_number()` only limits/orders the top five, so the
+  hub and in-game `count(greater)+1` rank semantics agree. Definer-level, but
   only ever returns safe columns, and only ranks rows with `best > 0`.
 - **`arcade_profiles`** `(user_id, display_name, avatar, theme, updated_at)` with the same
   public-read / owner-write RLS.

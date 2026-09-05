@@ -1,5 +1,7 @@
 // Persistent best wpm per duration for Sprint.
 
+import { isRecord, storedNumberMap } from '../../shared/stored';
+
 export interface SprintStore {
   best: Record<string, number>; // duration (s) -> best wpm
 }
@@ -10,8 +12,8 @@ export function loadStore(): SprintStore {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { best: {} };
-    const parsed = JSON.parse(raw) as Partial<SprintStore>;
-    return { best: parsed.best ?? {} };
+    const parsed: unknown = JSON.parse(raw);
+    return { best: isRecord(parsed) ? storedNumberMap(parsed.best, ['15', '30', '60']) : {} };
   } catch {
     return { best: {} };
   }

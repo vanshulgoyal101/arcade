@@ -42,6 +42,19 @@ describe('flash/dom', () => {
     expect(hidden(app.querySelector('#panel-reader'))).toBe(false);
   });
 
+  it('stays stopped when Stop is pressed during the countdown', async () => {
+    const app = await load();
+    click(app.querySelector('#startBtn')!);
+    click(app.querySelector('#stopBtn')!); // before 3-2-1 has finished
+    expect(hidden(app.querySelector('#panel-ready'))).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(120000);
+
+    expect(hidden(app.querySelector('#panel-ready'))).toBe(false);
+    expect(hidden(app.querySelector('#panel-reader'))).toBe(true);
+    expect(hidden(app.querySelector('#panel-quiz'))).toBe(true);
+  });
+
   it('plays a full round: read → quiz → submit counts the passage', async () => {
     const app = await load();
     click(app.querySelector('#startBtn')!);

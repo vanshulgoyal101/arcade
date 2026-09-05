@@ -140,6 +140,7 @@ export class Game {
   store: Store;
   // A win doesn't have to end the run: acknowledge 2048 once, then carry on.
   private winAcknowledged = false;
+  private bestAtStart = 0;
 
   constructor(private rng: () => number = Math.random) {
     this.store = loadStore();
@@ -158,6 +159,7 @@ export class Game {
   }
 
   start(): void {
+    this.bestAtStart = this.store.best;
     this.board = emptyBoard();
     this.score = 0;
     this.status = 'playing';
@@ -188,16 +190,28 @@ export class Game {
 
     if (!this.winAcknowledged && highestTile(this.board) >= WIN_TILE) this.status = 'won';
     else if (!hasMoves(this.board)) this.status = 'lost';
+    this.persistProgress();
     return true;
   }
 
   /** Persist the run's score/tile. Returns true when the best score improved. */
   end(): boolean {
+    this.persistProgress();
+    return this.score > this.bestAtStart;
+  }
+
+  /** A 2048 run can last indefinitely, so never wait for game-over to save it. */
+  private persistProgress(): void {
     const tile = highestTile(this.board);
-    const improved = this.score > this.store.best;
-    if (improved) this.store.best = this.score;
-    if (tile > this.store.bestTile) this.store.bestTile = tile;
-    if (improved || tile > 0) saveStore(this.store);
-    return improved;
+    let changed = false;
+    if (this.score > this.store.best) {
+      this.store.best = this.score;
+      changed = true;
+    }
+    if (tile > this.store.bestTile) {
+      this.store.bestTile = tile;
+      changed = true;
+    }
+    if (changed) saveStore(this.store);
   }
 }

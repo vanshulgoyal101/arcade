@@ -61,6 +61,7 @@ describe('aggressive · corrupt storage still boots', () => {
         ),
       );
       expect(app.children.length).toBeGreaterThan(0);
+      expect(app.textContent).not.toMatch(/\b(?:NaN|null|undefined)\b/);
     });
   }
 });

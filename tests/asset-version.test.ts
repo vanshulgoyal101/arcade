@@ -12,8 +12,8 @@ const sha = (name: string) =>
 // visitors keep the old copy indefinitely — the bug that shipped monochrome
 // icons. These digests pin content to version: bump both together, never one.
 const VERSIONED = [
-  { file: 'assets/style.css', version: 10, digest: '6c76ca16e42d61df' },
-  { file: 'assets/auth.js', version: 21, digest: '2d6e678c38ac3860' },
+  { file: 'assets/style.css', version: 11, digest: '237efc37a64a7380' },
+  { file: 'assets/auth.js', version: 22, digest: 'ca848ba998505ece' },
 ] as const;
 
 // assets/games.js is imported by module specifier rather than from index.html,

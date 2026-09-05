@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { mountGame, pointerdown, text, gameEnv } from './helpers/dom';
+import { COUNTRIES } from '../where/src/content';
 
 vi.mock('../shared/cloud', () => ({
   submitScore: vi.fn(),
@@ -14,6 +15,20 @@ vi.mock('../shared/cloud', () => ({
 }));
 
 const load = () => mountGame(() => import('../where/src/main.ts'));
+
+const lives = (app: HTMLElement): number => {
+  const label = app.querySelector('#lives [aria-label]')?.getAttribute('aria-label') || '';
+  return Number(label.match(/^\d+/)?.[0] || 0);
+};
+
+const pickWrong = (app: HTMLElement): void => {
+  const src = app.querySelector<HTMLImageElement>('#prompt img')!.src;
+  const code = src.match(/\/([a-z]{2})\.png/)![1].toUpperCase();
+  const answer = COUNTRIES.find((c) => c.code === code)!.name;
+  const wrong = [...app.querySelectorAll<HTMLButtonElement>('#options .opt')]
+    .find((b) => b.dataset.name !== answer)!;
+  pointerdown(wrong);
+};
 
 describe('where/dom', () => {
   gameEnv();
@@ -49,5 +64,22 @@ describe('where/dom', () => {
     expect([...diffBtns].every((b) => !b.disabled)).toBe(true);
     pointerdown(app.querySelector<HTMLButtonElement>('#options .opt')!);
     expect([...diffBtns].every((b) => b.disabled)).toBe(true);
+  });
+
+  it('does not let a previous mode open game-over over a fresh run', async () => {
+    const app = await load();
+    for (let remaining = 3; remaining > 0; remaining--) {
+      pickWrong(app);
+      expect(lives(app)).toBe(remaining - 1);
+      if (remaining > 1) await vi.advanceTimersByTimeAsync(900);
+    }
+
+    // Switch modes during the final answer's 750ms game-over delay.
+    app.querySelector<HTMLButtonElement>('#modeToggle [data-mode="capital"]')!.click();
+    expect(lives(app)).toBe(3); // fresh run started
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(app.querySelector('#overlay')!.classList.contains('show')).toBe(false);
+    expect(lives(app)).toBe(3);
   });
 });

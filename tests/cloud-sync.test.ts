@@ -42,6 +42,19 @@ describe('cloud/reconcileRestore', () => {
     expect(reconcileRestore('not-a-game', null, row(10, { x: 1 }))).toBeNull();
   });
 
+  it('rejects primitive and array cloud blobs instead of throwing or corrupting storage', () => {
+    for (const data of [5, 'bad', true, [], [1, 2]]) {
+      expect(() => reconcileRestore('wordle', null, row(10, data))).not.toThrow();
+      expect(reconcileRestore('wordle', null, row(10, data))).toBeNull();
+    }
+  });
+
+  it('treats primitive and array local blobs as corrupt so a valid cloud store can heal them', () => {
+    for (const local of ['5', '"bad"', 'true', '[]', '[1,2]']) {
+      expect(reconcileRestore('wordle', local, row(10, { maxStreak: 10 }))).toEqual({ maxStreak: 10 });
+    }
+  });
+
   it('heals Where on the difficulty that is already leading', () => {
     const blob = reconcileRestore('where', raw({ bestEasy: 50, bestHard: 30 }), row(120, { bestEasy: 50, bestHard: 30 }));
     expect(blob).toMatchObject({ bestEasy: 120, bestHard: 30 });

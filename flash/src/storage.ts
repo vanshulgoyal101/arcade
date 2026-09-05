@@ -1,5 +1,7 @@
 // Persistent progress for Flash.
 
+import { isRecord, storedInt, storedNumber } from '../../shared/stored';
+
 export interface FlashStore {
   wpm: number; // current target speed
   bestWpm: number; // best speed passed with good comprehension
@@ -26,7 +28,17 @@ export function loadStore(): FlashStore {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULT };
-    return { ...DEFAULT, ...(JSON.parse(raw) as Partial<FlashStore>) };
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return { ...DEFAULT };
+    return {
+      wpm: storedInt(parsed.wpm, DEFAULT.wpm),
+      bestWpm: storedInt(parsed.bestWpm),
+      passagesDone: storedInt(parsed.passagesDone),
+      wordsRead: storedInt(parsed.wordsRead),
+      bestStreak: storedInt(parsed.bestStreak),
+      comprehensionSum: storedNumber(parsed.comprehensionSum),
+      comprehensionCount: storedInt(parsed.comprehensionCount),
+    };
   } catch {
     return { ...DEFAULT };
   }

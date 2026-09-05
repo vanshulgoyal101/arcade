@@ -122,10 +122,15 @@ export function queuePending(game: string, best: number): void {
   writePending(queue);
 }
 
-/** Drop a game's parked submit once it lands. Exported for tests. */
-export function unqueuePending(game: string): void {
+/**
+ * Acknowledge a parked submit once it lands. Keep it when a higher best was
+ * queued while this request was in flight — that newer score has not landed.
+ * Omitting `acknowledgedBest` intentionally clears the entry (test/admin use).
+ */
+export function unqueuePending(game: string, acknowledgedBest = Infinity): void {
   const queue = readPending();
   if (!(game in queue)) return;
+  if (queue[game] > acknowledgedBest) return;
   delete queue[game];
   writePending(queue);
 }
@@ -139,11 +144,12 @@ export function unqueuePending(game: string): void {
  */
 export function reconcileRestore(slug: string, localRaw: string | null, row: CloudRow | null): unknown | null {
   const meta = HEADLINE[slug];
-  if (!meta || !row || row.data == null) return null;
+  if (!meta || !row || !isStore(row.data)) return null;
   let local: unknown = null;
   if (localRaw) {
     try {
-      local = JSON.parse(localRaw);
+      const parsed: unknown = JSON.parse(localRaw);
+      local = isStore(parsed) ? parsed : null;
     } catch {
       local = null; // corrupt local — treat as empty so the cloud copy wins
     }
@@ -185,6 +191,7 @@ export async function restoreGame(slug: string): Promise<boolean> {
 
 import { codedAvatarSvg } from './avatars';
 import { rankBadgeHtml } from './rank';
+import { isRecord as isStore } from './stored';
 
 function googleName(u: any): string {
   const m = u?.user_metadata || {};
@@ -287,7 +294,7 @@ export async function submitScore(game: string, best: number, opts?: { backup?: 
     if (hasStoredSession()) queuePending(game, safeBest);
     return;
   }
-  if (await push(game, safeBest)) unqueuePending(game);
+  if (await push(game, safeBest)) unqueuePending(game, safeBest);
   else queuePending(game, safeBest);
 }
 
@@ -343,7 +350,10 @@ export async function flushPending(): Promise<void> {
   try {
     await init();
     if (!client || !user) return;
-    for (const game of games) if (await push(game, queue[game])) unqueuePending(game);
+    for (const game of games) {
+      const best = queue[game];
+      if (await push(game, best)) unqueuePending(game, best);
+    }
   } catch {
     /* ignore */
   } finally {
@@ -362,8 +372,12 @@ try {
  * button row. Every game shows its rank the same way, so the lookup, the empty
  * cases and the insertion point all live here.
  */
+const rankRequests = new WeakMap<Element, number>();
 export function mountRank(modal: Element, game: string, score: number): void {
+  const request = (rankRequests.get(modal) || 0) + 1;
+  rankRequests.set(modal, request);
   void getRank(game, score).then((info) => {
+    if (rankRequests.get(modal) !== request) return;
     const badge = rankBadgeHtml(info);
     if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
   });

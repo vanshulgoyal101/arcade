@@ -67,6 +67,7 @@ const pCombo = app.querySelector<HTMLDivElement>('#p-combo')!;
 let entry = '';
 let rafId = 0;
 let lastTick = 0;
+let answerResetTimer = 0;
 
 const OP_LABEL: Record<Op, string> = { '+': '+', '−': '−', '×': '×', '÷': '÷' };
 
@@ -138,7 +139,9 @@ function submit(): void {
     void answerEl.offsetWidth;
     answerEl.classList.add('flash-bad');
     entry = '';
-    setTimeout(() => {
+    clearTimeout(answerResetTimer);
+    answerResetTimer = window.setTimeout(() => {
+      answerResetTimer = 0;
       answerEl.classList.remove('flash-bad');
       answerEl.innerHTML = '&nbsp;';
     }, 300);
@@ -213,10 +216,19 @@ function endGame(): void {
 }
 
 function start(): void {
+  cancelAnimationFrame(rafId);
+  clearTimeout(answerResetTimer);
+  answerResetTimer = 0;
+  entry = '';
+  answerEl.classList.remove('flash-bad');
+  answerEl.innerHTML = '&nbsp;';
   overlay.classList.remove('show');
   game.start(performance.now());
   renderHud();
   renderProblem();
+  timerEl.style.transform = 'scaleX(1)';
+  timernumEl.textContent = `${Math.ceil(ROUND_TIME / 1000)}s`;
+  timernumEl.classList.remove('low');
   lastTick = performance.now();
   rafId = requestAnimationFrame(loop);
 }

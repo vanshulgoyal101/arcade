@@ -45,6 +45,7 @@ const GAMES = [
 const BOARD_GAMES = GAMES.filter((g) => !g.hidden);
 
 function num(v) { return typeof v === 'number' && isFinite(v) ? v : 0; }
+function isStore(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
 function maxVal(o) { return o && typeof o === 'object' ? Math.max(0, ...Object.values(o).map(num)) : 0; }
 function readLocal(key) { try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; } catch { return null; } }
 function localBest(g) { const s = readLocal(g.key); return s ? num(g.best(s)) : 0; }
@@ -114,7 +115,13 @@ let pendingSignIn = false;
 // it shows even before (or entirely without) the Supabase SDK.
 paintCardBests();
 // Refresh when returning from a game (incl. bfcache restore) so a new best shows.
-addEventListener('pageshow', () => paintCardBests());
+addEventListener('pageshow', () => {
+  paintCardBests();
+  if (currentUser && syncedFor !== currentUser.id) void onUser(currentUser);
+});
+addEventListener('online', () => {
+  if (currentUser && syncedFor !== currentUser.id) void onUser(currentUser);
+});
 
 let supabase;
 try {
@@ -163,20 +170,23 @@ function hydrateProfileFromCache(id) {
 }
 
 async function loadProfile(user) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('arcade_profiles')
     .select('display_name,avatar,theme')
     .eq('user_id', user.id)
     .maybeSingle();
+  if (error) throw error;
   if (data && (data.display_name || data.avatar)) {
     profile = { display_name: data.display_name || googleName(user), avatar: data.avatar || googleAvatar(user) || 'a:panda', theme: data.theme || null };
   } else {
     // First sign-in: seed a profile from the Google identity.
-    profile = { display_name: googleName(user), avatar: googleAvatar(user) || pickRandomAvatar(), theme: null };
-    await supabase.from('arcade_profiles').upsert(
-      { user_id: user.id, display_name: profile.display_name, avatar: profile.avatar },
+    const seeded = { display_name: googleName(user), avatar: googleAvatar(user) || pickRandomAvatar(), theme: null };
+    const { error: seedError } = await supabase.from('arcade_profiles').upsert(
+      { user_id: user.id, display_name: seeded.display_name, avatar: seeded.avatar },
       { onConflict: 'user_id' }
     );
+    if (seedError) throw seedError;
+    profile = seeded;
   }
 }
 
@@ -198,16 +208,20 @@ function applyTheme(theme) {
 }
 
 async function saveProfile(name, avatar) {
-  profile = { display_name: (name || '').trim().slice(0, 24) || googleName(currentUser), avatar: avatar || 'a:panda' };
-  cacheProfile(currentUser.id);
-  await supabase.from('arcade_profiles').upsert(
-    { user_id: currentUser.id, display_name: profile.display_name, avatar: profile.avatar, updated_at: new Date().toISOString() },
+  const next = { display_name: (name || '').trim().slice(0, 24) || googleName(currentUser), avatar: avatar || 'a:panda' };
+  const { error } = await supabase.from('arcade_profiles').upsert(
+    { user_id: currentUser.id, display_name: next.display_name, avatar: next.avatar, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
   );
+  if (error) throw error;
+  profile = next;
+  cacheProfile(currentUser.id);
   // Re-stamp the player's score rows so the leaderboard shows the new identity.
   await supabase.from('arcade_scores')
     .update({ display_name: profile.display_name, avatar_url: profile.avatar })
     .eq('user_id', currentUser.id);
+  // A restamp failure does not undo the saved profile; the next score upload
+  // writes the same identity to every game row again.
 }
 
 // ---- score sync ----
@@ -227,18 +241,22 @@ async function uploadScores(user) {
       display_name: pName(), avatar_url: pAvatar(),
     });
   }
-  if (rows.length) await supabase.from('arcade_scores').upsert(rows, { onConflict: 'user_id,game' });
-  // Every local best just went up, so any submits parked by a game while it was
-  // offline are now redundant. Key mirrors PENDING_KEY in shared/cloud.ts.
-  try { localStorage.removeItem('arcade.pending.v1'); } catch { /* ignore */ }
+  if (!rows.length) return;
+  const { error } = await supabase.from('arcade_scores').upsert(rows, { onConflict: 'user_id,game' });
+  if (error) throw error;
+  // Every local best actually landed, so game-side retries are now redundant.
+  try { localStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
 }
 
 async function restoreScores(overwrite = false) {
-  const { data } = await supabase.rpc('restore_my_scores');
-  if (!data) return;
-  for (const row of data) {
+  const { data, error } = await supabase.rpc('restore_my_scores');
+  if (error) throw error;
+  // On an account switch, don't erase the previous account until the new
+  // account's authoritative snapshot has actually arrived.
+  if (overwrite) clearLocalScores();
+  for (const row of data || []) {
     const g = GAMES.find((x) => x.slug === row.game);
-    if (!g || !row.data) continue;
+    if (!g || !isStore(row.data)) continue;
     // Overwrite on an account switch; restore when this device has no local data
     // for the game yet (fresh device); otherwise cloud wins only when better.
     if (overwrite || !readLocal(g.key) || num(row.best) > localBest(g)) {
@@ -252,8 +270,11 @@ async function restoreScores(overwrite = false) {
 
 // Which signed-in account the local scores currently belong to.
 const OWNER_KEY = 'arcade.sync.owner';
+// Mirrors shared/cloud.ts; pending writes belong to the same account as scores.
+const PENDING_KEY = 'arcade.pending.v1';
 function clearLocalScores() {
   for (const g of GAMES) { try { localStorage.removeItem(g.key); } catch { /* ignore */ } }
+  try { localStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
 }
 
 // Render (or clear) the personal-best chip on each hub card's bottom row (beside
@@ -323,6 +344,7 @@ function openProfile() {
     `<div class="pf-avatars" id="pfAvatars">` +
     options.map((o) => `<button type="button" class="pf-av${o === current ? ' sel' : ''}" data-av="${esc(o)}">${avatarHtml(o, 'pf-av-inner')}</button>`).join('') +
     `</div>` +
+    `<p class="pf-error" id="pfError" role="status" aria-live="polite"></p>` +
     `<div class="pf-actions">` +
     `<button type="button" id="pfSignout" class="pf-signout">Sign out</button>` +
     `<button type="button" id="pfSave" class="pf-save">Save</button>` +
@@ -336,7 +358,14 @@ function openProfile() {
   document.getElementById('pfSave').addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     btn.disabled = true; btn.textContent = 'Saving…';
-    try { await saveProfile(document.getElementById('pfName').value, selected); } catch { /* ignore */ }
+    try {
+      await saveProfile(document.getElementById('pfName').value, selected);
+    } catch {
+      btn.disabled = false;
+      btn.textContent = 'Try again';
+      document.getElementById('pfError').textContent = 'Could not save your profile. Your previous profile is unchanged.';
+      return;
+    }
     closeProfile();
     renderAccount(currentUser);
   });
@@ -355,17 +384,28 @@ async function onUser(user) {
   }
   if (syncedFor !== user.id) {
     syncedFor = user.id;
-    if (hydrateProfileFromCache(user.id)) renderAccount(user); // instant, no flash
-    try { await loadProfile(user); } catch { /* ignore */ }
-    cacheProfile(user.id);
+    const hadCachedProfile = hydrateProfileFromCache(user.id);
+    if (hadCachedProfile) renderAccount(user); // instant, no flash
+    let profileReady = hadCachedProfile;
+    try {
+      await loadProfile(user);
+      profileReady = true;
+    } catch { /* retry on the next online/pageshow event */ }
+    if (profile) cacheProfile(user.id);
     applyTheme(profile?.theme);
     renderAccount(user);
+    // Without a loaded or account-matched cached profile, uploading now would
+    // stamp Google fallbacks over every customized leaderboard row.
+    if (!profileReady) {
+      syncedFor = null;
+      paintCardBests();
+      return;
+    }
     try {
       const owner = localStorage.getItem(OWNER_KEY);
       if (owner && owner !== user.id) {
         // A different account signed in on this browser — don't carry over the
         // previous account's scores; this account's cloud data is authoritative.
-        clearLocalScores();
         await restoreScores(true);
       } else {
         // Same account, or a guest claiming their local scores for the first time.
@@ -373,7 +413,9 @@ async function onUser(user) {
         await uploadScores(user);
       }
       localStorage.setItem(OWNER_KEY, user.id);
-    } catch { /* ignore */ }
+    } catch {
+      syncedFor = null; // preserve a retry path on reconnect / bfcache return
+    }
     paintCardBests();
   } else if (profile) {
     renderAccount(user);
@@ -421,9 +463,10 @@ async function loadLeaderboard() {
           ? rows
               .map((r, i) => {
                 const you = uid && r.user_id === uid;
-                const rank = i < 3
-                  ? `<span class="lb-rank lb-medal">${medalIcon(i + 1)}</span>`
-                  : `<span class="lb-rank">${i + 1}</span>`;
+                const place = num(r.rank) || i + 1;
+                const rank = place <= 3
+                  ? `<span class="lb-rank lb-medal">${medalIcon(place)}</span>`
+                  : `<span class="lb-rank">${place}</span>`;
                 return (
                   `<li class="${you ? 'lb-you' : ''}">${rank}` +
                   `${avatarHtml(r.avatar_url, 'lb-av')}` +

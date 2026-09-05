@@ -5,7 +5,7 @@ import { saveStore } from './storage';
 import * as sfx from '../../shared/sfx';
 import { shareText, shareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
-import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
+import { restoreGame, submitScore, mountRank, queuePending } from '../../shared/cloud';
 import { loadStore } from './storage';
 import { fmtScore } from '../../shared/format';
 import { ICON_2048, muteIcon, ICON_TROPHY } from '../../shared/icons';
@@ -19,8 +19,8 @@ app.innerHTML = `
     <a class="back" href="/">← Arcade</a>
     <h1 class="title">${ICON_2048} 2048</h1>
     <div class="topbar-actions">
-      <button class="icon-btn" id="restart" title="New game">↺</button>
-      <button class="icon-btn" id="mute" title="Toggle sound"></button>
+      <button class="icon-btn" id="restart" title="New game" aria-label="New game">↺</button>
+      <button class="icon-btn" id="mute" title="Toggle sound" aria-label="Toggle sound"></button>
     </div>
   </div>
 
@@ -51,7 +51,15 @@ const tileEl = app.querySelector<HTMLSpanElement>('#tile')!;
 const bestEl = app.querySelector<HTMLSpanElement>('#best')!;
 const hintEl = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay, () => start());
+makeDismissable(
+  overlay,
+  () => start(),
+  () => {
+    if (game.status !== 'won') return true;
+    continueAfterWin();
+    return false;
+  }
+);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
@@ -86,8 +94,11 @@ function renderHud(): void {
 // Background cells never change; live tiles are absolutely positioned on top so
 // a move can transition their transform instead of snapping to new text.
 const MOVE_MS = 120;
+const CLOUD_DEBOUNCE_MS = 600;
 let tileEls = new Map<number, HTMLElement>();
 let settle = 0;
+let cloudTimer = 0;
+let scheduledBest = 0;
 
 function buildGrid(): void {
   gridEl.innerHTML = '';
@@ -129,12 +140,28 @@ function landSlide(): void {
   renderTiles(game.lastMerged, game.spawned);
 }
 
+function scheduleBestSync(): void {
+  const best = game.store.best;
+  if (best <= scheduledBest) return;
+  scheduledBest = best;
+  // Queue synchronously first: closing the page before the debounce fires still
+  // leaves a durable upload for the next game load / reconnect.
+  queuePending('2048', best);
+  clearTimeout(cloudTimer);
+  cloudTimer = window.setTimeout(() => {
+    cloudTimer = 0;
+    void submitScore('2048', scheduledBest);
+  }, CLOUD_DEBOUNCE_MS);
+}
+
 // ---- input ----
 function tryMove(dir: Direction): void {
   if (!game.isPlaying()) return;
   landSlide();
   const before = game.score;
+  const previousBest = game.best;
   if (!game.move(dir)) return;
+  if (game.best > previousBest) scheduleBestSync();
 
   // Slide the tiles that exist now; the layer is rebuilt once they arrive, which
   // is what collapses a merged pair into a single tile.
@@ -216,11 +243,13 @@ function showWin(): void {
   `;
   overlay.classList.add('show');
   wireShare();
-  modal.querySelector<HTMLButtonElement>('#m-continue')!.onclick = () => {
-    game.continueAfterWin();
-    overlay.classList.remove('show');
-    hintEl.textContent = 'Past 2048 — how far can you push it?';
-  };
+  modal.querySelector<HTMLButtonElement>('#m-continue')!.onclick = continueAfterWin;
+}
+
+function continueAfterWin(): void {
+  game.continueAfterWin();
+  overlay.classList.remove('show');
+  hintEl.textContent = 'Past 2048 — how far can you push it?';
 }
 
 function endGame(): void {
@@ -270,6 +299,7 @@ function start(): void {
   settle = 0;
   swiping = false;
   game.start();
+  scheduledBest = game.best;
   renderTiles([], game.spawned);
   renderHud();
   hintEl.textContent = 'Swipe or use the arrow keys to slide the tiles.';

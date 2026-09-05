@@ -1,5 +1,7 @@
 // Persistent best score for Interval.
 
+import { isRecord, storedBoolean, storedInt } from '../../shared/stored';
+
 export interface IntervalStore {
   bestScore: number;
   muted: boolean;
@@ -12,7 +14,12 @@ export function loadStore(): IntervalStore {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULT };
-    return { ...DEFAULT, ...(JSON.parse(raw) as Partial<IntervalStore>) };
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return { ...DEFAULT };
+    return {
+      bestScore: storedInt(parsed.bestScore),
+      muted: storedBoolean(parsed.muted),
+    };
   } catch {
     return { ...DEFAULT };
   }

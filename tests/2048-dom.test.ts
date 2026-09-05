@@ -1,8 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { mountGame, gameEnv } from './helpers/dom';
 
+const submitScore = vi.fn();
+const queuePending = vi.fn();
 vi.mock('../shared/cloud', () => ({
-  submitScore: vi.fn(),
+  submitScore,
+  queuePending,
   getRank: vi.fn().mockResolvedValue(null),
   mountRank: vi.fn(),
   cloudReady: vi.fn().mockResolvedValue(undefined),
@@ -27,11 +30,18 @@ const swipe = (app: HTMLElement, dx: number, dy: number) => {
 describe('2048/dom', () => {
   gameEnv();
 
+  beforeEach(() => {
+    submitScore.mockClear();
+    queuePending.mockClear();
+  });
+
   it('boots a 16-cell grid holding two tiles', async () => {
     const app = await load();
     expect(app.querySelectorAll('.cell').length).toBe(16);
     expect(filled(app).length).toBe(2);
     expect(app.querySelector('#score')!.textContent).toBe('0');
+    expect(app.querySelector('#restart')!.getAttribute('aria-label')).toBe('New game');
+    expect(app.querySelector('#mute')!.getAttribute('aria-label')).toBe('Toggle sound');
   });
 
   it('slides on an arrow key and keeps the board legal', async () => {
@@ -116,5 +126,19 @@ describe('2048/dom', () => {
     expect(app.querySelector('#tile')).not.toBeNull();
     expect(app.querySelector('#best')).not.toBeNull();
     expect(Number(app.querySelector('#tile')!.textContent)).toBeGreaterThanOrEqual(2);
+  });
+
+  it('queues a new best immediately and debounces its cloud write', async () => {
+    const app = await load();
+    for (const k of ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']) {
+      press(k);
+      vi.advanceTimersByTime(200);
+      if (queuePending.mock.calls.length) break;
+    }
+
+    expect(queuePending).toHaveBeenCalledWith('2048', expect.any(Number));
+    expect(submitScore).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(600);
+    expect(submitScore).toHaveBeenCalledWith('2048', expect.any(Number));
   });
 });

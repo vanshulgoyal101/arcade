@@ -1,5 +1,7 @@
 // Persistent best score + best tile for 2048.
 
+import { isRecord, storedBoolean, storedInt } from '../../shared/stored';
+
 export interface Store {
   best: number;
   bestTile: number;
@@ -10,17 +12,16 @@ const KEY = '2048.v1';
 
 const DEFAULT: Store = { best: 0, bestTile: 0, muted: false };
 
-const num = (v: unknown): number => (typeof v === 'number' && isFinite(v) && v > 0 ? Math.floor(v) : 0);
-
 export function loadStore(): Store {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULT };
-    const parsed = JSON.parse(raw) as Partial<Store>;
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return { ...DEFAULT };
     return {
-      best: num(parsed.best),
-      bestTile: num(parsed.bestTile),
-      muted: parsed.muted === true,
+      best: storedInt(parsed.best),
+      bestTile: storedInt(parsed.bestTile),
+      muted: storedBoolean(parsed.muted),
     };
   } catch {
     return { ...DEFAULT };

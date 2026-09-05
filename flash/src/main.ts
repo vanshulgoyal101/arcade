@@ -111,6 +111,7 @@ const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 let player: RsvpPlayer | null = null;
 let activePassage: Passage | null = null;
 let answers: number[] = [];
+let readingRun = 0;
 
 function renderMute(): void {
   muteBtn.innerHTML = muteIcon(sfx.isMuted());
@@ -176,26 +177,36 @@ function renderToken(token: Token, index: number, total: number): void {
   progressEl.style.width = `${((index + 1) / total) * 100}%`;
 }
 
-async function countdown(): Promise<void> {
+function resetCountdown(): void {
+  countdownEl.classList.add('hidden');
+  readerEl.style.visibility = 'visible';
+}
+
+async function countdown(run: number): Promise<boolean> {
   countdownEl.classList.remove('hidden');
   readerEl.style.visibility = 'hidden';
   for (const n of ['3', '2', '1']) {
     countdownEl.textContent = n;
     sfx.tick();
     await new Promise((r) => setTimeout(r, 550));
+    if (run !== readingRun) return false;
   }
-  countdownEl.classList.add('hidden');
-  readerEl.style.visibility = 'visible';
+  resetCountdown();
+  return true;
 }
 
 async function startReading(): Promise<void> {
-  activePassage = game.nextPassage();
+  const run = ++readingRun;
+  player?.stop();
+  player = null;
+  const passage = game.nextPassage();
+  activePassage = passage;
   showPanel('reader');
   progressEl.style.width = '0%';
   pauseBtn.textContent = 'Pause';
-  await countdown();
+  if (!(await countdown(run)) || run !== readingRun) return;
 
-  player = new RsvpPlayer(activePassage.text, game.wpm, renderToken, onReadingDone);
+  player = new RsvpPlayer(passage.text, game.wpm, renderToken, onReadingDone);
   player.start();
 }
 
@@ -217,8 +228,10 @@ pauseBtn.addEventListener('click', () => {
 
 stopBtn.addEventListener('click', () => {
   sfx.click();
+  readingRun++;
   player?.stop();
   player = null;
+  resetCountdown();
   showPanel('ready');
 });
 

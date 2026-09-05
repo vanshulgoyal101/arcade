@@ -1,5 +1,7 @@
 // Persistent high scores for Hue Hunt.
 
+import { isRecord, storedBoolean, storedInt } from '../../shared/stored';
+
 export interface HueStore {
   bestScore: number;
   bestLevel: number;
@@ -14,7 +16,13 @@ export function loadStore(): HueStore {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULT };
-    return { ...DEFAULT, ...(JSON.parse(raw) as Partial<HueStore>) };
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return { ...DEFAULT };
+    return {
+      bestScore: storedInt(parsed.bestScore),
+      bestLevel: storedInt(parsed.bestLevel),
+      muted: storedBoolean(parsed.muted),
+    };
   } catch {
     return { ...DEFAULT };
   }

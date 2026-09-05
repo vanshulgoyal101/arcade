@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { makeDismissable } from '../shared/overlay';
 
-function setup(withReplay = false) {
+function setup(withReplay = false, onDismiss?: () => boolean | void) {
   document.body.innerHTML = '<div class="overlay" id="ov"><div class="modal">content</div></div>';
   const overlay = document.querySelector<HTMLElement>('#ov')!;
   const onReplay = vi.fn();
-  makeDismissable(overlay, withReplay ? onReplay : undefined);
+  makeDismissable(overlay, withReplay ? onReplay : undefined, onDismiss);
   overlay.classList.add('show');
   return { overlay, onReplay };
 }
@@ -68,5 +68,16 @@ describe('shared/overlay · makeDismissable', () => {
   it('creates no replay pill without an onReplay callback', () => {
     setup(false);
     expect(pill()).toBeUndefined();
+  });
+
+  it('lets a modal handle dismissal without offering a destructive replay', () => {
+    const onDismiss = vi.fn(() => false);
+    const { overlay } = setup(true, onDismiss);
+
+    escape();
+
+    expect(overlay.classList.contains('show')).toBe(false);
+    expect(onDismiss).toHaveBeenCalledOnce();
+    expect(pill()!.style.display).toBe('none');
   });
 });

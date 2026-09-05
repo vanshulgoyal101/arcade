@@ -1,5 +1,7 @@
 // Persistent Wordle stats (games played, streaks, guess distribution).
 
+import { isRecord, storedInt } from '../../shared/stored';
+
 export interface WordleStore {
   played: number;
   wins: number;
@@ -19,15 +21,16 @@ export function loadStore(): WordleStore {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return fresh();
-    const p = JSON.parse(raw) as Partial<WordleStore>;
-    const dist = Array.isArray(p.distribution) ? p.distribution.slice(0, 7) : [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return fresh();
+    const dist = Array.isArray(parsed.distribution) ? parsed.distribution.slice(0, 7) : [];
     while (dist.length < 7) dist.push(0);
     return {
-      played: p.played ?? 0,
-      wins: p.wins ?? 0,
-      currentStreak: p.currentStreak ?? 0,
-      maxStreak: p.maxStreak ?? 0,
-      distribution: dist.map((n) => (typeof n === 'number' && n >= 0 ? n : 0)),
+      played: storedInt(parsed.played),
+      wins: storedInt(parsed.wins),
+      currentStreak: storedInt(parsed.currentStreak),
+      maxStreak: storedInt(parsed.maxStreak),
+      distribution: dist.map((n) => storedInt(n)),
     };
   } catch {
     return fresh();

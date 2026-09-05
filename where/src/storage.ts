@@ -1,5 +1,7 @@
 // Persistent best scores for Where (one per difficulty).
 
+import { isRecord, storedInt } from '../../shared/stored';
+
 export interface WhereStore {
   bestEasy: number;
   bestHard: number;
@@ -11,12 +13,13 @@ export function loadStore(): WhereStore {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { bestEasy: 0, bestHard: 0 };
-    const parsed = JSON.parse(raw) as Partial<WhereStore> & { bestScore?: number };
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) return { bestEasy: 0, bestHard: 0 };
     return {
-      bestEasy: parsed.bestEasy ?? 0,
+      bestEasy: storedInt(parsed.bestEasy),
       // Migrate a legacy single best into the harder pool (the old game drew
       // from every country, which is closest to today's Hard mode).
-      bestHard: parsed.bestHard ?? parsed.bestScore ?? 0,
+      bestHard: storedInt(parsed.bestHard, storedInt(parsed.bestScore)),
     };
   } catch {
     return { bestEasy: 0, bestHard: 0 };

@@ -67,6 +67,12 @@ const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 
 let answered = false;
 let inProgress = false; // true once the player has answered — locks difficulty mid-run
+let runId = 0;
+
+function onRun(ms: number, fn: () => void): void {
+  const id = runId;
+  window.setTimeout(() => { if (id === runId) fn(); }, ms);
+}
 
 function setDiffLocked(locked: boolean): void {
   diffToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => { b.disabled = locked; });
@@ -93,9 +99,17 @@ function renderHud(): void {
 function loadFlagImage(code: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
+    let done = false;
+    const finish = (value: HTMLImageElement | null): void => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
+    const timer = window.setTimeout(() => finish(null), 4000);
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
+    img.onload = () => finish(img);
+    img.onerror = () => finish(null);
     img.src = `https://flagcdn.com/w640/${code.toLowerCase()}.png`;
   });
 }
@@ -141,11 +155,11 @@ function onAnswer(name: string, btn: HTMLButtonElement): void {
   const correctBtn = optionsEl.querySelector<HTMLButtonElement>(`.opt[data-name="${CSS.escape(game.target.name)}"]`)!;
   correctBtn.classList.add('correct');
   if (!res.correct) btn.classList.add('wrong');
-  window.setTimeout(() => (res.correct ? sfx.correct(game.streak) : sfx.wrong()), 120);
+  onRun(120, () => (res.correct ? sfx.correct(game.streak) : sfx.wrong()));
   renderHud();
 
-  if (res.gameOver) window.setTimeout(() => { sfx.gameOver(); endGame(res.newBest); }, 750);
-  else window.setTimeout(newRound, 850);
+  if (res.gameOver) onRun(750, () => { sfx.gameOver(); endGame(res.newBest); });
+  else onRun(850, newRound);
 }
 
 function endGame(newBest: boolean): void {
@@ -172,11 +186,19 @@ function endGame(newBest: boolean): void {
   void submitScore('where', game.best);
   mountRank(modal, 'where', game.best);
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
-    const flag = await loadFlagImage(game.target.code);
-    const blob = await canvasToBlob(whereShareCard(game.score, game.mode, game.difficulty, best, game.target, flag));
+    const result = {
+      score: game.score,
+      mode: game.mode,
+      difficulty: game.difficulty,
+      target: { ...game.target },
+    };
+    const flag = await loadFlagImage(result.target.code);
+    const blob = await canvasToBlob(
+      whereShareCard(result.score, result.mode, result.difficulty, best, result.target, flag)
+    );
     const outcome = await shareResult({
       title: 'Where',
-      text: whereShareText(game.score, game.mode, game.difficulty, best, newBest),
+      text: whereShareText(result.score, result.mode, result.difficulty, best, newBest),
       url: 'https://games.vanshul.com/where/',
       blob,
       filename: 'where.png',
@@ -190,6 +212,7 @@ function endGame(newBest: boolean): void {
 }
 
 function startGame(): void {
+  runId++;
   overlay.classList.remove('show');
   answered = false;
   inProgress = false;

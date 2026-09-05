@@ -9,7 +9,11 @@
 
 import { ICON_CLOSE } from './icons';
 
-export function makeDismissable(overlay: HTMLElement, onReplay?: () => void): void {
+export function makeDismissable(
+  overlay: HTMLElement,
+  onReplay?: () => void,
+  onDismiss?: () => boolean | void
+): void {
   let replay: HTMLButtonElement | null = null;
   if (onReplay) {
     replay = document.createElement('button');
@@ -45,7 +49,8 @@ export function makeDismissable(overlay: HTMLElement, onReplay?: () => void): vo
   const close = (): void => {
     if (!overlay.classList.contains('show')) return;
     overlay.classList.remove('show');
-    if (replay) replay.style.display = 'block';
+    const offerReplay = onDismiss?.() !== false;
+    if (replay) replay.style.display = offerReplay ? 'block' : 'none';
   };
 
   overlay.addEventListener('pointerdown', (e) => {
