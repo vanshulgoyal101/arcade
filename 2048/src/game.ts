@@ -15,6 +15,20 @@ export interface MoveResult {
   gained: number;
   moved: boolean;
   merged: number[]; // indices that just merged, for the pop animation
+  movements: Movement[]; // where every tile travelled, for the slide animation
+}
+
+/** One tile's journey during a move, in board indices. */
+export interface Movement {
+  from: number;
+  to: number;
+  merged: boolean;
+}
+
+/** Where a collapsed line's tiles ended up: the value, and the slots feeding it. */
+interface Slot {
+  value: number;
+  from: number[]; // positions within the line, not board indices
 }
 
 export const emptyBoard = (): Board => new Array(CELLS).fill(0);
@@ -31,26 +45,35 @@ function line(dir: Direction, i: number): number[] {
 }
 
 /**
- * Collapse one line toward its start: drop the gaps, then merge each equal pair
- * once. Returns the new values plus the score gained and which slots merged.
+ * The one place the merge rule lives: drop the gaps, then fuse each equal pair
+ * once, remembering which slots fed each result so a move can be animated.
  */
-export function slideLine(values: number[]): { values: number[]; gained: number; mergedAt: number[] } {
-  const packed = values.filter((v) => v !== 0);
-  const out: number[] = [];
-  const mergedAt: number[] = [];
+function collapse(values: number[]): { slots: Slot[]; gained: number } {
+  const packed = values.map((value, at) => ({ value, at })).filter((c) => c.value !== 0);
+  const slots: Slot[] = [];
   let gained = 0;
   for (let i = 0; i < packed.length; i++) {
     // A tile that just absorbed another can't merge again this move.
-    if (i + 1 < packed.length && packed[i] === packed[i + 1]) {
-      const value = packed[i] * 2;
+    if (i + 1 < packed.length && packed[i].value === packed[i + 1].value) {
+      const value = packed[i].value * 2;
       gained += value;
-      mergedAt.push(out.length);
-      out.push(value);
+      slots.push({ value, from: [packed[i].at, packed[i + 1].at] });
       i++;
     } else {
-      out.push(packed[i]);
+      slots.push({ value: packed[i].value, from: [packed[i].at] });
     }
   }
+  return { slots, gained };
+}
+
+/**
+ * Collapse one line toward its start. Returns the new values plus the score
+ * gained and which slots merged.
+ */
+export function slideLine(values: number[]): { values: number[]; gained: number; mergedAt: number[] } {
+  const { slots, gained } = collapse(values);
+  const out = slots.map((s) => s.value);
+  const mergedAt = slots.flatMap((s, k) => (s.from.length > 1 ? [k] : []));
   while (out.length < SIZE) out.push(0);
   return { values: out, gained, mergedAt };
 }
@@ -59,20 +82,21 @@ export function slideLine(values: number[]): { values: number[]; gained: number;
 export function moveBoard(board: Board, dir: Direction): MoveResult {
   const next = emptyBoard();
   const merged: number[] = [];
+  const movements: Movement[] = [];
   let gained = 0;
-  let moved = false;
   for (let i = 0; i < SIZE; i++) {
     const idx = line(dir, i);
-    const before = idx.map((j) => board[j]);
-    const res = slideLine(before);
+    const res = collapse(idx.map((j) => board[j]));
     gained += res.gained;
-    res.values.forEach((v, k) => {
-      next[idx[k]] = v;
-      if (v !== before[k]) moved = true;
+    res.slots.forEach((slot, k) => {
+      const to = idx[k];
+      const isMerge = slot.from.length > 1;
+      next[to] = slot.value;
+      if (isMerge) merged.push(to);
+      for (const at of slot.from) movements.push({ from: idx[at], to, merged: isMerge });
     });
-    for (const k of res.mergedAt) merged.push(idx[k]);
   }
-  return { board: next, gained, moved, merged };
+  return { board: next, gained, moved: movements.some((m) => m.from !== m.to), merged, movements };
 }
 
 export const emptyCells = (board: Board): number[] =>
@@ -111,6 +135,7 @@ export class Game {
   score = 0;
   status: Status = 'playing';
   lastMerged: number[] = [];
+  lastMovements: Movement[] = [];
   spawned = -1;
   store: Store;
   // A win doesn't have to end the run: acknowledge 2048 once, then carry on.
@@ -137,6 +162,7 @@ export class Game {
     this.score = 0;
     this.status = 'playing';
     this.lastMerged = [];
+    this.lastMovements = [];
     this.winAcknowledged = false;
     spawnTile(this.board, this.rng);
     this.spawned = spawnTile(this.board, this.rng);
@@ -157,6 +183,7 @@ export class Game {
     this.board = res.board;
     this.score += res.gained;
     this.lastMerged = res.merged;
+    this.lastMovements = res.movements;
     this.spawned = spawnTile(this.board, this.rng);
 
     if (!this.winAcknowledged && highestTile(this.board) >= WIN_TILE) this.status = 'won';

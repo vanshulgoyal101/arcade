@@ -10,7 +10,16 @@
 }
 
 * { box-sizing: border-box; }
-a, button, input, summary, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Each selector needs its own :focus-visible — a single trailing one binds to
+   the last selector only, which paints a permanent ring on every link/button. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
 html { overflow-x: hidden; }
 html, body {
@@ -56,35 +65,52 @@ html, body {
 @keyframes bump { 50% { transform: scale(1.08); } }
 
 .board {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  --gap: 10px;
+  --pad: 10px;
+  position: relative; aspect-ratio: 1;
   background: var(--bg-soft); border: 1px solid var(--line); border-radius: 16px;
-  padding: 10px; aspect-ratio: 1; box-shadow: var(--shadow);
+  padding: var(--pad); box-shadow: var(--shadow);
   touch-action: none; /* swipes drive the game, not the page */
   user-select: none; -webkit-user-select: none;
 }
-.cell {
+.grid, .tiles { position: absolute; inset: var(--pad); }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: var(--gap); }
+.cell { border-radius: 10px; background: rgba(255, 255, 255, .04); }
+
+.tile {
+  position: absolute; top: 0; left: 0;
+  width: calc((100% - 3 * var(--gap)) / 4); aspect-ratio: 1;
   display: grid; place-items: center; border-radius: 10px;
-  background: rgba(255, 255, 255, .04);
   font-weight: 800; font-variant-numeric: tabular-nums;
   font-size: clamp(1.1rem, 7vw, 2rem); color: #3b3324;
-  transition: background-color .12s ease, color .12s ease;
+  /* A translate percentage is relative to the tile's own size, which is exactly
+     one cell — so column × (100% + gap) lands it on the grid. */
+  transform: translate(calc(var(--col, 0) * (100% + var(--gap))), calc(var(--row, 0) * (100% + var(--gap))));
+  transition: transform 120ms cubic-bezier(.2, .7, .3, 1);
 }
 /* One rung per power of two: warmer and deeper as the tile grows. */
-.cell[data-v="2"]    { background: #efe4d6; }
-.cell[data-v="4"]    { background: #ecdcc0; }
-.cell[data-v="8"]    { background: #f2b179; color: #fff; }
-.cell[data-v="16"]   { background: #f59563; color: #fff; }
-.cell[data-v="32"]   { background: #f67c5f; color: #fff; }
-.cell[data-v="64"]   { background: #f65e3b; color: #fff; }
-.cell[data-v="128"]  { background: #edcf72; color: #fff; font-size: clamp(.95rem, 6vw, 1.7rem); }
-.cell[data-v="256"]  { background: #edcc61; color: #fff; font-size: clamp(.95rem, 6vw, 1.7rem); }
-.cell[data-v="512"]  { background: #edc850; color: #fff; font-size: clamp(.95rem, 6vw, 1.7rem); }
-.cell[data-v="1024"] { background: #edc53f; color: #fff; font-size: clamp(.8rem, 5vw, 1.4rem); }
-.cell[data-v="2048"] { background: #edc22e; color: #fff; font-size: clamp(.8rem, 5vw, 1.4rem); box-shadow: 0 0 24px rgba(237, 194, 46, .55); }
-.cell.fresh { animation: appear .16s ease; }
-.cell.merged { animation: pop .18s ease; }
-@keyframes appear { from { transform: scale(.4); opacity: 0; } }
-@keyframes pop { 50% { transform: scale(1.16); } }
+.tile[data-v="2"]    { background: #efe4d6; }
+.tile[data-v="4"]    { background: #ecdcc0; }
+.tile[data-v="8"]    { background: #f2b179; color: #fff; }
+.tile[data-v="16"]   { background: #f59563; color: #fff; }
+.tile[data-v="32"]   { background: #f67c5f; color: #fff; }
+.tile[data-v="64"]   { background: #f65e3b; color: #fff; }
+.tile[data-v="128"]  { background: #edcf72; color: #fff; font-size: clamp(.95rem, 6vw, 1.7rem); }
+.tile[data-v="256"]  { background: #edcc61; color: #fff; font-size: clamp(.95rem, 6vw, 1.7rem); }
+.tile[data-v="512"]  { background: #edc850; color: #fff; font-size: clamp(.95rem, 6vw, 1.7rem); }
+.tile[data-v="1024"] { background: #edc53f; color: #fff; font-size: clamp(.8rem, 5vw, 1.4rem); }
+.tile[data-v="2048"] { background: #edc22e; color: #fff; font-size: clamp(.8rem, 5vw, 1.4rem); box-shadow: 0 0 24px rgba(237, 194, 46, .55); }
+
+/* `scale` is its own property, so these never clobber the translate above. */
+.tile.fresh { animation: appear .16s ease; }
+.tile.merged { animation: pop .18s ease; }
+@keyframes appear { from { scale: .4; opacity: 0; } }
+@keyframes pop { 50% { scale: 1.16; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .tile { transition: none; }
+  .tile.fresh, .tile.merged { animation: none; }
+}
 
 .center { text-align: center; }
 .hint { color: var(--muted); font-size: .85rem; margin: 14px 0 0; }

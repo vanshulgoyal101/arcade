@@ -83,6 +83,42 @@ describe('2048/moveBoard', () => {
     expect(r.merged).toEqual([0]);
   });
 
+  it('reports every tile that travelled, so a move can be animated', () => {
+    const r = moveBoard(b([0, 0, 0, 2], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]), 'left');
+    expect(r.movements).toEqual([{ from: 3, to: 0, merged: false }]);
+  });
+
+  it('sends both halves of a merge to the same destination', () => {
+    const r = moveBoard(b([2, 0, 0, 2], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]), 'left');
+    expect(r.movements).toEqual([
+      { from: 0, to: 0, merged: true },
+      { from: 3, to: 0, merged: true },
+    ]);
+  });
+
+  it('tracks movements down a column, not just across a row', () => {
+    const r = moveBoard(b([2, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [2, 0, 0, 0]), 'down');
+    expect(r.movements).toEqual([
+      { from: 12, to: 12, merged: true },
+      { from: 0, to: 12, merged: true },
+    ]);
+  });
+
+  it('accounts for every non-empty tile exactly once', () => {
+    const board = b([2, 2, 4, 4], [8, 0, 8, 2], [2, 4, 2, 4], [0, 16, 16, 0]);
+    for (const dir of ['left', 'right', 'up', 'down'] as const) {
+      const froms = moveBoard(board, dir).movements.map((m) => m.from).sort((x, y) => x - y);
+      const occupied = board.flatMap((v, i) => (v ? [i] : []));
+      expect(froms).toEqual(occupied);
+    }
+  });
+
+  it('emits no movement for a line that cannot shift', () => {
+    const r = moveBoard(b([2, 4, 8, 16], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]), 'left');
+    expect(r.moved).toBe(false);
+    expect(r.movements.every((m) => m.from === m.to)).toBe(true);
+  });
+
   it('conserves the tile total across a move', () => {
     const board = b([2, 2, 4, 4], [8, 0, 8, 2], [2, 4, 2, 4], [0, 16, 16, 0]);
     const sum = (x: number[]) => x.reduce((a, c) => a + c, 0);

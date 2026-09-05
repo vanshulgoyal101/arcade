@@ -30,7 +30,10 @@ app.innerHTML = `
     <div class="pill" id="p-best"><span class="k">Best</span><span class="v" id="best">0</span></div>
   </div>
 
-  <div id="board" class="board" role="grid" aria-label="2048 board"></div>
+  <div class="board" id="board">
+    <div class="grid" id="grid" aria-hidden="true"></div>
+    <div class="tiles" id="tiles" role="grid" aria-label="2048 board"></div>
+  </div>
 
   <p class="center hint" id="hint">Swipe or use the arrow keys to slide the tiles.</p>
 
@@ -41,6 +44,8 @@ app.innerHTML = `
 `;
 
 const boardEl = app.querySelector<HTMLDivElement>('#board')!;
+const gridEl = app.querySelector<HTMLDivElement>('#grid')!;
+const tilesEl = app.querySelector<HTMLDivElement>('#tiles')!;
 const scoreEl = app.querySelector<HTMLSpanElement>('#score')!;
 const tileEl = app.querySelector<HTMLSpanElement>('#tile')!;
 const bestEl = app.querySelector<HTMLSpanElement>('#best')!;
@@ -78,38 +83,67 @@ function renderHud(): void {
 }
 
 // ---- board ----
-function buildBoard(): void {
-  boardEl.innerHTML = '';
+// Background cells never change; live tiles are absolutely positioned on top so
+// a move can transition their transform instead of snapping to new text.
+const MOVE_MS = 120;
+let tileEls = new Map<number, HTMLElement>();
+let settle = 0;
+
+function buildGrid(): void {
+  gridEl.innerHTML = '';
   for (let i = 0; i < SIZE * SIZE; i++) {
     const cell = document.createElement('div');
     cell.className = 'cell';
-    boardEl.appendChild(cell);
+    gridEl.appendChild(cell);
   }
-  renderBoard();
 }
 
-function renderBoard(): void {
-  const cells = boardEl.children;
-  for (let i = 0; i < SIZE * SIZE; i++) {
-    const el = cells[i] as HTMLDivElement;
-    const v = game.board[i];
-    el.textContent = v ? String(v) : '';
-    // A single data attribute drives every tile colour + font size in CSS.
-    el.dataset.v = v ? String(Math.min(2048, v)) : '';
-    el.classList.toggle('filled', v > 0);
-    el.classList.remove('merged', 'fresh');
-  }
-  for (const i of game.lastMerged) cells[i]?.classList.add('merged');
-  if (game.spawned >= 0) cells[game.spawned]?.classList.add('fresh');
+function setPos(el: HTMLElement, index: number): void {
+  el.style.setProperty('--col', String(index % SIZE));
+  el.style.setProperty('--row', String(Math.floor(index / SIZE)));
+}
+
+/** Rebuild the tile layer from the model, once a slide has landed. */
+function renderTiles(merged: number[] = [], spawned = -1): void {
+  tilesEl.innerHTML = '';
+  tileEls = new Map();
+  game.board.forEach((v, i) => {
+    if (!v) return;
+    const el = document.createElement('div');
+    el.className = 'tile';
+    el.dataset.v = String(Math.min(2048, v));
+    el.textContent = String(v);
+    setPos(el, i);
+    if (merged.includes(i)) el.classList.add('merged');
+    if (i === spawned) el.classList.add('fresh');
+    tilesEl.appendChild(el);
+    tileEls.set(i, el);
+  });
+}
+
+/** Land an in-flight slide now, so a fast second swipe is never dropped. */
+function landSlide(): void {
+  if (!settle) return;
+  clearTimeout(settle);
+  settle = 0;
+  renderTiles(game.lastMerged, game.spawned);
 }
 
 // ---- input ----
-let busy = false;
-
 function tryMove(dir: Direction): void {
-  if (busy || !game.isPlaying()) return;
+  if (!game.isPlaying()) return;
+  landSlide();
   const before = game.score;
   if (!game.move(dir)) return;
+
+  // Slide the tiles that exist now; the layer is rebuilt once they arrive, which
+  // is what collapses a merged pair into a single tile.
+  for (const m of game.lastMovements) {
+    const el = tileEls.get(m.from);
+    if (!el) continue;
+    if (m.merged) el.style.zIndex = '2';
+    setPos(el, m.to);
+  }
 
   if (game.score > before) {
     sfx.correct(Math.log2(Math.max(2, game.score - before)));
@@ -117,17 +151,15 @@ function tryMove(dir: Direction): void {
   } else {
     sfx.click();
   }
-  renderBoard();
   renderHud();
 
-  const status: Status = game.status;
-  if (status === 'won') {
-    busy = true;
-    window.setTimeout(() => { busy = false; showWin(); }, 220);
-  } else if (status === 'lost') {
-    busy = true;
-    window.setTimeout(() => { busy = false; endGame(); }, 260);
-  }
+  settle = window.setTimeout(() => {
+    settle = 0;
+    renderTiles(game.lastMerged, game.spawned);
+    const status: Status = game.status;
+    if (status === 'won') showWin();
+    else if (status === 'lost') endGame();
+  }, MOVE_MS);
 }
 
 const KEYS: Record<string, Direction> = {
@@ -142,26 +174,30 @@ window.addEventListener('keydown', (e) => {
   tryMove(dir);
 });
 
-// Touch: a swipe past the threshold on the dominant axis moves that way.
+// Touch: act the moment the gesture passes the threshold, rather than waiting
+// for the finger to lift — waiting is what made the swipe feel unresponsive.
 let startX = 0;
 let startY = 0;
-let tracking = false;
-const SWIPE = 24;
+let swiping = false;
+const SWIPE = 18;
 
 boardEl.addEventListener('pointerdown', (e) => {
-  tracking = true;
+  swiping = true;
   startX = e.clientX;
   startY = e.clientY;
 });
-boardEl.addEventListener('pointerup', (e) => {
-  if (!tracking) return;
-  tracking = false;
+boardEl.addEventListener('pointermove', (e) => {
+  if (!swiping) return;
   const dx = e.clientX - startX;
   const dy = e.clientY - startY;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE) return;
+  swiping = false; // one move per gesture
   tryMove(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up');
 });
-boardEl.addEventListener('pointercancel', () => { tracking = false; });
+const endSwipe = (): void => { swiping = false; };
+boardEl.addEventListener('pointerup', endSwipe);
+boardEl.addEventListener('pointercancel', endSwipe);
+boardEl.addEventListener('pointerleave', endSwipe);
 
 // ---- end of run ----
 function showWin(): void {
@@ -228,9 +264,11 @@ function wireShare(): void {
 // ---- lifecycle ----
 function start(): void {
   overlay.classList.remove('show');
-  busy = false;
+  clearTimeout(settle);
+  settle = 0;
+  swiping = false;
   game.start();
-  renderBoard();
+  renderTiles([], game.spawned);
   renderHud();
   hintEl.textContent = 'Swipe or use the arrow keys to slide the tiles.';
 }
@@ -249,7 +287,7 @@ muteBtn.addEventListener('click', () => {
 });
 
 renderMute();
-buildBoard();
+buildGrid();
 start();
 
 // Pull this device's saved progress once the cloud session is known.

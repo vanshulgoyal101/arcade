@@ -232,6 +232,12 @@ input[type="range"] {
   outline: none;
   cursor: pointer;
 }
+/* The reset above outranks the shared focus rule (same specificity, later in the
+   file), so give the sliders their keyboard ring back. */
+input[type="range"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 .slider-row.r input { background: linear-gradient(90deg, #2a0d0d, var(--r)); }
 .slider-row.g input { background: linear-gradient(90deg, #0d2a27, var(--g)); }
 .slider-row.b input { background: linear-gradient(90deg, #161033, var(--b)); }
