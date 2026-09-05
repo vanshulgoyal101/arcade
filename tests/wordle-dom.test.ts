@@ -61,4 +61,18 @@ describe('wordle/dom', () => {
     const row = app.querySelector('.row')!;
     expect(row.querySelectorAll('.correct, .present, .absent').length).toBe(5);
   });
+
+  it('never paints the previous guess onto a board started mid-reveal', async () => {
+    const app = await load();
+    type(app, ANSWER_WORDS[0]);
+    press(app, 'enter');
+    await vi.advanceTimersByTimeAsync(300); // tiles are still flipping
+
+    app.querySelector<HTMLButtonElement>('#restart')!.click();
+    await vi.advanceTimersByTimeAsync(2000); // let every stale timeout fire
+
+    expect(app.querySelectorAll('.tile.correct, .tile.present, .tile.absent').length).toBe(0);
+    expect(app.querySelectorAll('.tile.reveal').length).toBe(0);
+    expect(rowText(app.querySelector('.row')!)).toBe('');
+  });
 });

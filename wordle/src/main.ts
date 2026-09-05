@@ -127,22 +127,6 @@ function paintKeyboard(): void {
   }
 }
 
-function revealRow(row: number, result: Tile[]): void {
-  for (let c = 0; c < WORD_LENGTH; c++) {
-    const tile = tiles[row][c];
-    const start = c * FLIP_STAGGER;
-    window.setTimeout(() => {
-      tile.classList.add('reveal');
-      if (c === 0) sfx.tick();
-    }, start);
-    // Swap in the colour when the tile is edge-on, so it "reveals" mid-flip.
-    window.setTimeout(() => tile.classList.add(result[c]), start + FLIP_HALF);
-    // Drop the transform/animation once done so Windows/Edge doesn't leave the
-    // tile on a GPU layer with the glyph unpainted (the colour class stays).
-    window.setTimeout(() => tile.classList.remove('reveal'), start + FLIP_DURATION + 30);
-  }
-}
-
 function shakeRow(row: number): void {
   const el = boardEl.children[row] as HTMLDivElement;
   el.classList.remove('shake');
@@ -154,6 +138,40 @@ function shakeRow(row: number): void {
 let locked = false;
 // Bumped on every new game so an in-flight reveal timeout aborts.
 let runId = 0;
+
+/** setTimeout that does nothing if the run has moved on (restart / new word). */
+function onRun(myRun: number, ms: number, fn: () => void): void {
+  window.setTimeout(() => {
+    if (myRun === runId) fn();
+  }, ms);
+}
+
+function revealRow(row: number, result: Tile[], myRun: number): void {
+  for (let c = 0; c < WORD_LENGTH; c++) {
+    const tile = tiles[row][c];
+    const start = c * FLIP_STAGGER;
+    onRun(myRun, start, () => {
+      tile.classList.add('reveal');
+      if (c === 0) sfx.tick();
+    });
+    // Swap in the colour when the tile is edge-on, so it "reveals" mid-flip.
+    onRun(myRun, start + FLIP_HALF, () => tile.classList.add(result[c]));
+    // Drop the transform/animation once done so Windows/Edge doesn't leave the
+    // tile on a GPU layer with the glyph unpainted (the colour class stays).
+    onRun(myRun, start + FLIP_DURATION + 30, () => tile.classList.remove('reveal'));
+  }
+}
+
+function bounceRow(row: number, myRun: number): void {
+  for (let c = 0; c < WORD_LENGTH; c++) {
+    const tile = tiles[row][c];
+    onRun(myRun, c * 90, () => {
+      tile.classList.remove('bounce');
+      void tile.offsetWidth;
+      tile.classList.add('bounce');
+    });
+  }
+}
 
 function handleKey(key: string): void {
   if (locked || game.status !== 'playing') return;
@@ -187,33 +205,21 @@ function onSubmit(): void {
     return;
   }
   locked = true;
-  revealRow(res.row, res.result);
-  const revealMs = (WORD_LENGTH - 1) * FLIP_STAGGER + FLIP_DURATION + 40;
   const myRun = runId;
-  window.setTimeout(() => {
-    if (myRun !== runId) return;
+  revealRow(res.row, res.result, myRun);
+  const revealMs = (WORD_LENGTH - 1) * FLIP_STAGGER + FLIP_DURATION + 40;
+  onRun(myRun, revealMs, () => {
     paintKeyboard();
     locked = false;
     if (res.status === 'won') {
-      bounceRow(res.row);
+      bounceRow(res.row, myRun);
       sfx.levelUp();
-      window.setTimeout(() => { if (myRun === runId) endGame(true, res.newRecord); }, 900);
+      onRun(myRun, 900, () => endGame(true, res.newRecord));
     } else if (res.status === 'lost') {
       sfx.gameOver();
-      window.setTimeout(() => { if (myRun === runId) endGame(false, false); }, 500);
+      onRun(myRun, 500, () => endGame(false, false));
     }
-  }, revealMs);
-}
-
-function bounceRow(row: number): void {
-  for (let c = 0; c < WORD_LENGTH; c++) {
-    const tile = tiles[row][c];
-    window.setTimeout(() => {
-      tile.classList.remove('bounce');
-      void tile.offsetWidth;
-      tile.classList.add('bounce');
-    }, c * 90);
-  }
+  });
 }
 
 // ---- overlays ----
