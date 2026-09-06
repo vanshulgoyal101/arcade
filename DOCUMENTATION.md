@@ -142,7 +142,7 @@ The hub and all games are tuned to feel native on phones and tablets:
 A static landing page. Key points:
 
 - `<body class="hub">` — hub styles live in `assets/style.css`.
-- Ten `.card` links, one per featured game, each pointing at the game's clean URL `<game>/`.
+- Eleven `.card` links, one per featured game, each pointing at the game's clean URL `<game>/`.
 - Each card sets an accent colour via `style="--accent:…"`.
 - The SVG favicon is inlined as a data URI (🕹️).
 - No JavaScript on the hub itself.
