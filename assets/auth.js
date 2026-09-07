@@ -117,7 +117,7 @@ paintCardBests();
 
 let supabase;
 try {
-  const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+  const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.4?bundle');
   supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 } catch {
   // Offline or CDN blocked — hide the auth UI and bail quietly.

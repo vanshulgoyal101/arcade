@@ -222,7 +222,7 @@ async function init(): Promise<void> {
     try {
       // Loaded from the CDN at runtime; kept out of the Vite bundle on purpose.
       // @ts-ignore - remote ESM module, no local types
-      const mod: any = await import(/* @vite-ignore */ 'https://esm.sh/@supabase/supabase-js@2');
+      const mod: any = await import(/* @vite-ignore */ 'https://esm.sh/@supabase/supabase-js@2.45.4?bundle');
       client = mod.createClient(SUPABASE_URL, SUPABASE_KEY);
       const { data } = await client.auth.getSession();
       user = data?.session?.user ?? null;

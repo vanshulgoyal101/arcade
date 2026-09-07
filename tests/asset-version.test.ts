@@ -13,7 +13,7 @@ const sha = (name: string) =>
 // icons. These digests pin content to version: bump both together, never one.
 const VERSIONED = [
   { file: 'assets/style.css', version: 11, digest: '237efc37a64a7380' },
-  { file: 'assets/auth.js', version: 23, digest: 'e23810f237a4311c' },
+  { file: 'assets/auth.js', version: 24, digest: '9966cdaad9ed4e27' },
 ] as const;
 
 // assets/games.js is imported by module specifier rather than from index.html,
