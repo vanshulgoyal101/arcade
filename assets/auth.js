@@ -114,14 +114,6 @@ let pendingSignIn = false;
 // Paint each hub card with the player's personal best — instant + local-only, so
 // it shows even before (or entirely without) the Supabase SDK.
 paintCardBests();
-// Refresh when returning from a game (incl. bfcache restore) so a new best shows.
-addEventListener('pageshow', () => {
-  paintCardBests();
-  if (currentUser && syncedFor !== currentUser.id) void onUser(currentUser);
-});
-addEventListener('online', () => {
-  if (currentUser && syncedFor !== currentUser.id) void onUser(currentUser);
-});
 
 let supabase;
 try {
@@ -145,6 +137,17 @@ const pfBody = document.getElementById('pfBody');
 // ---- profile ----
 let currentUser = null;
 let profile = null; // { display_name, avatar }
+
+// Refresh when returning from a game (incl. bfcache restore) so a new best shows.
+// These listeners read currentUser/syncedFor, so register them only after the
+// module-level state exists; pageshow can fire during module evaluation.
+addEventListener('pageshow', () => {
+  paintCardBests();
+  if (currentUser && syncedFor !== currentUser.id) void onUser(currentUser);
+});
+addEventListener('online', () => {
+  if (currentUser && syncedFor !== currentUser.id) void onUser(currentUser);
+});
 
 function googleName(user) {
   const m = user.user_metadata || {};

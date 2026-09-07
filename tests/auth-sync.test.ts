@@ -142,6 +142,15 @@ function onUserHarness(options: {
 describe('hub score sync', () => {
   beforeEach(() => localStorage.clear());
 
+  it('registers retry listeners only after auth state exists', () => {
+    const state = source.indexOf('let currentUser = null;');
+    const pageshow = source.indexOf("addEventListener('pageshow'");
+    const online = source.indexOf("addEventListener('online'");
+    expect(state).toBeGreaterThan(-1);
+    expect(pageshow).toBeGreaterThan(state);
+    expect(online).toBeGreaterThan(state);
+  });
+
   it('keeps pending retries when Supabase resolves with an error', async () => {
     localStorage.setItem('arcade.pending.v1', JSON.stringify({ wordle: 12 }));
     const { upload } = uploadHarness(new Error('offline'));
