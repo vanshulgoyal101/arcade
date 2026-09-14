@@ -1,6 +1,6 @@
 # 🕹️ Tiny Arcade
 
-**10 tiny, instantly-playable browser games for your brain and reflexes.**
+**11 tiny, instantly-playable browser games for your brain and reflexes.**
 No installs, no accounts, no backend — just open a page and play.
 
 ### ▶️ Play now: **[games.vanshul.com](https://games.vanshul.com)**
