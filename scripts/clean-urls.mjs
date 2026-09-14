@@ -20,8 +20,16 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const ALL = ['chromatic', 'digit-span', 'echo', 'flash', 'flashmath', 'hue-hunt', 'interval', 'sprint', 'where', 'word', 'wordle'];
+const ALL = ['2048', 'chromatic', 'digit-span', 'echo', 'flash', 'flashmath', 'hue-hunt', 'interval', 'sprint', 'where', 'word', 'wordle'];
 const games = process.argv.slice(2).length ? process.argv.slice(2) : ALL;
+
+for (const game of games) {
+  if (!ALL.includes(game) || !existsSync(join(root, game, 'dist', 'template.html')) ||
+      !existsSync(join(root, game, 'dist', 'assets'))) {
+    console.error(`${game}: no complete build in dist/ (run vite build first)`);
+    process.exit(1);
+  }
+}
 
 const stub = (slug) => `<!DOCTYPE html>
 <html lang="en">
@@ -40,7 +48,7 @@ const stub = (slug) => `<!DOCTYPE html>
 for (const g of games) {
   const gameDir = join(root, g);
   const dist = join(gameDir, 'dist');
-  const builtHtml = existsSync(join(dist, 'template.html')) ? join(dist, 'template.html') : join(dist, 'index.html');
+  const builtHtml = join(dist, 'template.html');
   if (!existsSync(builtHtml)) {
     console.error(`✗ ${g}: no built HTML in dist/ (run vite build first)`);
     process.exit(1);

@@ -99,7 +99,9 @@ describe('2048/dom', () => {
   });
 
   it('completes a flick that leaves the board mid-gesture', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const app = await load();
+    random.mockRestore();
     const board = app.querySelector('#board')!;
     const before = tiles(app).join('|');
     board.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 100 }));

@@ -137,6 +137,7 @@ const pfBody = document.getElementById('pfBody');
 // ---- profile ----
 let currentUser = null;
 let profile = null; // { display_name, avatar }
+let authVersion = 0;
 
 // Refresh when returning from a game (incl. bfcache restore) so a new best shows.
 // These listeners read currentUser/syncedFor, so register them only after the
@@ -180,7 +181,7 @@ async function loadProfile(user) {
     .maybeSingle();
   if (error) throw error;
   if (data && (data.display_name || data.avatar)) {
-    profile = { display_name: data.display_name || googleName(user), avatar: data.avatar || googleAvatar(user) || 'a:panda', theme: data.theme || null };
+    return { display_name: data.display_name || googleName(user), avatar: data.avatar || googleAvatar(user) || 'a:panda', theme: data.theme || null };
   } else {
     // First sign-in: seed a profile from the Google identity.
     const seeded = { display_name: googleName(user), avatar: googleAvatar(user) || pickRandomAvatar(), theme: null };
@@ -189,7 +190,7 @@ async function loadProfile(user) {
       { onConflict: 'user_id' }
     );
     if (seedError) throw seedError;
-    profile = seeded;
+    return seeded;
   }
 }
 
@@ -211,25 +212,29 @@ function applyTheme(theme) {
 }
 
 async function saveProfile(name, avatar) {
-  const next = { display_name: (name || '').trim().slice(0, 24) || googleName(currentUser), avatar: avatar || 'a:panda' };
+  const user = currentUser;
+  const version = authVersion;
+  if (!user) return;
+  const next = { display_name: (name || '').trim().slice(0, 24) || googleName(user), avatar: avatar || 'a:panda' };
   const { error } = await supabase.from('arcade_profiles').upsert(
-    { user_id: currentUser.id, display_name: next.display_name, avatar: next.avatar, updated_at: new Date().toISOString() },
+    { user_id: user.id, display_name: next.display_name, avatar: next.avatar, updated_at: new Date().toISOString() },
     { onConflict: 'user_id' }
   );
   if (error) throw error;
+  if (version !== authVersion || currentUser?.id !== user.id) return;
   profile = next;
-  cacheProfile(currentUser.id);
+  cacheProfile(user.id);
   // Re-stamp the player's score rows so the leaderboard shows the new identity.
   await supabase.from('arcade_scores')
     .update({ display_name: profile.display_name, avatar_url: profile.avatar })
-    .eq('user_id', currentUser.id);
+    .eq('user_id', user.id);
   // A restamp failure does not undo the saved profile; the next score upload
   // writes the same identity to every game row again.
 }
 
 // ---- score sync ----
 
-async function uploadScores(user) {
+async function uploadScores(user, isCurrent = () => true) {
   const rows = [];
   for (const g of GAMES) {
     const s = readLocal(g.key);
@@ -247,13 +252,25 @@ async function uploadScores(user) {
   if (!rows.length) return;
   const { error } = await supabase.from('arcade_scores').upsert(rows, { onConflict: 'user_id,game' });
   if (error) throw error;
-  // Every local best actually landed, so game-side retries are now redundant.
-  try { localStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
+  if (!isCurrent()) return;
+  try {
+    const pending = JSON.parse(localStorage.getItem(PENDING_KEY) || '{}');
+    for (const row of rows) {
+      const game = GAMES.find((entry) => entry.slug === row.game);
+      if (typeof pending[row.game] === 'number' && pending[row.game] <= row.best &&
+          JSON.stringify(readLocal(game.key)) === JSON.stringify(row.data)) {
+        delete pending[row.game];
+      }
+    }
+    if (Object.keys(pending).length) localStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+    else localStorage.removeItem(PENDING_KEY);
+  } catch { /* ignore */ }
 }
 
-async function restoreScores(overwrite = false) {
+async function restoreScores(overwrite = false, isCurrent = () => true) {
   const { data, error } = await supabase.rpc('restore_my_scores');
   if (error) throw error;
+  if (!isCurrent()) return;
   // On an account switch, don't erase the previous account until the new
   // account's authoritative snapshot has actually arrived.
   if (overwrite) clearLocalScores();
@@ -360,15 +377,18 @@ function openProfile() {
   document.getElementById('pfSignout').addEventListener('click', signOut);
   document.getElementById('pfSave').addEventListener('click', async (e) => {
     const btn = e.currentTarget;
+    const version = authVersion;
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
       await saveProfile(document.getElementById('pfName').value, selected);
     } catch {
+      if (version !== authVersion) return;
       btn.disabled = false;
       btn.textContent = 'Try again';
       document.getElementById('pfError').textContent = 'Could not save your profile. Your previous profile is unchanged.';
       return;
     }
+    if (version !== authVersion) return;
     closeProfile();
     renderAccount(currentUser);
   });
@@ -377,7 +397,16 @@ function openProfile() {
 function closeProfile() { pfOverlay?.classList.remove('show'); }
 
 async function onUser(user) {
+  if (currentUser?.id !== user?.id) {
+    authVersion++;
+    profile = null;
+    syncedFor = null;
+    closeProfile();
+    closeLeaderboard();
+  }
   currentUser = user;
+  const version = authVersion;
+  const isCurrent = () => version === authVersion && currentUser?.id === user?.id;
   if (!user) {
     profile = null; syncedFor = null; renderAccount(null);
     paintCardBests();
@@ -391,9 +420,12 @@ async function onUser(user) {
     if (hadCachedProfile) renderAccount(user); // instant, no flash
     let profileReady = hadCachedProfile;
     try {
-      await loadProfile(user);
+      const loaded = await loadProfile(user);
+      if (!isCurrent()) return;
+      profile = loaded;
       profileReady = true;
     } catch { /* retry on the next online/pageshow event */ }
+    if (!isCurrent()) return;
     if (profile) cacheProfile(user.id);
     applyTheme(profile?.theme);
     renderAccount(user);
@@ -409,14 +441,17 @@ async function onUser(user) {
       if (owner && owner !== user.id) {
         // A different account signed in on this browser — don't carry over the
         // previous account's scores; this account's cloud data is authoritative.
-        await restoreScores(true);
+        await restoreScores(true, isCurrent);
       } else {
         // Same account, or a guest claiming their local scores for the first time.
-        await restoreScores();
-        await uploadScores(user);
+        await restoreScores(false, isCurrent);
+        if (!isCurrent()) return;
+        await uploadScores(user, isCurrent);
       }
+      if (!isCurrent()) return;
       localStorage.setItem(OWNER_KEY, user.id);
     } catch {
+      if (!isCurrent()) return;
       syncedFor = null; // preserve a retry path on reconnect / bfcache return
     }
     paintCardBests();
@@ -443,8 +478,11 @@ async function signOut() {
 }
 
 // ---- leaderboard ----
+let leaderboardRequest = 0;
 async function loadLeaderboard() {
   if (!lbBody) return;
+  const request = ++leaderboardRequest;
+  const version = authVersion;
   lbBody.innerHTML = '<p class="lb-loading">Loading…</p>';
   try {
     const uid = currentUser?.id || null;
@@ -454,6 +492,7 @@ async function loadLeaderboard() {
       p_games: BOARD_GAMES.map((g) => g.slug),
       p_limit: 5,
     });
+    if (request !== leaderboardRequest || version !== authVersion) return;
     if (error) throw error;
     const board = data || {};
     lbBody.innerHTML = BOARD_GAMES
@@ -499,6 +538,7 @@ async function loadLeaderboard() {
       })
       .join('');
   } catch {
+    if (request !== leaderboardRequest || version !== authVersion) return;
     lbBody.innerHTML = '<p class="lb-loading">Could not load the leaderboard.</p>';
   }
 }
@@ -533,6 +573,6 @@ document.getElementById('pfClose')?.addEventListener('click', closeProfile);
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeLeaderboard(); closeProfile(); } });
 
 // ---- boot ----
-supabase.auth.onAuthStateChange((_event, session) => onUser(session?.user ?? null));
-const { data: { session } } = await supabase.auth.getSession();
-onUser(session?.user ?? null);
+supabase.auth.onAuthStateChange((_event, session) => {
+  setTimeout(() => { void onUser(session?.user ?? null); }, 0);
+});

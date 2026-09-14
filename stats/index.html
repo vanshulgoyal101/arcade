@@ -135,12 +135,16 @@
     function last30(byDay) {
       const map = new Map((byDay || []).map((d) => [d.day, (d.visits || 0) + (d.plays || 0)]));
       const out = [];
+      const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(new Date());
+      const midnight = Date.parse(today + 'T00:00:00Z');
       for (let i = 29; i >= 0; i--) {
-        const dt = new Date(Date.now() - i * 86400000);
+        const dt = new Date(midnight - i * 86400000);
         const key = dt.toISOString().slice(0, 10);
         out.push({
-          label: String(dt.getDate()),
-          title: dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+          label: String(dt.getUTCDate()),
+          title: dt.toLocaleDateString('en-IN', { timeZone: 'UTC', day: '2-digit', month: 'short' }),
           value: map.get(key) || 0,
         });
       }
@@ -176,29 +180,40 @@
     }
 
     let loading = false;
+    let authVersion = 0;
     async function load() {
       if (loading) return; // avoid overlapping RPCs (auth events + auto-refresh)
       loading = true;
       const reqDays = currentDays;
+      const version = authVersion;
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (version !== authVersion) return;
+        if (sessionError) throw sessionError;
         if (!session) { signInView('This page is private — sign in as the owner.'); return; }
         const { data, error } = await supabase.rpc('arcade_stats', { p_days: reqDays });
+        if (version !== authVersion || reqDays !== currentDays) return;
         if (error) {
           const denied = /not authorized/i.test(error.message || '');
           signInView(denied ? 'Signed in, but this account is not the owner.' : 'Could not load stats — please try again.');
           return;
         }
         render(data);
+      } catch {
+        if (version === authVersion) signInView('Could not load stats — please try again.');
       } finally {
         loading = false;
-        if (reqDays !== currentDays) load(); // filter changed mid-request — refetch
+        if (reqDays !== currentDays || version !== authVersion) void load();
       }
     }
 
     // INITIAL_SESSION is handled by the single load() below; only react to real changes.
     supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') load();
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        authVersion++;
+        if (event === 'SIGNED_OUT') signInView('This page is private — sign in as the owner.');
+        setTimeout(() => { void load(); }, 0);
+      }
     });
     setInterval(() => { if (!document.hidden) load(); }, 60000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });

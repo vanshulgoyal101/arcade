@@ -65,6 +65,30 @@ describe('game registry parity (hub auth.js vs shared/cloud.ts)', () => {
     expect(Object.keys(cloud).sort()).toEqual(gameDirs);
   });
 
+  it('builds and promotes every game on disk, including hidden games', () => {
+    const pkg = JSON.parse(readFileSync(root + 'package.json', 'utf8'));
+    const buildGames = /for g in (.*?);/.exec(pkg.scripts['build:games'])![1].split(' ').sort();
+    const promote = readFileSync(root + 'scripts/clean-urls.mjs', 'utf8');
+    const promotedGames = [.../const ALL = \[(.*?)\]/.exec(promote)![1].matchAll(/'([^']+)'/g)]
+      .map((match) => match[1]).sort();
+    expect(buildGames).toEqual(gameDirs);
+    expect(promotedGames).toEqual(gameDirs);
+  });
+
+  it('audits every game headline in the database checker', () => {
+    const audit = readFileSync(root + 'scripts/db-audit.mjs', 'utf8');
+    const slugs = [...audit.matchAll(/when '([^']+)'\s+then/g)].map((match) => match[1]).sort();
+    expect(slugs).toEqual(gameDirs);
+  });
+
+  it('advertises the actual number of featured games', () => {
+    const document = new DOMParser().parseFromString(readFileSync(root + 'index.html', 'utf8'), 'text/html');
+    const cards = document.querySelectorAll('.grid a.card');
+    expect(document.title).toContain(`${cards.length} Free`);
+    const graph = JSON.parse(document.querySelector('script[type="application/ld+json"]')!.textContent!)['@graph'];
+    expect(graph.find((item: { '@type': string }) => item['@type'] === 'ItemList').itemListElement).toHaveLength(cards.length);
+  });
+
   it.each(gameDirs)('%s agrees on storage key, best field and heal field', (slug) => {
     expect(auth[slug].key).toBe(cloud[slug].key);
     expect(auth[slug].best).toEqual(cloud[slug].best);

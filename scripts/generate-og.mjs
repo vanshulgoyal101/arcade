@@ -18,7 +18,7 @@ mkdirSync(outDir, { recursive: true });
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const cards = [
-  { slug: 'hub',        accent: '#7cf0c8', title: 'Tiny Arcade', subtitle: 'Eleven free browser games — no download', eyebrow: '' },
+  { slug: 'hub',        accent: '#7cf0c8', title: 'Tiny Arcade', subtitle: 'Ten free browser games — no download', eyebrow: '' },
   { slug: 'hue-hunt',   accent: '#ff6b6b', title: 'Hue Hunt',    subtitle: 'Spot the tile that’s a different shade' },
   { slug: 'echo',       accent: '#4ecdc4', title: 'Echo',        subtitle: 'Watch the pattern, repeat it back' },
   { slug: 'chromatic',  accent: '#ffd93d', title: 'Chromatic',   subtitle: 'Match the colour with RGB sliders' },

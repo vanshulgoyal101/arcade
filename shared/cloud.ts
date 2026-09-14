@@ -127,10 +127,11 @@ export function queuePending(game: string, best: number): void {
  * queued while this request was in flight — that newer score has not landed.
  * Omitting `acknowledgedBest` intentionally clears the entry (test/admin use).
  */
-export function unqueuePending(game: string, acknowledgedBest = Infinity): void {
+export function unqueuePending(game: string, acknowledgedBest = Infinity, acknowledgedData?: unknown): void {
   const queue = readPending();
   if (!(game in queue)) return;
   if (queue[game] > acknowledgedBest) return;
+  if (acknowledgedData !== undefined && JSON.stringify(readBlob(game)) !== JSON.stringify(acknowledgedData)) return;
   delete queue[game];
   writePending(queue);
 }
@@ -224,7 +225,8 @@ async function init(): Promise<void> {
       // @ts-ignore - remote ESM module, no local types
       const mod: any = await import(/* @vite-ignore */ 'https://esm.sh/@supabase/supabase-js@2.45.4?bundle');
       client = mod.createClient(SUPABASE_URL, SUPABASE_KEY);
-      const { data } = await client.auth.getSession();
+      const { data, error } = await client.auth.getSession();
+      if (error) throw error;
       user = data?.session?.user ?? null;
       if (user) {
         const { data: p } = await client
@@ -242,6 +244,7 @@ async function init(): Promise<void> {
       client = null;
       user = null;
       profile = null;
+      initPromise = null;
     }
   })();
   return initPromise;
@@ -294,13 +297,14 @@ export async function submitScore(game: string, best: number, opts?: { backup?: 
     if (hasStoredSession()) queuePending(game, safeBest);
     return;
   }
-  if (await push(game, safeBest)) unqueuePending(game, safeBest);
+  const data = readBlob(game);
+  queuePending(game, safeBest);
+  if (await push(game, safeBest, data)) unqueuePending(game, safeBest, data);
   else queuePending(game, safeBest);
 }
 
 /** One write attempt. Resolves `true` only when the score actually landed. */
-async function push(game: string, best: number): Promise<boolean> {
-  const data = readBlob(game);
+async function push(game: string, best: number, data: unknown): Promise<boolean> {
   try {
     const rpc = await client.rpc('submit_score', { p_game: game, p_best: best, p_data: data });
     if (!rpc?.error) return true;
@@ -352,7 +356,8 @@ export async function flushPending(): Promise<void> {
     if (!client || !user) return;
     for (const game of games) {
       const best = queue[game];
-      if (await push(game, best)) unqueuePending(game, best);
+      const data = readBlob(game);
+      if (await push(game, best, data)) unqueuePending(game, best, data);
     }
   } catch {
     /* ignore */
@@ -400,6 +405,7 @@ export async function getRank(game: string, score: number): Promise<RankInfo | n
       // 0-best rows exist only as cross-device backups and shouldn't inflate rank.
       client.from('arcade_scores').select('user_id', { count: 'exact', head: true }).eq('game', game).gt('best', 0),
     ]);
+    if (ahead.error || total.error) return parked;
     const rank = (ahead.count || 0) + 1;
     // The player's own row may not be counted yet (submit in flight), so make
     // sure the field always includes them — rank can never exceed total.

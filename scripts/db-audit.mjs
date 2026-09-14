@@ -38,6 +38,7 @@ const num = (field) => `case when jsonb_typeof(data->'${field}')='number' then (
 const mapMax = `(select max(value::numeric) from jsonb_each_text(case when jsonb_typeof(data->'best')='object' then data->'best' else '{}'::jsonb end) where value ~ '^-?[0-9.]+$')`;
 
 const HEADLINE = `case game
+  when '2048'       then ${num('best')}
   when 'hue-hunt'   then ${num('bestScore')}
   when 'chromatic'  then ${num('endlessBest')}
   when 'flash'      then ${num('bestWpm')}
@@ -66,9 +67,11 @@ const rows = await q(`
   from h group by game order by game`);
 
 let underReported = 0;
+let unreadable = 0;
 console.log('game          rows  unreadable  blob_ahead  best_ahead  worst_gap');
 for (const r of rows) {
   underReported += Number(r.blob_ahead);
+  unreadable += Number(r.unreadable);
   const flag = Number(r.blob_ahead) > 0 ? '  <-- under-reported on the board' : '';
   console.log(
     `${r.game.padEnd(12)} ${String(r.rows).padStart(5)} ${String(r.unreadable).padStart(11)} ${String(r.blob_ahead).padStart(11)} ${String(r.best_ahead).padStart(11)} ${String(r.worst_gap).padStart(10)}${flag}`
@@ -87,5 +90,7 @@ if (underReported) {
     from h where headline > best order by (headline - best) desc limit 20`);
   for (const d of detail) console.log(`  ${d.game.padEnd(12)} ${d.who.padEnd(22)} board ${d.best} vs local ${d.headline}`);
 } else {
-  console.log('\n✓ No under-reported scores: every board entry is >= the player’s own saved store.');
+  console.log('\n✓ No under-reported scores among readable saved stores.');
 }
+if (unreadable) console.error(`\n${unreadable} saved store(s) could not be audited.`);
+if (underReported || unreadable) process.exitCode = 1;

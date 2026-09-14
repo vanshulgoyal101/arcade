@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
+import { JSDOM } from 'jsdom';
 
 const source = readFileSync(process.cwd() + '/assets/auth.js', 'utf8');
 const between = (start: string, end: string): string => {
@@ -69,12 +70,16 @@ function saveProfileHarness(profileError: Error | null) {
   const cacheProfile = vi.fn();
   const factory = new Function(
     'supabase', 'currentUser', 'googleName', 'cacheProfile', 'profile',
-    `${between('async function saveProfile', '// ---- score sync ----')} return { saveProfile, getProfile: () => profile };`
+    `let authVersion = 0;
+    ${between('async function saveProfile', '// ---- score sync ----')} return {
+      saveProfile, getProfile: () => profile,
+      switchUser: () => { currentUser = { id: 'user-b' }; authVersion++; },
+    };`
   );
   const harness = factory(
     supabase, { id: 'user-a' }, () => 'Google Name', cacheProfile,
     { display_name: 'Old Name', avatar: 'a:owl' }
-  ) as { saveProfile: (name: string, avatar: string) => Promise<void>; getProfile: () => unknown };
+  ) as { saveProfile: (name: string, avatar: string) => Promise<void>; getProfile: () => unknown; switchUser: () => void };
   return { ...harness, profileUpsert, scoreUpdate, cacheProfile };
 }
 
@@ -103,7 +108,7 @@ function restoreHarness(rows: unknown[], error: Error | null = null) {
     localStorage,
     (v: unknown) => v !== null && typeof v === 'object' && !Array.isArray(v),
     clearLocalScores,
-  ) as (overwrite?: boolean) => Promise<void>;
+  ) as (overwrite?: boolean, isCurrent?: () => boolean) => Promise<void>;
   return { restore, clearLocalScores };
 }
 
@@ -116,7 +121,7 @@ function onUserHarness(options: {
   const paintCardBests = vi.fn();
   const loadProfile = options.profileError
     ? vi.fn().mockRejectedValue(options.profileError)
-    : vi.fn().mockResolvedValue(undefined);
+    : vi.fn().mockResolvedValue({ display_name: 'Loaded', avatar: 'a:owl' });
   const uploadScores = options.uploadError
     ? vi.fn().mockRejectedValue(options.uploadError)
     : vi.fn().mockResolvedValue(undefined);
@@ -126,7 +131,10 @@ function onUserHarness(options: {
     'renderAccount', 'paintCardBests', 'signIn', 'hydrateProfileFromCache', 'loadProfile',
     'cacheProfile', 'applyTheme', 'clearLocalScores', 'restoreScores', 'uploadScores',
     'localStorage', 'OWNER_KEY', 'currentUser', 'syncedFor', 'pendingSignIn', 'profile',
-    `${between('async function onUser', 'async function signIn')} return {
+    `let authVersion = 0;
+    const closeProfile = () => {};
+    const closeLeaderboard = () => {};
+    ${between('async function onUser', 'async function signIn')} return {
       onUser,
       getSyncedFor: () => syncedFor,
     };`
@@ -135,8 +143,8 @@ function onUserHarness(options: {
     renderAccount, paintCardBests, vi.fn(), () => options.cached === true, loadProfile,
     vi.fn(), vi.fn(), vi.fn(), restoreScores, uploadScores, localStorage,
     'arcade.sync.owner', null, null, false, profile
-  ) as { onUser: (user: { id: string }) => Promise<void>; getSyncedFor: () => string | null };
-  return { ...harness, uploadScores, restoreScores, renderAccount };
+  ) as { onUser: (user: { id: string } | null) => Promise<void>; getSyncedFor: () => string | null };
+  return { ...harness, uploadScores, restoreScores, renderAccount, loadProfile };
 }
 
 describe('hub score sync', () => {
@@ -175,6 +183,20 @@ describe('hub score sync', () => {
     await upload({ id: 'user-a' });
     expect(upsert).not.toHaveBeenCalled();
     expect(localStorage.getItem('arcade.pending.v1')).not.toBeNull();
+  });
+
+  it('preserves newer scores and games outside an in-flight hub upload', async () => {
+    localStorage.setItem('arcade.pending.v1', JSON.stringify({ wordle: 12 }));
+    const { upload, upsert } = uploadHarness(null);
+    let finish!: (response: { error: null }) => void;
+    upsert.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+
+    const request = upload({ id: 'user-a' });
+    localStorage.setItem('arcade.pending.v1', JSON.stringify({ wordle: 15, echo: 8 }));
+    finish({ error: null });
+    await request;
+
+    expect(JSON.parse(localStorage.getItem('arcade.pending.v1')!)).toEqual({ wordle: 15, echo: 8 });
   });
 
   it('clears both scores and their pending writes on an account switch', () => {
@@ -223,6 +245,14 @@ describe('hub score sync', () => {
     expect(clearLocalScores).toHaveBeenCalledOnce();
     expect(localStorage.getItem('wordle.v1')).toBeNull();
   });
+
+  it('ignores a restore response after its account context expires', async () => {
+    localStorage.setItem('wordle.v1', JSON.stringify({ maxStreak: 7 }));
+    const { restore, clearLocalScores } = restoreHarness([{ game: 'wordle', best: 20, data: {} }]);
+    await restore(true, () => false);
+    expect(clearLocalScores).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem('wordle.v1')!)).toEqual({ maxStreak: 7 });
+  });
 });
 
 describe('hub profile sync', () => {
@@ -263,6 +293,27 @@ describe('hub profile sync', () => {
     expect(scoreUpdate).not.toHaveBeenCalled();
   });
 
+  it('does not cache or restamp a profile save under a different account', async () => {
+    const { saveProfile, switchUser, cacheProfile, scoreUpdate } = saveProfileHarness(null);
+    const request = saveProfile('New Name', 'a:panda');
+    switchUser();
+    await request;
+    expect(cacheProfile).not.toHaveBeenCalled();
+    expect(scoreUpdate).not.toHaveBeenCalled();
+  });
+
+  it('ignores a delayed profile load after sign-out', async () => {
+    const { onUser, loadProfile, uploadScores, renderAccount } = onUserHarness();
+    let finish!: (profile: unknown) => void;
+    loadProfile.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const request = onUser({ id: 'user-a' });
+    await onUser(null);
+    finish({ display_name: 'Old account', avatar: 'a:owl' });
+    await request;
+    expect(renderAccount).toHaveBeenLastCalledWith(null);
+    expect(uploadScores).not.toHaveBeenCalled();
+  });
+
   it('does not upload fallback identity when profile load fails without a cache', async () => {
     const { onUser, getSyncedFor, uploadScores } = onUserHarness({ profileError: new Error('offline') });
 
@@ -293,5 +344,44 @@ describe('hub profile sync', () => {
     await onUser({ id: 'user-a' });
 
     expect(getSyncedFor()).toBeNull();
+  });
+});
+
+describe('complete hub module boot', () => {
+  it('returns from the auth callback before starting SDK-dependent sync', async () => {
+    const dom = new JSDOM('<div id="account"></div><button id="lbBtn"></button>', {
+      url: 'https://arcade.test/', runScripts: 'outside-only',
+    });
+    let locked = false;
+    let callback!: (event: string, session: unknown) => unknown;
+    const rpc = vi.fn().mockResolvedValue({ data: [], error: null });
+    const maybeSingle = vi.fn(async () => {
+      if (locked) throw new Error('SDK auth lock held');
+      return { data: { display_name: 'Saved Player', avatar: 'a:robot' }, error: null };
+    });
+    const backend = {
+      auth: {
+        onAuthStateChange: (listener: typeof callback) => { callback = listener; },
+      },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
+      rpc,
+    };
+    (dom.window as unknown as { sdk: unknown }).sdk = { createClient: () => backend };
+    const executable = source
+      .replace(/import \{ gameIcon, gameName \} from '[^']+';/, 'const gameIcon = () => ""; const gameName = (slug) => slug;')
+      .replace(/await import\('https:\/\/esm.sh\/[^']+'\)/, 'await Promise.resolve(globalThis.sdk)');
+    try {
+      await dom.window.eval(`(async () => { ${executable} })()`);
+      locked = true;
+      const result = callback('INITIAL_SESSION', { user: { id: 'user-a', user_metadata: {} } });
+      expect(result).toBeUndefined();
+      expect(maybeSingle).not.toHaveBeenCalled();
+      locked = false;
+      await vi.waitFor(() => expect(dom.window.document.querySelector('#profileBtn')?.textContent).toContain('Saved Player'));
+      expect(rpc).toHaveBeenCalledWith('restore_my_scores');
+      expect(dom.window.localStorage.getItem('arcade.sync.owner')).toBe('user-a');
+    } finally {
+      dom.window.close();
+    }
   });
 });
