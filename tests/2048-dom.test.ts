@@ -1,4 +1,4 @@
-import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { mountGame, gameEnv } from './helpers/dom';
 
 const submitScore = vi.fn();
@@ -29,6 +29,8 @@ const swipe = (app: HTMLElement, dx: number, dy: number) => {
 
 describe('2048/dom', () => {
   gameEnv();
+  const shareSpies: Array<{ mockRestore(): void }> = [];
+  afterEach(() => shareSpies.splice(0).forEach((spy) => spy.mockRestore()));
 
   beforeEach(() => {
     submitScore.mockClear();
@@ -120,6 +122,36 @@ describe('2048/dom', () => {
     expect(filled(app).length).toBe(2);
     expect(app.querySelector('#score')!.textContent).toBe('0');
     expect(app.querySelector('.overlay.show')).toBeNull();
+  });
+
+  it('keeps the shared caption matched to its image if a new game starts during encoding', async () => {
+    let finish!: (blob: Blob | null) => void;
+    let expectedText = '';
+    const shareResult = vi.fn().mockResolvedValue('shared');
+    const app = await mountGame(async () => {
+      const { Game } = await import('../2048/src/game');
+      const originalStart = Game.prototype.start;
+      shareSpies.push(vi.spyOn(Game.prototype, 'start').mockImplementationOnce(function (this: InstanceType<typeof Game>) {
+        originalStart.call(this);
+        this.board.fill(0);
+        this.board[0] = this.board[1] = 1024;
+      }));
+      const share = await import('../2048/src/share');
+      expectedText = share.shareText(2048, 2048, 2048);
+      shareSpies.push(vi.spyOn(share, 'shareCard').mockReturnValue(document.createElement('canvas')));
+      shareSpies.push(vi.spyOn(share, 'shareResult').mockImplementation(shareResult));
+      const card = await import('../shared/card');
+      shareSpies.push(vi.spyOn(card, 'canvasToBlob').mockImplementation(() => new Promise((resolve) => { finish = resolve; })));
+      await import('../2048/src/main');
+    });
+    press('ArrowLeft');
+    vi.advanceTimersByTime(200);
+    app.querySelector<HTMLButtonElement>('#m-share')!.click();
+    app.querySelector<HTMLButtonElement>('#restart')!.click();
+    finish(null);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(shareResult).toHaveBeenCalledWith(expect.objectContaining({ text: expectedText }));
   });
 
   it('shows the score, biggest tile and best in the HUD', async () => {

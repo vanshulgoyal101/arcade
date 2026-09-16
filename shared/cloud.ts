@@ -25,6 +25,7 @@ let client: any = null;
 let user: any = null;
 let profile: CloudProfile | null = null;
 let initPromise: Promise<void> | null = null;
+let sessionChanged = false;
 
 // localStorage key per game slug — lets submitScore ship the full store blob
 // (for cross-device restore) without each game passing it in.
@@ -116,7 +117,7 @@ function writePending(queue: Record<string, number>): void {
 
 /** Park a best for retry, keeping the highest per game. Exported for tests. */
 export function queuePending(game: string, best: number): void {
-  if (!LS_KEYS[game]) return;
+  if (sessionChanged || !LS_KEYS[game]) return;
   const queue = readPending();
   queue[game] = Math.max(n(queue[game]), Math.max(0, Math.floor(best) || 0));
   writePending(queue);
@@ -128,6 +129,7 @@ export function queuePending(game: string, best: number): void {
  * Omitting `acknowledgedBest` intentionally clears the entry (test/admin use).
  */
 export function unqueuePending(game: string, acknowledgedBest = Infinity, acknowledgedData?: unknown): void {
+  if (sessionChanged) return;
   const queue = readPending();
   if (!(game in queue)) return;
   if (queue[game] > acknowledgedBest) return;
@@ -177,7 +179,8 @@ export async function restoreGame(slug: string): Promise<boolean> {
   const key = LS_KEYS[slug];
   if (!key || !HEADLINE[slug]) return false;
   try {
-    const { data } = await client.rpc('restore_my_scores');
+    const { data, error } = await client.rpc('restore_my_scores');
+    if (sessionChanged || error) return false;
     const row: CloudRow | null = (data || []).find((r: any) => r.game === slug) || null;
     const blob = reconcileRestore(slug, localStorage.getItem(key), row);
     if (blob != null) {
@@ -208,7 +211,7 @@ function preloadAvatar(av: string | undefined): void {
   if (!svg || typeof Image === 'undefined') return;
   const img = new Image();
   img.decoding = 'async';
-  img.onload = () => { avatarImg = img; };
+  img.onload = () => { if (!sessionChanged && profile?.avatar === av) avatarImg = img; };
   img.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
@@ -220,20 +223,49 @@ export function cloudAvatarImage(): HTMLImageElement | null {
 async function init(): Promise<void> {
   if (initPromise) return initPromise;
   initPromise = (async () => {
+    let subscription: { unsubscribe(): void } | undefined;
     try {
       // Loaded from the CDN at runtime; kept out of the Vite bundle on purpose.
       // @ts-ignore - remote ESM module, no local types
       const mod: any = await import(/* @vite-ignore */ 'https://esm.sh/@supabase/supabase-js@2.45.4?bundle');
       client = mod.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const sessionClient = client;
+      let sessionKnown = false;
+      const acceptSession = (session: any): void => {
+        if (sessionChanged || client !== sessionClient) return;
+        const nextUser = session?.user ?? null;
+        let owner: string | null = null;
+        try { owner = localStorage.getItem('arcade.sync.owner'); } catch { /* ignore */ }
+        const differentOwner = nextUser && owner && owner !== nextUser.id;
+        if ((sessionKnown && user?.id !== nextUser?.id) || differentOwner) {
+          const differentAccount = differentOwner || (user && nextUser && user.id !== nextUser.id);
+          sessionChanged = true;
+          user = null;
+          profile = null;
+          avatarImg = null;
+          if (differentAccount) location.replace('/');
+          else location.reload();
+          return;
+        }
+        user = nextUser;
+        sessionKnown = true;
+        if (user && !owner) {
+          try { localStorage.setItem('arcade.sync.owner', user.id); } catch { /* ignore */ }
+        }
+      };
+      subscription = client.auth.onAuthStateChange((_event: string, session: any) => {
+        acceptSession(session);
+      })?.data?.subscription;
       const { data, error } = await client.auth.getSession();
       if (error) throw error;
-      user = data?.session?.user ?? null;
+      acceptSession(data?.session);
       if (user) {
         const { data: p } = await client
           .from('arcade_profiles')
           .select('display_name,avatar')
           .eq('user_id', user.id)
           .maybeSingle();
+        if (sessionChanged) return;
         profile = {
           name: p?.display_name || googleName(user),
           avatar: p?.avatar || user.user_metadata?.avatar_url || 'a:panda',
@@ -241,6 +273,7 @@ async function init(): Promise<void> {
         preloadAvatar(profile.avatar);
       }
     } catch {
+      subscription?.unsubscribe();
       client = null;
       user = null;
       profile = null;
@@ -262,7 +295,7 @@ export function isSignedIn(): boolean {
 /** Start Google sign-in from within a game, returning to this page afterwards. */
 export async function signIn(): Promise<void> {
   await init();
-  if (!client) return;
+  if (!client || sessionChanged) return;
   try {
     await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href } });
   } catch {
@@ -288,8 +321,10 @@ export function cloudProfile(): CloudProfile | null {
  * daily streak). The server keeps the max best, so this never lowers a score.
  */
 export async function submitScore(game: string, best: number, opts?: { backup?: boolean }): Promise<void> {
+  if (sessionChanged) return;
   if (!(best > 0) && !opts?.backup) return;
   const safeBest = Math.max(0, Math.floor(best) || 0);
+  if (hasStoredSession()) queuePending(game, safeBest);
   await init();
   if (!client || !user) {
     // Signed in on this device but the SDK/session is unreachable (offline):
@@ -305,12 +340,14 @@ export async function submitScore(game: string, best: number, opts?: { backup?: 
 
 /** One write attempt. Resolves `true` only when the score actually landed. */
 async function push(game: string, best: number, data: unknown): Promise<boolean> {
+  if (sessionChanged || !user) return false;
   try {
     const rpc = await client.rpc('submit_score', { p_game: game, p_best: best, p_data: data });
-    if (!rpc?.error) return true;
+    if (!rpc?.error) return !sessionChanged;
   } catch {
     /* fall through to the direct upsert */
   }
+  if (sessionChanged || !user) return false;
   try {
     const res = await client.from('arcade_scores').upsert(
       {
@@ -323,7 +360,7 @@ async function push(game: string, best: number, data: unknown): Promise<boolean>
       },
       { onConflict: 'user_id,game' }
     );
-    return !res?.error;
+    return !sessionChanged && !res?.error;
   } catch {
     return false;
   }
@@ -333,6 +370,7 @@ async function push(game: string, best: number, data: unknown): Promise<boolean>
 // directly tells us "signed in on this device" even when the SDK itself failed
 // to load, which is exactly the offline case we want to queue for.
 function hasStoredSession(): boolean {
+  if (sessionChanged) return false;
   if (user) return true;
   try {
     const ref = SUPABASE_URL.replace('https://', '').split('.')[0];
@@ -355,6 +393,7 @@ export async function flushPending(): Promise<void> {
     await init();
     if (!client || !user) return;
     for (const game of games) {
+      if (sessionChanged) return;
       const best = queue[game];
       const data = readBlob(game);
       if (await push(game, best, data)) unqueuePending(game, best, data);
@@ -381,6 +420,7 @@ const rankRequests = new WeakMap<Element, number>();
 export function mountRank(modal: Element, game: string, score: number): void {
   const request = (rankRequests.get(modal) || 0) + 1;
   rankRequests.set(modal, request);
+  modal.querySelectorAll('.cloud-rank').forEach((badge) => badge.remove());
   void getRank(game, score).then((info) => {
     if (rankRequests.get(modal) !== request) return;
     const badge = rankBadgeHtml(info);
@@ -391,6 +431,7 @@ export function mountRank(modal: Element, game: string, score: number): void {
 /** Where `score` would place on `game`'s all-time board, plus the field size. */
 export async function getRank(game: string, score: number): Promise<RankInfo | null> {
   await init();
+  if (sessionChanged) return null;
   if (!(score > 0)) return null;
   // Unreachable backend: submitScore has parked the score, so say so rather than
   // showing nothing. Guests aren't on the board either way.
@@ -405,6 +446,7 @@ export async function getRank(game: string, score: number): Promise<RankInfo | n
       // 0-best rows exist only as cross-device backups and shouldn't inflate rank.
       client.from('arcade_scores').select('user_id', { count: 'exact', head: true }).eq('game', game).gt('best', 0),
     ]);
+    if (sessionChanged) return null;
     if (ahead.error || total.error) return parked;
     const rank = (ahead.count || 0) + 1;
     // The player's own row may not be counted yet (submit in flight), so make

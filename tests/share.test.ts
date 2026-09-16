@@ -66,6 +66,18 @@ describe('shared/share', () => {
     expect(share.mock.calls[0][0].url).toBe('u');
   });
 
+  it('retries native text sharing when mobile image sharing fails', async () => {
+    const share = vi.fn()
+      .mockRejectedValueOnce(new DOMException('File sharing unavailable', 'NotAllowedError'))
+      .mockResolvedValueOnce(undefined);
+    Object.assign(navigator, { share, canShare: () => true, userAgentData: { mobile: true } });
+    const blob = new Blob(['img'], { type: 'image/png' });
+
+    expect(await shareResult({ title: 'T', text: 'hi', url: 'u', blob })).toBe('shared');
+    expect(share).toHaveBeenCalledTimes(2);
+    expect(share.mock.calls[1][0]).toEqual({ title: 'T', text: 'hi', url: 'u' });
+  });
+
   it('treats a user-cancelled share sheet as shared', async () => {
     const share = vi.fn().mockRejectedValue(new DOMException('cancelled', 'AbortError'));
     Object.assign(navigator, { share, canShare: () => true });

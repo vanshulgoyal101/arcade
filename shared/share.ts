@@ -58,7 +58,8 @@ export async function shareResult(opts: ShareResultOptions): Promise<ShareOutcom
     } catch (err) {
       if (isAbort(err)) return 'shared'; // user opened the sheet then dismissed
     }
-  } else if (canNativeShare) {
+  }
+  if (canNativeShare) {
     // 2. Native share sheet, clean text + link (no file — avoids the path leak).
     try {
       await nav.share({ title, text: message, url });

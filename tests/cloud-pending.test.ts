@@ -171,6 +171,19 @@ describe('cloud/mountRank', () => {
     expect(modal.querySelectorAll('.cloud-rank').length).toBe(1);
   });
 
+  it('replaces a completed badge and clears it for a non-scoring result', async () => {
+    localStorage.setItem(SESSION_KEY, '{"access_token":"x"}');
+    const modal = document.querySelector('#m')!;
+    mountRank(modal, 'wordle', 10);
+    await settle();
+    mountRank(modal, 'wordle', 12);
+    await settle();
+    expect(modal.querySelectorAll('.cloud-rank')).toHaveLength(1);
+    mountRank(modal, 'wordle', 0);
+    await settle();
+    expect(modal.querySelector('.cloud-rank')).toBeNull();
+  });
+
   it('inserts nothing when there is no rank to show', async () => {
     const modal = document.querySelector('#m')!; // guest: no session on this device
     mountRank(modal, 'wordle', 12);

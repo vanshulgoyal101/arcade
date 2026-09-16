@@ -9,7 +9,8 @@ const read = (name: string) => readFileSync(resolve(process.cwd(), name), 'utf8'
 const hub = read('index.html');
 // The hub cards are the source of truth: a game is "featured" when it has a card.
 // (interval/ is built and reachable but deliberately not carded.)
-const featured = [...new Set([...hub.matchAll(/href="([a-z0-9-]+)\/"/g)].map((m) => m[1]))];
+const document = new DOMParser().parseFromString(hub, 'text/html');
+const featured = [...document.querySelectorAll('.grid a.card')].map((card) => card.getAttribute('data-game'));
 
 describe('featured game count', () => {
   it('links every featured game exactly once', () => {

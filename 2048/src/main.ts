@@ -280,10 +280,11 @@ function wireShare(): void {
   if (!btn) return;
   btn.onclick = async () => {
     const tile = highestTile(game.board);
+    const text = shareText(game.score, tile, game.best);
     const blob = await canvasToBlob(shareCard(game.board, game.score, tile, game.best));
     const outcome = await shareResult({
       title: '2048',
-      text: shareText(game.score, tile, game.best),
+      text,
       url: 'https://games.vanshul.com/2048/',
       blob,
       filename: '2048.png',
