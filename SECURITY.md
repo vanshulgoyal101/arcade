@@ -99,9 +99,14 @@ the transaction may have committed even when its response was lost.
   monotonic; maps and streak histories can diverge across simultaneous devices.
 - Runtime CDN availability remains a dependency of optional cloud features. The
   bundled Supabase version is pinned; offline game play must continue without it.
-- GitHub Pages does not provide configurable response security headers. A full
-  CSP/header policy requires a compatible hosting layer or a separately tested
-  static CSP rollout; do not claim headers exist because they appear in docs.
+- Hub and stats pages have limited meta CSP policies that allow inline scripts.
+  Game pages do not yet have equivalent policies. GitHub Pages does not provide
+  configurable response security headers; meta CSP cannot enforce frame-ancestors.
+  A full header policy needs a compatible hosting layer and integration testing.
+- The privacy page offers local analytics opt-out and the beacon honors browser
+  privacy signals. This does not delete past events or recall in-flight requests.
+- External avatar image hosts receive normal image requests. Do not promise
+  anonymity for remote profile images or a persistent visitor identifier.
 
 ## Reporting
 

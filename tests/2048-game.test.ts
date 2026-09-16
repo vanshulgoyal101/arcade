@@ -232,6 +232,17 @@ describe('2048/Game', () => {
     expect(g.move('right')).toBe(false); // no moves accepted once lost
   });
 
+  it('finishes a blocked board after acknowledging the winning tile', () => {
+    const game = new Game(() => 0.5);
+    game.start();
+    game.board = b([1024, 1024, 4, 8], [4, 8, 16, 4], [8, 16, 2, 8], [16, 2, 4, 16]);
+    expect(game.move('left')).toBe(true);
+    expect(game.status).toBe('won');
+    expect(hasMoves(game.board)).toBe(false);
+    game.continueAfterWin();
+    expect(game.status).toBe('lost');
+  });
+
   it('records a new best score and best tile', () => {
     const g = new Game(() => 0.5);
     g.start();

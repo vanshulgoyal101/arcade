@@ -7,13 +7,25 @@
 const CACHE = 'arcade-v2';
 const IMMUTABLE = /-[A-Za-z0-9_-]{8,}\.(?:js|css)$/;
 
+async function cachedResponse(request) {
+  try { return await caches.match(request); } catch { return null; }
+}
+
+async function storeResponse(request, response) {
+  if (!response.ok || response.type === 'opaque') return;
+  try {
+    const cache = await caches.open(CACHE);
+    await cache.put(request, response.clone());
+  } catch {}
+}
+
 self.addEventListener('install', () => self.skipWaiting());
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     (async () => {
       const keys = await caches.keys();
-      await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+      await Promise.all(keys.filter((k) => k.startsWith('arcade-') && k !== CACHE).map((k) => caches.delete(k)));
       await self.clients.claim();
     })()
   );
@@ -35,11 +47,11 @@ self.addEventListener('fetch', (event) => {
         try {
           // `no-store` skips the browser HTTP cache so we truly hit the network.
           const fresh = await fetch(req, { cache: 'no-store' });
-          const cache = await caches.open(CACHE);
-          cache.put(req, fresh.clone());
+          if (fresh.status >= 500) return (await cachedResponse(req)) || fresh;
+          await storeResponse(req, fresh);
           return fresh;
         } catch {
-          return (await caches.match(req)) || Response.error();
+          return (await cachedResponse(req)) || Response.error();
         }
       })()
     );
@@ -52,14 +64,11 @@ self.addEventListener('fetch', (event) => {
   if (IMMUTABLE.test(url.pathname)) {
     event.respondWith(
       (async () => {
-        const cached = await caches.match(req);
+        const cached = await cachedResponse(req);
         if (cached) return cached;
         try {
           const fresh = await fetch(req);
-          if (fresh.ok && fresh.type === 'basic') {
-            const cache = await caches.open(CACHE);
-            cache.put(req, fresh.clone());
-          }
+          await storeResponse(req, fresh);
           return fresh;
         } catch {
           return Response.error();
@@ -71,18 +80,16 @@ self.addEventListener('fetch', (event) => {
 
   // Everything else: serve the cached copy at once, but refresh it in the
   // background so an edit lands on the next load instead of never.
+  const network = fetch(req)
+    .then(async (fresh) => {
+      await storeResponse(req, fresh);
+      return fresh;
+    })
+    .catch(() => null);
+  event.waitUntil(network.then(() => undefined));
   event.respondWith(
     (async () => {
-      const cached = await caches.match(req);
-      const network = fetch(req)
-        .then(async (fresh) => {
-          if (fresh.ok && fresh.type === 'basic') {
-            const cache = await caches.open(CACHE);
-            cache.put(req, fresh.clone());
-          }
-          return fresh;
-        })
-        .catch(() => null);
+      const cached = await cachedResponse(req);
       return cached || (await network) || Response.error();
     })()
   );

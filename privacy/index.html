@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c0d12" />
+  <meta name="description" content="How Tiny Arcade stores game progress, handles optional accounts and public scores, and respects your analytics privacy preferences." />
+  <meta name="robots" content="index, follow" />
+  <title>Privacy and Data Preferences | Tiny Arcade</title>
+  <link rel="canonical" href="https://games.vanshul.com/privacy/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Privacy and Data Preferences | Tiny Arcade" />
+  <meta property="og:description" content="Game progress, optional accounts, public scores, and your analytics privacy preference." />
+  <meta property="og:url" content="https://games.vanshul.com/privacy/" />
+  <meta property="og:image" content="https://games.vanshul.com/assets/og/hub.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="stylesheet" href="/assets/style.css?v=11" />
+  <script defer src="/assets/analytics.js?v=3"></script>
+  <style>
+    .privacy { max-width: 720px; margin: 0 auto; padding: 32px 20px 64px; line-height: 1.7; }
+    .privacy h1 { font-size: 2rem; line-height: 1.2; letter-spacing: 0; }
+    .privacy h2 { font-size: 1.2rem; margin-top: 32px; letter-spacing: 0; }
+    .privacy a { color: var(--accent); }
+    .privacy p, .privacy li { color: var(--muted); }
+    .privacy label { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+    .privacy input { width: 20px; height: 20px; accent-color: var(--accent); }
+    .privacy output { display: block; min-height: 3.4em; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main class="privacy">
+    <a href="/">Tiny Arcade</a>
+    <h1>Privacy and Data Preferences</h1>
+    <p>Updated September 16, 2026.</p>
+    <h2>Analytics Preference</h2>
+    <label><input id="analytics-enabled" type="checkbox" /> Allow pseudonymous usage analytics</label>
+    <output id="privacy-status" aria-live="polite"></output>
+    <noscript><p>JavaScript is disabled, so the analytics beacon and preference control do not run.</p></noscript>
+    <p>This preference applies to this browser. Do Not Track and Global Privacy Control disable analytics automatically. Opting out removes the local analytics identifier; it does not delete previously recorded events or your game progress.</p>
+    <h2>Game Progress</h2>
+    <p>Games save scores, settings, and progress in browser localStorage. Play does not require an account. Clearing site data removes local progress and preferences. Downloaded pages may also be cached by a service worker for repeat visits; a first visit still requires a connection.</p>
+    <h2>Optional Accounts and Public Scores</h2>
+    <p>Google sign-in is handled by Supabase Auth. Signed-in game progress is backed up to Supabase. Your leaderboard score, display name, avatar, and account identifier are public; complete game backups and profile preferences are restricted to your account. Signing out preserves local progress on this device.</p>
+    <p>Avatar images can be loaded from their external image host. Hosting, authentication, and CDN providers receive connection information such as your IP address when your browser requests their services.</p>
+    <h2>Usage Events</h2>
+    <p>When enabled, the site sends a visit event once per tab session and a play event when a game page loads. Events include the game identifier, a server timestamp, and a persistent random browser identifier. A play event does not mean a completed game. New events do not store a signed-in account ID. Raw events are not publicly readable; aggregate statistics are available only to the site owner.</p>
+    <p>The visitor identifier is pseudonymous, not anonymous in an absolute sense. There is currently no automated retention schedule or self-service cloud account deletion screen. Do not assume clearing browser storage deletes server-side backups or historical analytics.</p>
+    <h2>Data Requests</h2>
+    <p>For account or data requests, contact the maintainer through <a href="https://vanshul.com">vanshul.com</a>. Do not post access tokens, private game backups, or identifying data in public GitHub issues. Requests may require verification of account ownership.</p>
+    <p><a href="/">Return to Tiny Arcade</a></p>
+  </main>
+</body>
+</html>

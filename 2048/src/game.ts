@@ -173,7 +173,7 @@ export class Game {
   /** Keep playing after reaching 2048 rather than ending the run. */
   continueAfterWin(): void {
     this.winAcknowledged = true;
-    if (this.status === 'won') this.status = 'playing';
+    if (this.status === 'won') this.status = hasMoves(this.board) ? 'playing' : 'lost';
   }
 
   /** Returns true when the board actually changed. */

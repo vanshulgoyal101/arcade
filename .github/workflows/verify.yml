@@ -36,6 +36,8 @@ jobs:
             npm audit --prefix "$game" --audit-level=low
           done
       - run: npm run build:games
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
       - name: Verify committed releases match source
         run: |
           git diff --exit-code -- '*/index.html' '*/assets/'

@@ -3,7 +3,7 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://games.vanshul.com/</loc>
-    <lastmod>2026-09-16</lastmod>
+    <lastmod>2026-09-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/hub.png</image:loc></image:image>
@@ -56,6 +56,13 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
     <image:image><image:loc>https://games.vanshul.com/assets/og/hue-hunt.png</image:loc></image:image>
+  </url>
+  <url>
+    <loc>https://games.vanshul.com/privacy/</loc>
+    <lastmod>2026-09-16</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image><image:loc>https://games.vanshul.com/assets/og/hub.png</image:loc></image:image>
   </url>
   <url>
     <loc>https://games.vanshul.com/sprint/</loc>

@@ -6,8 +6,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://esm.sh; font-src 'self'; base-uri 'self'; object-src 'none'" />
   <script>try{if(localStorage.getItem('arcade.theme')==='classic')document.documentElement.setAttribute('data-theme','classic')}catch(e){}</script>
   <script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(function(r){r.update();setInterval(function(){r.update()},60000);document.addEventListener('visibilitychange',function(){document.hidden||r.update()});r.addEventListener('updatefound',function(){var n=r.installing;n&&n.addEventListener('statechange',function(){n.state==='installed'&&navigator.serviceWorker.controller&&location.reload()})})}).catch(function(){})})}</script>
-  <script defer src="/assets/analytics.js?v=2"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <script defer src="/assets/analytics.js?v=3"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0c0d12" />
   <meta name="color-scheme" content="dark" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -18,7 +18,6 @@
 
   <title>Tiny Arcade — 10 Free Browser Brain &amp; Skill Games, No Download</title>
   <meta name="description" content="Play ten free, instant browser games — no download, no signup. Reflex, memory and colour puzzles plus brain trainers: mental maths, typing speed, digit span, speed reading, geography, 2048 and unlimited Wordle. Works on mobile; scores saved locally." />
-  <meta name="keywords" content="free browser games, online games no download, brain training games, reflex game, memory game, colour matching puzzle, speed reading trainer, mental maths game, typing test, ear training game, geography quiz, html5 games, mini games" />
   <meta name="author" content="Tiny Arcade" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
   <link rel="canonical" href="https://games.vanshul.com/" />
@@ -97,18 +96,6 @@
           { "@type": "ListItem", "position": 10, "name": "Wordle", "url": "https://games.vanshul.com/wordle/" }
         ]
       }
-    ]
-  }
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      { "@type": "Question", "name": "Are the games on Tiny Arcade free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Every game is completely free with no download, no sign-up and no ads." } },
-      { "@type": "Question", "name": "Do the games work on mobile?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. All ten games are built for touch and work on phones, tablets and desktops." } },
-      { "@type": "Question", "name": "Are my scores saved?", "acceptedAnswer": { "@type": "Answer", "text": "Your high scores are saved locally in your browser. You can also sign in with Google to sync them across devices and appear on the leaderboard." } },
-      { "@type": "Question", "name": "What kinds of games are on Tiny Arcade?", "acceptedAnswer": { "@type": "Answer", "text": "Reflex and memory games, colour puzzles, and brain trainers: mental maths, typing speed, digit span, ear training, a geography quiz, a daily vocabulary word and an unlimited Wordle." } }
     ]
   }
   </script>
@@ -213,7 +200,8 @@
     <p class="hub-home">
       <a href="https://vanshul.com">vanshul.com</a> ·
       <a href="https://blog.vanshul.com">Blog</a> ·
-      <a href="https://links.vanshul.com">Links</a>
+      <a href="https://links.vanshul.com">Links</a> ·
+      <a href="/privacy/">Privacy</a>
     </p>
   </footer>
 

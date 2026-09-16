@@ -27,6 +27,11 @@
 }
 * { box-sizing: border-box; }
 
+.about { max-width: 480px; margin: 0 auto; padding: 0 18px 32px; color: var(--muted); line-height: 1.6; }
+.about summary { cursor: pointer; color: var(--text); }
+.about h2 { font-size: 1rem; color: var(--text); }
+.about a { color: var(--accent); }
+
 /* Visible keyboard-focus ring; pointer taps stay ring-free */
 a:focus-visible,
 button:focus-visible,

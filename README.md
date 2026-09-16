@@ -29,7 +29,7 @@ No installs or account required. Optional sign-in syncs progress and leaderboard
 
 Word of the Day and Interval remain playable at their own URLs but are not featured on the hub.
 
-Every game has sound, a mute toggle, light/dark themes, shareable result cards,
+Every game has sound, a mute toggle, refined/classic palettes, shareable result cards,
 an optional cloud leaderboard (Google sign-in), and works great on mobile.
 
 ---
@@ -37,7 +37,7 @@ an optional cloud leaderboard (Google sign-in), and works great on mobile.
 ## ✨ Highlights
 
 - **Zero backend to play.** Each game is a self-contained static site; scores live in `localStorage`.
-- **Clean architecture.** Every game splits **pure logic** (`game.ts`) from **DOM/UI** (`main.ts`) — no framework, fully unit-tested.
+- **Testable architecture.** Game rules are separated from DOM/UI, with model, interaction, database, and browser regression tests.
 - **PWA-grade.** Service worker (network-first docs, cache-first hashed assets) keeps it fast and update-safe.
 - **SEO + share cards.** Per-game Open Graph / Twitter / JSON-LD metadata and generated 1080×1080 share images.
 - **Optional cloud.** Supabase-backed accounts, profiles, and per-game leaderboards with row-level security.
@@ -47,7 +47,7 @@ an optional cloud leaderboard (Google sign-in), and works great on mobile.
 ## 🧱 Tech stack
 
 - **TypeScript + Vite** per game (no UI framework — hand-written DOM rendering)
-- **Vitest + jsdom** for logic tests
+- **Vitest + jsdom + PGlite + Playwright** for model, DOM, SQL, and browser tests
 - **Supabase** (Postgres + Auth + RLS) for optional accounts, leaderboards & analytics
 - **GitHub Pages** for hosting
 
@@ -67,21 +67,33 @@ arcade/
 ## 🚀 Run locally
 
 ```bash
-# Play a single game with hot reload
-cd hue-hunt && npm install && npm run dev
+# Install root test tools
+npm ci
 
-# Build a game to static files
-npm run build            # → dist/
+# Play a single game with hot reload; open /template.html
+cd hue-hunt && npm ci && npm run dev
 
-# Run the whole hub over http (games are ES modules, need a server)
-cd .. && python3 -m http.server 8000   # then open http://localhost:8000
+# After stopping Vite, build and promote that game
+npm run build
+cd .. && node scripts/clean-urls.mjs hue-hunt
 
-# Run the test suite (from the repo root)
-npm install && npm test
+# Serve the committed site and run tests from the repository root
+python3 -m http.server 8000 --bind 127.0.0.1
+# In another terminal:
+npm test
 ```
+
+Use Node.js 22.12 or newer. Each of the twelve game packages has its own lockfile;
+the full installation, build, browser checks, and release procedure are in the
+developer guide. Edit game templates and sources, not promoted build output.
 
 > **Full developer docs:** see [DOCUMENTATION.md](DOCUMENTATION.md) for architecture,
 > conventions, the theme system, mobile support, and per-game internals.
+
+See [FEATURES.md](FEATURES.md) for implemented versus proposed capabilities and
+[SECURITY.md](SECURITY.md) for data access, safe migrations, and known limits.
+The [privacy page](privacy/index.html) includes analytics opt-out. Client-reported
+scores are not anti-cheat verified; search rankings are not guaranteed.
 
 ---
 

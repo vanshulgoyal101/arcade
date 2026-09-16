@@ -22,11 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
+          node-version: '22'
       - name: Generate sitemap
-        run: node scripts/gen-sitemap.mjs
+        run: npm ci && node scripts/gen-sitemap.mjs
       - name: Commit if changed
         run: |
           if [ -n "$(git status --porcelain sitemap.xml robots.txt)" ]; then

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
@@ -7,13 +7,11 @@ const read = (name: string) => readFileSync(resolve(process.cwd(), name), 'utf8'
 const sha = (name: string) =>
   createHash('sha256').update(readFileSync(resolve(process.cwd(), name))).digest('hex').slice(0, 16);
 
-// The hub's shared assets are versioned by query string, not by content hash, so
-// sw.js caches each ?v= forever. Edit one without bumping its ?v= and returning
-// visitors keep the old copy indefinitely — the bug that shipped monochrome
-// icons. These digests pin content to version: bump both together, never one.
+// Query versions select new content immediately instead of waiting for revalidation.
 const VERSIONED = [
   { file: 'assets/style.css', version: 11, digest: '237efc37a64a7380' },
   { file: 'assets/auth.js', version: 25, digest: '2a730408f97d6552' },
+  { file: 'assets/analytics.js', version: 3, digest: 'f62fba657cd5bead' },
 ] as const;
 
 // assets/games.js is imported by module specifier rather than from index.html,
@@ -28,6 +26,12 @@ const SHARED_MODULE = {
 const hub = read('index.html');
 
 describe('versioned hub assets', () => {
+  it('uses the same analytics version on every game and privacy page', () => {
+    const games = readdirSync('.').filter(name => existsSync(`${name}/template.html`));
+    for (const file of ['privacy/index.html', ...games.map(game => `${game}/template.html`)]) {
+      expect(read(file)).toContain('/assets/analytics.js?v=3');
+    }
+  });
   for (const { file, version, digest } of VERSIONED) {
     it(`${file} is published as ?v=${version}`, () => {
       const name = file.split('/').pop()!.replace('.', '\\.');

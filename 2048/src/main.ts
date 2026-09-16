@@ -248,6 +248,10 @@ function showWin(): void {
 
 function continueAfterWin(): void {
   game.continueAfterWin();
+  if (game.status === 'lost') {
+    endGame();
+    return;
+  }
   overlay.classList.remove('show');
   hintEl.textContent = 'Past 2048 — how far can you push it?';
 }

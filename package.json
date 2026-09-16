@@ -4,10 +4,13 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Tests, release tooling, and security checks for Tiny Arcade.",
-  "engines": { "node": ">=22.12.0" },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:browser": "node scripts/browser-test.mjs",
     "build:games": "for g in 2048 chromatic digit-span echo flash flashmath hue-hunt interval sprint where word wordle; do (cd $g && npm run build) || exit 1; done && node scripts/clean-urls.mjs",
     "clean:urls": "node scripts/clean-urls.mjs",
     "generate:og": "node scripts/generate-og.mjs"
@@ -15,6 +18,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
     "jsdom": "^25.0.1",
+    "playwright": "^1.63.0",
     "sharp": "^0.35.4",
     "vite": "^7.3.6",
     "vitest": "^4.1.11"

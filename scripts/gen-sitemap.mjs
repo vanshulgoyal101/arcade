@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// gen-sitemap.mjs — zero-dependency sitemap + robots generator.
+// gen-sitemap.mjs — sitemap + robots generator using parsed HTML metadata.
 //
 // Reads ./sitemap.config.json (repo root), scans the publish directory for
 // HTML files, maps them to URLs, and writes <scanDir>/<outFile> plus keeps
@@ -21,10 +21,11 @@
 //   crawlUrl           baseUrl        origin to crawl when --crawl is passed
 //   maxCrawl           200            crawl page budget
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, lstatSync } from 'node:fs';
 import { join, relative, basename, dirname } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { JSDOM } from 'jsdom';
 
 const CONFIG_PATH = 'sitemap.config.json';
 if (!existsSync(CONFIG_PATH)) { console.error(`✗ ${CONFIG_PATH} not found (run from the repo root).`); process.exit(1); }
@@ -46,7 +47,7 @@ function globToRe(glob) {
   for (let i = 0; i < glob.length; i++) {
     const c = glob[i];
     if (c === '*') {
-      if (glob[i + 1] === '*') { i++; if (glob[i + 1] === '/') i++; re += '(?:.*/)?'; }
+      if (glob[i + 1] === '*') { i++; if (glob[i + 1] === '/') { i++; re += '(?:.*/)?'; } else re += '.*'; }
       else re += '[^/]*';
     } else if (c === '?') re += '[^/]';
     else if ('.+^${}()|[]\\'.includes(c)) re += '\\' + c;
@@ -63,8 +64,12 @@ function walk(dir) {
   const out = [];
   for (const name of readdirSync(dir)) {
     const full = join(dir, name);
-    let st; try { st = statSync(full); } catch { continue; }
-    if (st.isDirectory()) out.push(...walk(full));
+    let st; try { st = lstatSync(full); } catch { continue; }
+    if (st.isSymbolicLink()) continue;
+    if (st.isDirectory()) {
+      if (name === 'node_modules' || name === '.git' || anyMatch(excRes, relPosix(full) + '/')) continue;
+      out.push(...walk(full));
+    }
     else out.push(full);
   }
   return out;
@@ -78,12 +83,12 @@ function fileToUrl(rel) {
     let dir = rel.slice(0, -'index.html'.length).replace(/\/+$/, '');
     return BASE + '/' + (dir ? dir + '/' : '');
   }
-  return BASE + '/' + rel.replace(/\.html$/, '');
+  return BASE + '/' + rel.split('/').map(encodeURIComponent).join('/');
 }
 
 function gitDate(file) {
   try {
-    const d = execSync(`git log -1 --format=%cs -- "${file}"`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    const d = execFileSync('git', ['log', '-1', '--format=%cs', '--', file], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
     return d || null;
   } catch { return null; }
 }
@@ -101,11 +106,19 @@ const entries = new Map(); // url -> { lastmod, image }
 const add = (url, lastmod, image) => { if (!entries.has(url)) entries.set(url, { lastmod: lastmod || today, image: image || null }); };
 
 // Pull og:image out of a page so the sitemap carries an <image:image> entry.
-function ogImage(html, pageUrl) {
-  const m = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-    || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-  if (!m) return null;
-  try { return new URL(m[1], pageUrl).href; } catch { return null; }
+function pageMetadata(html, pageUrl) {
+  const dom = new JSDOM(html, { url: pageUrl });
+  try {
+    const document = dom.window.document;
+    if ([...document.querySelectorAll('meta[name="robots"]')].some(meta => /\bnoindex\b/i.test(meta.content))) return null;
+    const canonical = document.querySelector('link[rel="canonical"]')?.getAttribute('href');
+    const url = new URL(canonical || pageUrl, pageUrl);
+    if (url.origin !== new URL(BASE).origin) return null;
+    url.hash = '';
+    url.search = '';
+    const image = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
+    return { url: url.href, image: image ? new URL(image, url).href : null };
+  } finally { dom.window.close(); }
 }
 
 const files = existsSync(scanDir) ? walk(scanDir) : [];
@@ -114,9 +127,8 @@ for (const f of files) {
   if (!rel.endsWith('.html')) continue;
   if (!anyMatch(incRes, rel) || anyMatch(excRes, rel)) continue;
   const url = fileToUrl(rel);
-  let img = null;
-  try { img = ogImage(readFileSync(f, 'utf8'), url); } catch { /* unreadable */ }
-  add(url, gitDate(f), img);
+  const metadata = pageMetadata(readFileSync(f, 'utf8'), url);
+  if (metadata) add(metadata.url, gitDate(f), metadata.image);
 }
 
 for (const route of cfg.extraRoutes ?? []) add(BASE + '/' + String(route).replace(/^\//, ''), today);
@@ -140,7 +152,11 @@ async function crawl(startUrl, budget) {
     let html;
     try { const res = await fetch(url); if (!res.ok || !/text\/html/.test(res.headers.get('content-type') || '')) continue; html = await res.text(); }
     catch { continue; }
-    add(url.replace(/index\.html$/, ''), today);
+    const metadata = pageMetadata(html, url);
+    if (!metadata) continue;
+    const canonicalPath = new URL(metadata.url).pathname.slice(1);
+    if (anyMatch(excRes, canonicalPath) || anyMatch(excRes, canonicalPath + 'index.html')) continue;
+    add(metadata.url, today, metadata.image);
     for (const m of html.matchAll(/href\s*=\s*["']([^"'#?]+)/gi)) {
       let href = m[1];
       try {
