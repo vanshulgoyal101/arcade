@@ -2,6 +2,18 @@
 -- Run this in the Supabase SQL editor for project tmngedsmgcgbkbkmsnsw.
 -- It only creates an `arcade_`-prefixed table, so it won't touch your blog tables.
 
+create or replace function public.arcade_valid_game(p_game text)
+returns boolean
+language sql
+immutable
+set search_path = public
+as $$
+  select coalesce(p_game = any(array[
+    '2048', 'chromatic', 'digit-span', 'echo', 'flash', 'flashmath',
+    'hue-hunt', 'interval', 'sprint', 'where', 'word', 'wordle'
+  ]), false);
+$$;
+
 create table if not exists public.arcade_scores (
   user_id      uuid        not null references auth.users (id) on delete cascade,
   game         text        not null,
@@ -57,6 +69,7 @@ as $$
   from public.arcade_scores
   where user_id = auth.uid();
 $$;
+revoke execute on function public.restore_my_scores() from public, anon;
 grant execute on function public.restore_my_scores() to authenticated;
 
 -- Whole leaderboard in ONE round trip: per-game top N (by best desc) plus the
@@ -70,12 +83,16 @@ stable
 security definer
 set search_path = public
 as $$
-  with ranked as (
+  with requested as (
+    select distinct gg
+    from unnest(p_games[1:64]) as requested_game(gg)
+    where public.arcade_valid_game(gg)
+  ), ranked as (
     select s.game, s.user_id, s.display_name, s.avatar_url, s.best,
            rank() over (partition by s.game order by s.best desc) as place,
            row_number() over (partition by s.game order by s.best desc, s.updated_at, s.user_id) as rn
     from public.arcade_scores s
-    where s.game = any(p_games) and s.best > 0
+    where s.game in (select gg from requested) and s.best > 0
   ),
   me as (
     select game, best, place from ranked where user_id = auth.uid()
@@ -88,11 +105,11 @@ as $$
           select jsonb_agg(jsonb_build_object(
                    'user_id', r.user_id, 'display_name', r.display_name,
                    'avatar_url', r.avatar_url, 'best', r.best, 'rank', r.place) order by r.rn)
-          from ranked r where r.game = gg and r.rn <= p_limit), '[]'::jsonb),
+          from ranked r where r.game = gg and r.rn <= least(50, greatest(1, coalesce(p_limit, 5)))), '[]'::jsonb),
         'my_best', (select best from me where me.game = gg),
         'my_rank', (select place from me where me.game = gg)
       ) as payload
-    from unnest(p_games) as u(gg)
+    from requested
   ) x;
 $$;
 grant execute on function public.arcade_leaderboard(text[], int) to anon, authenticated;
@@ -115,7 +132,7 @@ alter table public.arcade_profiles enable row level security;
 drop policy if exists arcade_profiles_read on public.arcade_profiles;
 create policy arcade_profiles_read
   on public.arcade_profiles for select
-  using (true);
+  using (auth.uid() = user_id);
 
 drop policy if exists arcade_profiles_insert on public.arcade_profiles;
 create policy arcade_profiles_insert
@@ -189,6 +206,7 @@ begin
 end;
 $$;
 
+revoke execute on function public.submit_score(text, integer, jsonb) from public, anon;
 grant execute on function public.submit_score(text, integer, jsonb) to authenticated;
 
 -- Enforce the per-game caps and a blob-size limit on EVERY write path — the
@@ -201,6 +219,9 @@ language plpgsql
 set search_path = public
 as $$
 begin
+  if not public.arcade_valid_game(new.game) then
+    raise exception 'unsupported game' using errcode = '23514';
+  end if;
   if new.best is null or new.best < 0 then
     new.best := 0;
   end if;
