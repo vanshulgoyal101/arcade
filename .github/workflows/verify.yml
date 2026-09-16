@@ -1,0 +1,42 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['sitemap.xml', 'robots.txt']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-build-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: '**/package-lock.json'
+      - run: npm ci
+      - run: npm audit --audit-level=low
+      - run: npm test
+      - run: node scripts/db-migrate.mjs --check
+      - name: Install and audit games
+        run: |
+          for game in 2048 chromatic digit-span echo flash flashmath hue-hunt interval sprint where word wordle; do
+            npm ci --prefix "$game"
+            npm audit --prefix "$game" --audit-level=low
+          done
+      - run: npm run build:games
+      - name: Verify committed releases match source
+        run: |
+          git diff --exit-code -- '*/index.html' '*/assets/'
+          test -z "$(git ls-files --others --exclude-standard -- '*/assets/')"

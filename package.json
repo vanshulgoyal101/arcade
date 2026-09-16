@@ -3,7 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Unit tests for the Tiny Arcade games' pure logic.",
+  "description": "Tests, release tooling, and security checks for Tiny Arcade.",
+  "engines": { "node": ">=22.12.0" },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
@@ -14,7 +15,8 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
     "jsdom": "^25.0.1",
-    "sharp": "^0.34.2",
-    "vitest": "^2.1.9"
+    "sharp": "^0.35.4",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.11"
   }
 }
