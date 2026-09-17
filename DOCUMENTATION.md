@@ -134,8 +134,8 @@ acknowledging a blocked winning board leads to normal game over, not a frozen
 
 Arcade uses a progressive variant rather than classic 2048's permanent 2/4
 distribution. The pure `spawnOptions(board)` policy uses a base of
-`max(2, largestTile / 128)`. It selects the base 90% of the time and twice the
-base 10% of the time. Thus 512 unlocks 4/8, 2048 unlocks 16/32, and 8192 unlocks
+`max(2, largestTile / 128)`. It selects the base 60% of the time and twice the
+base 40% of the time. Thus 512 unlocks 4/8, 2048 unlocks 16/32, and 8192 unlocks
 64/128. New values remain six or seven merge levels below the largest tile.
 
 Before sampling that distribution, the policy counts tiles below the base. An

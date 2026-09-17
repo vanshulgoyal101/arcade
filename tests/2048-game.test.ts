@@ -150,13 +150,13 @@ describe('2048/spawnTile', () => {
   it('exposes a normalized, non-mutating distribution derived only from the board', () => {
     const board = b([2048, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]);
     const before = [...board];
-    expect(spawnOptions(board)).toEqual([{ value: 32, probability: 0.1 }, { value: 16, probability: 0.9 }]);
+    expect(spawnOptions(board)).toEqual([{ value: 32, probability: 0.4 }, { value: 16, probability: 0.6 }]);
     expect(board).toEqual(before);
     board[1] = 2;
     expect(spawnOptions(board)).toEqual([{ value: 2, probability: 1 }]);
   });
 
-  it.each([[0, 32], [0.099999, 32], [0.1, 16], [0.999999, 16]])('honors the probability boundary at %f', (roll, expected) => {
+  it.each([[0, 32], [0.399999, 32], [0.4, 16], [0.999999, 16]])('honors the probability boundary at %f', (roll, expected) => {
     const board = emptyBoard();
     board[0] = 2048;
     expect(board[spawnTile(board, () => roll)]).toBe(expected);

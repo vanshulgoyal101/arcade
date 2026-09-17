@@ -6,7 +6,7 @@ export const SIZE = 4;
 export const CELLS = SIZE * SIZE;
 export const WIN_TILE = 2048;
 const SPAWN_TIER_DISTANCE = 7;
-const HIGHER_SPAWN_CHANCE = 0.1;
+const HIGHER_SPAWN_CHANCE = 0.4;
 
 export type Board = number[];
 export type Direction = 'left' | 'right' | 'up' | 'down';
