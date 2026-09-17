@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  slideLine, moveBoard, hasMoves, spawnTile, emptyCells, highestTile, emptyBoard, Game, SIZE, CELLS,
+  slideLine, moveBoard, hasMoves, spawnTile, spawnOptions, emptyCells, highestTile, emptyBoard, Game, SIZE, CELLS,
 } from '../2048/src/game';
 
 // Readable 4×4 fixtures: rows of four, flattened.
@@ -147,6 +147,48 @@ describe('2048/hasMoves', () => {
 });
 
 describe('2048/spawnTile', () => {
+  it('exposes a normalized, non-mutating distribution derived only from the board', () => {
+    const board = b([2048, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]);
+    const before = [...board];
+    expect(spawnOptions(board)).toEqual([{ value: 32, probability: 0.1 }, { value: 16, probability: 0.9 }]);
+    expect(board).toEqual(before);
+    board[1] = 2;
+    expect(spawnOptions(board)).toEqual([{ value: 2, probability: 1 }]);
+  });
+
+  it.each([[0, 32], [0.099999, 32], [0.1, 16], [0.999999, 16]])('honors the probability boundary at %f', (roll, expected) => {
+    const board = emptyBoard();
+    board[0] = 2048;
+    expect(board[spawnTile(board, () => roll)]).toBe(expected);
+    expect(board[0]).toBe(2048);
+    expect(emptyCells(board)).toHaveLength(14);
+  });
+
+  it.each([[256, 2], [512, 4], [1024, 8], [2048, 16], [4096, 32], [8192, 64], [65536, 512]])('scales ordinary spawns with a %i tile', (largest, expected) => {
+    const board = emptyBoard();
+    board[0] = largest;
+    const at = spawnTile(board, () => 0.5);
+    expect(board[at]).toBe(expected);
+  });
+
+  it('keeps the higher spawn one tier above the current base', () => {
+    const board = emptyBoard();
+    board[0] = 2048;
+    expect(board[spawnTile(board, () => 0.05)]).toBe(32);
+  });
+
+  it('supplies a partner for the smallest unpaired tile below the spawn tier', () => {
+    const board = b([2048, 2, 4, 4], [8, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]);
+    expect(board[spawnTile(board, () => 0.5)]).toBe(2);
+    expect(board[spawnTile(board, () => 0.5)]).toBe(8);
+    expect(board[spawnTile(board, () => 0.5)]).toBe(16);
+  });
+
+  it('does not keep spawning small values that already have merge partners', () => {
+    const board = b([4096, 2, 2, 4], [4, 8, 8, 16], [16, 0, 0, 0], [0, 0, 0, 0]);
+    expect(board[spawnTile(board, () => 0.5)]).toBe(32);
+  });
+
   it('fills an empty cell and returns its index', () => {
     const board = emptyBoard();
     const at = spawnTile(board, () => 0.5);
@@ -167,7 +209,7 @@ describe('2048/spawnTile', () => {
     expect(full.every((v) => v === 2)).toBe(true);
   });
 
-  it('only ever produces 2s and 4s', () => {
+  it('only produces 2s and 4s on a fresh board', () => {
     for (let i = 0; i < 200; i++) {
       const board = emptyBoard();
       spawnTile(board, Math.random);
@@ -178,6 +220,61 @@ describe('2048/spawnTile', () => {
 
 describe('2048/Game', () => {
   beforeEach(() => localStorage.clear());
+
+  it('advances the spawn tier on the move that earns it without scoring the spawn', () => {
+    const game = new Game(() => 0.5);
+    game.start();
+    game.board = b([256, 256, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]);
+    expect(game.move('left')).toBe(true);
+    expect(game.board[game.spawned]).toBe(4);
+    expect(game.score).toBe(512);
+  });
+
+  it('restarts at the opening tier even with a high previous record', () => {
+    localStorage.setItem('2048.v1', JSON.stringify({ best: 100000, bestTile: 16384 }));
+    const game = new Game(() => 0.5);
+    game.start();
+    game.board = b([4096, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]);
+    game.move('right');
+    expect(game.board[game.spawned]).toBe(32);
+    game.start();
+    expect(game.board.filter(Boolean)).toEqual([2, 2]);
+    expect(game.best).toBe(100000);
+  });
+
+  it('preserves score, tile mass, and spawn contracts throughout seeded runs', () => {
+    const directions = ['left', 'up', 'right', 'down'] as const;
+    for (let seed = 1; seed <= 20; seed++) {
+      let state = seed;
+      const random = () => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return state / 2 ** 32;
+      };
+      const game = new Game(random);
+      game.start();
+      for (let turn = 0; turn < 500 && game.status !== 'lost'; turn++) {
+        if (game.status === 'won') game.continueAfterWin();
+        if (game.status === 'lost') break;
+        const direction = directions[Math.floor(random() * directions.length)];
+        const before = [...game.board];
+        const previousScore = game.score;
+        const result = moveBoard(before, direction);
+        const options = spawnOptions(result.board).map(option => option.value);
+        expect(game.move(direction)).toBe(result.moved);
+        expect(game.score).toBe(previousScore + result.gained);
+        if (!result.moved) {
+          expect(game.board).toEqual(before);
+          continue;
+        }
+        expect(options).toContain(game.board[game.spawned]);
+        expect(result.board[game.spawned]).toBe(0);
+        expect(game.board.reduce((sum, value) => sum + value, 0)).toBe(
+          before.reduce((sum, value) => sum + value, 0) + game.board[game.spawned],
+        );
+        expect(game.board.every(value => value === 0 || Number.isInteger(Math.log2(value)))).toBe(true);
+      }
+    }
+  });
 
   it('starts with exactly two tiles and no score', () => {
     const g = new Game(() => 0.5);

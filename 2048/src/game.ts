@@ -5,6 +5,8 @@
 export const SIZE = 4;
 export const CELLS = SIZE * SIZE;
 export const WIN_TILE = 2048;
+const SPAWN_TIER_DISTANCE = 7;
+const HIGHER_SPAWN_CHANCE = 0.1;
 
 export type Board = number[];
 export type Direction = 'left' | 'right' | 'up' | 'down';
@@ -102,12 +104,27 @@ export function moveBoard(board: Board, dir: Direction): MoveResult {
 export const emptyCells = (board: Board): number[] =>
   board.reduce<number[]>((acc, v, i) => (v === 0 ? (acc.push(i), acc) : acc), []);
 
-/** Place a new tile — 4 one time in ten, otherwise 2. Mutates `board`. */
+export function spawnOptions(board: Board): ReadonlyArray<{ value: number; probability: number }> {
+  const base = Math.max(2, highestTile(board) / 2 ** SPAWN_TIER_DISTANCE);
+  const counts = new Map<number, number>();
+  for (const value of board) {
+    if (value > 0 && value < base) counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  const unpaired = [...counts].filter(([, count]) => count % 2 !== 0).map(([value]) => value);
+  if (unpaired.length) return [{ value: Math.min(...unpaired), probability: 1 }];
+  return [
+    { value: base * 2, probability: HIGHER_SPAWN_CHANCE },
+    { value: base, probability: 1 - HIGHER_SPAWN_CHANCE },
+  ];
+}
+
+/** Place a progression-aware tile in a uniformly selected empty cell. Mutates `board`. */
 export function spawnTile(board: Board, rng: () => number = Math.random): number {
   const free = emptyCells(board);
   if (!free.length) return -1;
+  const options = spawnOptions(board);
   const at = free[Math.floor(rng() * free.length)];
-  board[at] = rng() < 0.1 ? 4 : 2;
+  board[at] = rng() < options[0].probability ? options[0].value : options[1].value;
   return at;
 }
 

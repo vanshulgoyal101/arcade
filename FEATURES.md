@@ -8,7 +8,7 @@ guarantee about every browser or future deployment. See
 
 | Game | Experience | Discovery |
 | --- | --- | --- |
-| 2048 | Sliding tiles, merge score, best tile, legal continuation after a win | Featured |
+| 2048 | Sliding tiles, progressive spawns with small-tile partner recovery, merge score, best tile, legal continuation after a win | Featured |
 | Hue Hunt | Timed odd-color selection, increasing grids, combo scoring | Featured |
 | Echo | Pad-sequence memory, strict/forgiving modes, four/six pads | Featured |
 | Chromatic | RGB matching, endless rounds, difficulty and accuracy feedback | Featured |

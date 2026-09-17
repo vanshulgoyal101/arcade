@@ -162,6 +162,26 @@ describe('2048/dom', () => {
     expect(Number(app.querySelector('#tile')!.textContent)).toBeGreaterThanOrEqual(2);
   });
 
+  it('renders the newly unlocked spawn tier and returns to small tiles on restart', async () => {
+    const app = await mountGame(async () => {
+      const { Game } = await import('../2048/src/game');
+      const originalStart = Game.prototype.start;
+      shareSpies.push(vi.spyOn(Math, 'random').mockReturnValue(0.5));
+      shareSpies.push(vi.spyOn(Game.prototype, 'start').mockImplementationOnce(function (this: InstanceType<typeof Game>) {
+        originalStart.call(this);
+        this.board = [256, 256, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+      }));
+      await import('../2048/src/main');
+    });
+    press('ArrowLeft');
+    vi.advanceTimersByTime(200);
+    expect(filled(app).sort()).toEqual(['4', '512']);
+    expect(app.querySelector('#score')!.textContent).toBe('512');
+    app.querySelector<HTMLButtonElement>('#restart')!.click();
+    expect(filled(app)).toEqual(['2', '2']);
+    expect(app.querySelector('#score')!.textContent).toBe('0');
+  });
+
   it.each(['continue', 'escape'])('offers replay after a blocked win is acknowledged with %s', async (action) => {
     const app = await mountGame(async () => {
       const { Game } = await import('../2048/src/game');

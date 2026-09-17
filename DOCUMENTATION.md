@@ -130,6 +130,34 @@ history. Delayed work must belong to the run or view that scheduled it. In 2048,
 acknowledging a blocked winning board leads to normal game over, not a frozen
 "playing" state. Escape and the continuation button share that decision.
 
+### 2048 Progressive Spawning (September 18, 2026)
+
+Arcade uses a progressive variant rather than classic 2048's permanent 2/4
+distribution. The pure `spawnOptions(board)` policy uses a base of
+`max(2, largestTile / 128)`. It selects the base 90% of the time and twice the
+base 10% of the time. Thus 512 unlocks 4/8, 2048 unlocks 16/32, and 8192 unlocks
+64/128. New values remain six or seven merge levels below the largest tile.
+
+Before sampling that distribution, the policy counts tiles below the base. An
+odd count means a value lacks a partner; it supplies the smallest such value
+with certainty. Paired small values receive no extra spawns until a merge leaves
+another unpaired value. This preserves a route for clearing low-value leftovers
+without deleting, upgrading, or awarding points for them. It does not guarantee
+that the player can bring partners together on a crowded board.
+
+Empty-cell placement remains uniform, and only a successful move spawns a tile.
+The policy reads the post-merge board, so a new tier applies immediately. There
+is no persisted tier, no dependence on historical bests, and no hidden losing-
+streak adjustment. Restart returns to 2/4. Merge rules and scoring are unchanged.
+Deterministic tier, probability, recovery, restart, and seeded-run invariant
+tests live alongside the existing model/DOM regressions. The seven-level gap is
+a tunable design choice, not a claim of empirically optimal difficulty.
+
+Existing local/cloud records remain intact. The casual leaderboard now spans
+classic-spawn and progressive-spawn runs, which are not strictly comparable;
+there is no separate ranked season or historical ruleset attribution. Server
+score caps are unchanged. Do not silently erase records to hide that difference.
+
 ## 5. Accounts, Restore, and Sync
 
 The hub's registry and the game cloud registry cover all twelve applications,
