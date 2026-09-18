@@ -21,9 +21,8 @@ ${r}`:u,f=i?new File([i],o,{type:i.type||"image/png"}):null;if(f&&We()&&d&&s&&l.
       <div class="grid" id="grid" aria-hidden="true"></div>
       <div class="tiles" id="tiles" role="grid" aria-label="2048 board"></div>
     </div>
+    <p class="center hint" id="hint">Swipe or use the arrow keys to slide the tiles.</p>
   </div>
-
-  <p class="center hint" id="hint">Swipe or use the arrow keys to slide the tiles.</p>
 
   <div class="overlay" id="overlay">
     <div class="modal" id="modal"></div>

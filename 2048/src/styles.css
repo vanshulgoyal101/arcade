@@ -35,7 +35,8 @@ html, body {
 
 #app {
   max-width: 480px; margin: 0 auto;
-  padding: max(14px, env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
+  min-height: 100svh; display: flex; flex-direction: column;
+  padding: max(14px, env(safe-area-inset-top)) 16px 0;
 }
 
 .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
@@ -66,6 +67,7 @@ html, body {
 
 .swipe-area {
   width: 100vw; margin-left: calc(50% - 50vw);
+  flex: 1; padding-bottom: calc(28px + env(safe-area-inset-bottom));
   touch-action: pinch-zoom;
   user-select: none; -webkit-user-select: none;
 }
@@ -123,7 +125,7 @@ html, body {
 }
 
 .center { text-align: center; }
-.hint { color: var(--muted); font-size: .85rem; margin: 14px 0 0; }
+.hint { color: var(--muted); font-size: .85rem; margin: 14px 16px 0; }
 
 .overlay {
   position: fixed; inset: 0; display: none; place-items: center;

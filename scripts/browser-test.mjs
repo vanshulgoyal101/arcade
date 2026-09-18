@@ -76,8 +76,12 @@ try {
         for (const selector of ['.topbar', '.about']) {
           assert.equal(await page.locator(selector).evaluate(element => getComputedStyle(element).touchAction), 'auto');
         }
-        for (const position of [board.x / 2, (board.x + board.width + width) / 2]) {
-          const start = { x: position, y: board.y + board.height / 2 };
+        const starts = [
+          { x: board.x / 2, y: board.y + board.height / 2 },
+          { x: (board.x + board.width + width) / 2, y: board.y + board.height / 2 },
+          { x: width / 2, y: board.y + board.height + 60 },
+        ];
+        for (const start of starts) {
           assert.equal(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.id, start), 'swipe-area');
           await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
           await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...start, y: start.y + 60 }] });
@@ -86,7 +90,7 @@ try {
           await page.locator('#restart').click();
         }
         await touch.detach();
-        console.log(`PASS 2048 ${width}px: real touch swipes on both sides`);
+        console.log(`PASS 2048 ${width}px: real touch swipes beside and below the board`);
       }
       const image = await page.screenshot(artifacts ? { path: resolve(artifacts, `${game}-${width}.png`), fullPage: true } : { fullPage: true });
       const pixels = await sharp(image).stats();

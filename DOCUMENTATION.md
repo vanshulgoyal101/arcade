@@ -153,8 +153,8 @@ Deterministic tier, probability, recovery, restart, and seeded-run invariant
 tests live alongside the existing model/DOM regressions. The seven-level gap is
 a tunable design choice, not a claim of empirically optimal difficulty.
 
-The board row accepts swipes across the viewport, including the empty space on
-both sides. The header and About section remain outside the gesture area for
+The play area accepts swipes across the viewport, including the empty space on
+both sides and the remaining screen below the board. The header and About section remain outside the gesture area for
 normal controls and scrolling. Pointer capture keeps an edge gesture active;
 cancellation ends it, and each gesture triggers at most one move. Pinch zoom
 remains available within the swipe area.
