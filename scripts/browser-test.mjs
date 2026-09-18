@@ -46,6 +46,7 @@ try {
     await hub.close();
     for (const game of games) {
       const page = await context.newPage();
+      if (game === '2048') await page.addInitScript(() => { Math.random = () => 0.5; });
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));
       page.on('response', response => { if (response.url().startsWith(base) && response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); });
@@ -66,6 +67,26 @@ try {
         assert.notEqual(await page.locator('#board').innerHTML(), before);
         await page.locator('#restart').click();
         assert.equal(await page.locator('.tile').count(), 2);
+        const touch = await context.newCDPSession(page);
+        await touch.send('Emulation.setTouchEmulationEnabled', { enabled: true });
+        const board = await page.locator('#board').boundingBox();
+        const area = await page.locator('#swipe-area').boundingBox();
+        assert(Math.abs(area.x) < 1 && Math.abs(area.width - width) < 1, '2048: swipe area spans viewport');
+        assert.equal(await page.locator('#swipe-area').evaluate(element => getComputedStyle(element).touchAction), 'pinch-zoom');
+        for (const selector of ['.topbar', '.about']) {
+          assert.equal(await page.locator(selector).evaluate(element => getComputedStyle(element).touchAction), 'auto');
+        }
+        for (const position of [board.x / 2, (board.x + board.width + width) / 2]) {
+          const start = { x: position, y: board.y + board.height / 2 };
+          assert.equal(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.id, start), 'swipe-area');
+          await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] });
+          await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ ...start, y: start.y + 60 }] });
+          await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          await page.waitForFunction(() => document.querySelectorAll('.tile').length === 3);
+          await page.locator('#restart').click();
+        }
+        await touch.detach();
+        console.log(`PASS 2048 ${width}px: real touch swipes on both sides`);
       }
       const image = await page.screenshot(artifacts ? { path: resolve(artifacts, `${game}-${width}.png`), fullPage: true } : { fullPage: true });
       const pixels = await sharp(image).stats();

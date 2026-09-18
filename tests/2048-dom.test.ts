@@ -100,6 +100,36 @@ describe('2048/dom', () => {
     expect(tiles(app).join('|')).toBe(before);
   });
 
+  it('accepts swipes beside the board but not on header controls', async () => {
+    const app = await load();
+    const { Game } = await import('../2048/src/game');
+    const move = vi.spyOn(Game.prototype, 'move');
+    shareSpies.push(move);
+    const area = app.querySelector('#swipe-area')!;
+    const dispatch = (target: Element, type: string, clientX: number) =>
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, clientX, clientY: 200 }));
+    dispatch(area, 'pointerdown', 5);
+    dispatch(area, 'pointermove', 65);
+    dispatch(area, 'pointermove', 95);
+    dispatch(area, 'pointerup', 95);
+    expect(move).toHaveBeenCalledExactlyOnceWith('right');
+    dispatch(app.querySelector('#mute')!, 'pointerdown', 5);
+    dispatch(area, 'pointermove', 65);
+    expect(move).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['pointercancel', 'lostpointercapture'])('ends a side swipe on %s', async (event) => {
+    const app = await load();
+    const { Game } = await import('../2048/src/game');
+    const move = vi.spyOn(Game.prototype, 'move');
+    shareSpies.push(move);
+    const area = app.querySelector('#swipe-area')!;
+    area.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 5 }));
+    area.dispatchEvent(new MouseEvent(event, { bubbles: true, clientX: 5 }));
+    area.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 65 }));
+    expect(move).not.toHaveBeenCalled();
+  });
+
   it('completes a flick that leaves the board mid-gesture', async () => {
     const random = vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const app = await load();

@@ -30,9 +30,11 @@ app.innerHTML = `
     <div class="pill" id="p-best"><span class="k">Best</span><span class="v" id="best">0</span></div>
   </div>
 
-  <div class="board" id="board">
-    <div class="grid" id="grid" aria-hidden="true"></div>
-    <div class="tiles" id="tiles" role="grid" aria-label="2048 board"></div>
+  <div class="swipe-area" id="swipe-area">
+    <div class="board" id="board">
+      <div class="grid" id="grid" aria-hidden="true"></div>
+      <div class="tiles" id="tiles" role="grid" aria-label="2048 board"></div>
+    </div>
   </div>
 
   <p class="center hint" id="hint">Swipe or use the arrow keys to slide the tiles.</p>
@@ -43,7 +45,7 @@ app.innerHTML = `
   <div class="toast" id="toast"></div>
 `;
 
-const boardEl = app.querySelector<HTMLDivElement>('#board')!;
+const swipeArea = app.querySelector<HTMLDivElement>('#swipe-area')!;
 const gridEl = app.querySelector<HTMLDivElement>('#grid')!;
 const tilesEl = app.querySelector<HTMLDivElement>('#tiles')!;
 const scoreEl = app.querySelector<HTMLSpanElement>('#score')!;
@@ -206,27 +208,33 @@ window.addEventListener('keydown', (e) => {
 let startX = 0;
 let startY = 0;
 let swiping = false;
+let activePointer: number | null = null;
 const SWIPE = 18;
 
-boardEl.addEventListener('pointerdown', (e) => {
+swipeArea.addEventListener('pointerdown', (e) => {
+  if (activePointer !== null || e.isPrimary === false || e.button !== 0 || !game.isPlaying()) return;
+  activePointer = e.pointerId;
   swiping = true;
   startX = e.clientX;
   startY = e.clientY;
-  // Keep receiving moves after the pointer leaves the board, so a flick that
-  // starts near an edge still counts. Touch captures implicitly; mouse doesn't.
-  boardEl.setPointerCapture?.(e.pointerId);
+  swipeArea.setPointerCapture?.(e.pointerId);
 });
-boardEl.addEventListener('pointermove', (e) => {
-  if (!swiping) return;
+swipeArea.addEventListener('pointermove', (e) => {
+  if (!swiping || e.pointerId !== activePointer) return;
   const dx = e.clientX - startX;
   const dy = e.clientY - startY;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE) return;
   swiping = false; // one move per gesture
   tryMove(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up');
 });
-const endSwipe = (): void => { swiping = false; };
-boardEl.addEventListener('pointerup', endSwipe);
-boardEl.addEventListener('pointercancel', endSwipe);
+const endSwipe = (event: PointerEvent): void => {
+  if (event.pointerId !== activePointer) return;
+  swiping = false;
+  activePointer = null;
+};
+swipeArea.addEventListener('pointerup', endSwipe);
+swipeArea.addEventListener('pointercancel', endSwipe);
+swipeArea.addEventListener('lostpointercapture', endSwipe);
 
 // ---- end of run ----
 function showWin(): void {

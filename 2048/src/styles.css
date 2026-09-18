@@ -64,13 +64,19 @@ html, body {
 .pill.bump { animation: bump .15s ease; }
 @keyframes bump { 50% { transform: scale(1.08); } }
 
+.swipe-area {
+  width: 100vw; margin-left: calc(50% - 50vw);
+  touch-action: pinch-zoom;
+  user-select: none; -webkit-user-select: none;
+}
+
 .board {
   --gap: 10px;
   --pad: 10px;
   position: relative; aspect-ratio: 1;
+  width: calc(100% - 32px); max-width: 448px; margin: 0 auto;
   background: var(--bg-soft); border: 1px solid var(--line); border-radius: 16px;
   padding: var(--pad); box-shadow: var(--shadow);
-  touch-action: none; /* swipes drive the game, not the page */
   user-select: none; -webkit-user-select: none;
 }
 .grid, .tiles { position: absolute; inset: var(--pad); }
