@@ -47,6 +47,13 @@ try {
     for (const game of games) {
       const page = await context.newPage();
       if (game === '2048') await page.addInitScript(() => { Math.random = () => 0.5; });
+      if (game === 'sprint') await page.addInitScript(() => {
+        let seed = 42;
+        Math.random = () => {
+          seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+          return seed / 4294967296;
+        };
+      });
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));
       page.on('response', response => { if (response.url().startsWith(base) && response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); });
@@ -91,6 +98,51 @@ try {
         }
         await touch.detach();
         console.log(`PASS 2048 ${width}px: real touch swipes beside and below the board`);
+      }
+      if (game === 'sprint') {
+        await page.locator('#mute').click();
+        const typing = await page.evaluate(() => {
+          const field = document.querySelector('#field');
+          const stream = document.querySelector('#stream');
+          const enter = value => {
+            field.value = value;
+            field.dispatchEvent(new Event('input', { bubbles: true }));
+          };
+          for (let index = 0; index < 40; index++) {
+            enter(stream.querySelector('.current').textContent + ' ');
+          }
+          const current = stream.querySelector('.current');
+          const target = current.textContent;
+          const observer = new MutationObserver(() => {});
+          observer.observe(stream, { childList: true, subtree: true });
+          const durations = [];
+          for (let index = 0; index < 200; index++) {
+            const start = performance.now();
+            enter(target.slice(0, index % 2 + 1));
+            durations.push(performance.now() - start);
+          }
+          const records = observer.takeRecords();
+          observer.disconnect();
+          durations.sort((first, second) => first - second);
+          const active = stream.querySelector('.current');
+          const bounds = active.getBoundingClientRect();
+          const viewport = stream.getBoundingClientRect();
+          return {
+            inputs: durations.length,
+            streamReplacements: records.filter(record => record.target === stream).length,
+            nodesAdded: records.reduce((total, record) => total + record.addedNodes.length, 0),
+            medianMs: durations[100],
+            p95Ms: durations[190],
+            currentPreserved: current === active,
+            currentVisible: bounds.top >= viewport.top && bounds.bottom <= viewport.bottom,
+          };
+        });
+        console.log(`Sprint typing ${width}px: ${JSON.stringify(typing)}`);
+        assert.equal(typing.streamReplacements, 0, 'Sprint: character input must not rebuild the stream');
+        assert(typing.currentPreserved, 'Sprint: current word node stays mounted');
+        assert(typing.currentVisible, 'Sprint: current word remains visible after scrolling');
+        await page.locator('#restart').click();
+        assert.equal(await page.locator('.w.done').count(), 0);
       }
       const image = await page.screenshot(artifacts ? { path: resolve(artifacts, `${game}-${width}.png`), fullPage: true } : { fullPage: true });
       const pixels = await sharp(image).stats();

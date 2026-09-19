@@ -100,16 +100,21 @@ function wordCharsHtml(target: string, typed: string, withCaret: boolean): strin
 
 // MonkeyType-style: keep recently-typed words on screen and scroll the current
 // word into the middle, so nothing you just typed disappears mid-flow.
-function renderStream(typed: string): void {
-  const parts: string[] = [];
-  for (const h of game.typedHistory) {
-    parts.push(`<span class="w done">${wordCharsHtml(h.word, h.typed, false)}</span>`);
+function renderStream(typed: string, rebuild = true): void {
+  const current = streamEl.querySelector<HTMLElement>('.w.current');
+  if (!rebuild && current) {
+    current.innerHTML = wordCharsHtml(game.current, typed, true);
+  } else {
+    const parts: string[] = [];
+    for (const h of game.typedHistory) {
+      parts.push(`<span class="w done">${wordCharsHtml(h.word, h.typed, false)}</span>`);
+    }
+    parts.push(`<span class="w current">${wordCharsHtml(game.current, typed, true)}</span>`);
+    for (const w of game.upcoming.slice(1, 1 + VISIBLE)) {
+      parts.push(`<span class="w">${escWord(w)}</span>`);
+    }
+    streamEl.innerHTML = parts.join(' ');
   }
-  parts.push(`<span class="w current">${wordCharsHtml(game.current, typed, true)}</span>`);
-  for (const w of game.upcoming.slice(1, 1 + VISIBLE)) {
-    parts.push(`<span class="w">${escWord(w)}</span>`);
-  }
-  streamEl.innerHTML = parts.join(' ');
   const cur = streamEl.querySelector<HTMLElement>('.w.current');
   if (cur) streamEl.scrollTop = Math.max(0, cur.offsetTop - streamEl.clientHeight / 2 + cur.offsetHeight / 2);
 }
@@ -120,10 +125,13 @@ function renderBest(): void {
 
 function liveUpdate(now: number): void {
   const s = game.stats(now);
-  wpmEl.textContent = String(game.started ? s.wpm : 0);
-  accEl.textContent = `${s.accuracy}%`;
+  const wpm = String(game.started ? s.wpm : 0);
+  const accuracy = `${s.accuracy}%`;
+  if (wpmEl.textContent !== wpm) wpmEl.textContent = wpm;
+  if (accEl.textContent !== accuracy) accEl.textContent = accuracy;
   const left = game.timeLeft(now);
-  timeEl.textContent = String(Math.ceil(left / 1000));
+  const seconds = String(Math.ceil(left / 1000));
+  if (timeEl.textContent !== seconds) timeEl.textContent = seconds;
   timerEl.style.transform = `scaleX(${left / (game.duration * 1000)})`;
 }
 
@@ -218,6 +226,7 @@ field.addEventListener('input', () => {
   if (field.value.length > 0) startIfNeeded();
   let val = field.value;
   let sp = val.indexOf(' ');
+  const advancing = sp !== -1;
   while (sp !== -1) {
     const word = val.slice(0, sp);
     if (word.length > 0) submitWord(word);
@@ -225,7 +234,7 @@ field.addEventListener('input', () => {
     sp = val.indexOf(' ');
   }
   if (val !== field.value) field.value = val;
-  renderStream(field.value);
+  renderStream(field.value, advancing);
 });
 
 durToggle.querySelectorAll<HTMLButtonElement>('button').forEach((b) => {

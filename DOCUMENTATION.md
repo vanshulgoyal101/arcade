@@ -1,6 +1,6 @@
 # Tiny Arcade: Architecture and Operations
 
-This guide describes the repository as of September 16, 2026. There are twelve
+This guide describes the repository as of September 19, 2026. There are twelve
 playable applications and ten featured hub games. Word of the Day and Interval
 remain available at their own URLs, but are excluded from the featured grid,
 public hub leaderboard, and sitemap. Hidden does not mean private or disabled.
@@ -329,6 +329,23 @@ were not verified by the local test suite. Measure LCP, INP, and CLS on real
 devices before claiming a performance improvement; browser screenshots are not
 performance measurements. Prioritize observed bottlenecks over speculative
 preloads or adding libraries purely for an SEO score.
+
+### Input Rendering
+
+Sprint updates only the active word's characters while typing or deleting. Its
+40-word history and up to 18 upcoming word nodes remain mounted until submission
+or reset; scroll centering is retained. Sprint's WPM, accuracy, and countdown,
+and Flashmath's countdown, update text only when the displayed value changes.
+Timer-bar animation still runs every frame. Rules and gameplay delays are unchanged.
+
+The browser runner measures 200 deterministic character inputs after 40 completed
+words. On September 19, a local Chromium desktop run reduced full-stream
+replacements from 200 to zero and median synchronous input-handler time from
+2.2 ms to 0.7 ms (95th percentile: 2.6 ms to 1.0 ms). These are controlled local
+measurements, not field INP or a claim about every device. Timing is reported,
+not used as a flaky pass/fail threshold. Stable nodes, scrolling, and replay are
+checked at desktop and mobile viewport widths; DOM tests also check that
+unchanged HUD values cause no text mutations between countdown boundaries.
 
 ## 10. Tests and Release Gates
 

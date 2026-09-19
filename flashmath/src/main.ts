@@ -172,7 +172,8 @@ function loop(ts: number): void {
   game.tick(dt);
   timerEl.style.transform = `scaleX(${Math.max(0, game.timeLeft / ROUND_TIME)})`;
   const secs = Math.max(0, Math.ceil(game.timeLeft / 1000));
-  timernumEl.textContent = `${secs}s`;
+  const label = `${secs}s`;
+  if (timernumEl.textContent !== label) timernumEl.textContent = label;
   timernumEl.classList.toggle('low', game.timeLeft <= 5000);
   if (game.timeLeft <= 0) {
     endGame();

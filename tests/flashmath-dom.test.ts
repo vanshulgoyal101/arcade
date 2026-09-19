@@ -51,7 +51,7 @@ describe('flashmath/dom', () => {
     expect(text(app.querySelector('#level'))).toBe('4'); // level 1 → 4 after 3 solves
   });
 
-  async function loadWithFrame(): Promise<{ app: HTMLElement; expire: () => void }> {
+  async function loadWithFrame(): Promise<{ app: HTMLElement; expire: () => void; tick: (now: number) => void }> {
     document.body.innerHTML = '<div id="app"></div>';
     localStorage.clear();
     let frame: FrameRequestCallback | null = null;
@@ -65,8 +65,25 @@ describe('flashmath/dom', () => {
     return {
       app: document.querySelector<HTMLElement>('#app')!,
       expire: () => frame?.(performance.now() + 60_000),
+      tick: now => frame?.(now),
     };
   }
+
+  it('leaves countdown text untouched between second boundaries', async () => {
+    const { app, tick } = await loadWithFrame();
+    const countdown = app.querySelector('#timernum')!;
+    const now = performance.now();
+    tick(now + 16);
+    const initial = text(countdown);
+    const observer = new MutationObserver(() => {});
+    observer.observe(countdown, { childList: true });
+    for (let index = 2; index <= 30; index++) tick(now + index * 16);
+    expect(observer.takeRecords()).toHaveLength(0);
+    tick(now + 1100);
+    expect(Number.parseInt(text(countdown))).toBe(Number.parseInt(initial) - 1);
+    expect(observer.takeRecords()).toHaveLength(1);
+    observer.disconnect();
+  });
 
   it('starts a replay with an empty answer', async () => {
     const { app, expire } = await loadWithFrame();
