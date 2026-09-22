@@ -7,6 +7,7 @@ import { hueShareText, hueShareCard, shareResult, shareToast } from './share';
 import { canvasToBlob } from '../../shared/card';
 import { restoreGame, submitScore, mountRank } from '../../shared/cloud';
 import { ICON_HUE_HUNT, muteIcon, ICON_TROPHY } from '../../shared/icons';
+import { fmtScore } from '../../shared/format';
 
 const game = new HueGame();
 sfx.setMuted(game.store.muted);
@@ -99,9 +100,9 @@ function renderMute(): void {
 
 function renderHud(): void {
   levelEl.textContent = String(game.level);
-  scoreEl.textContent = String(game.score);
+  scoreEl.textContent = fmtScore(game.score);
   comboEl.textContent = `x${game.multiplier}`;
-  bestEl.textContent = String(game.store.bestScore);
+  bestEl.textContent = fmtScore(game.store.bestScore);
 }
 
 function buildBoard(): void {
@@ -131,7 +132,7 @@ function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
     void boardEl.offsetWidth;
     boardEl.classList.add('board-flash');
 
-    scorePopup(ev.clientX, ev.clientY, `+${points}`, fast ? '#ffd93d' : '#4ecdc4');
+    scorePopup(ev.clientX, ev.clientY, `+${fmtScore(points)}`, fast ? '#ffd93d' : '#4ecdc4');
     if (game.multiplier >= 2 && game.combo % 3 === 0) {
       comboFlash.textContent = `COMBO x${game.multiplier}!`;
       comboFlash.classList.remove('show');
@@ -190,8 +191,8 @@ function showResults(newBest: boolean): void {
   modal.innerHTML = `
     <h2>Time!</h2>
     <p class="sub">Score</p>
-    <div class="big">${game.score}</div>
-    <p class="sub">Reached level ${reached} · Best ${game.store.bestScore}</p>
+    <div class="big">${fmtScore(game.score)}</div>
+    <p class="sub">Reached level ${reached} · Best ${fmtScore(game.store.bestScore)}</p>
     ${newBest ? `<p class="newbest">${ICON_TROPHY} New best score!</p>` : ''}
     <div class="row">
       <button class="btn ghost" id="m-share">Share</button>
