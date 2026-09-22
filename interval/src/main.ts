@@ -1,4 +1,5 @@
 import './styles.css';
+import { fmtScore } from '../../shared/format';
 import { makeDismissable } from '../../shared/overlay';
 import { IntervalGame, INTERVALS } from './game';
 import { loadStore, saveStore } from './storage';
@@ -74,10 +75,10 @@ function renderMute(): void {
   muteBtn.innerHTML = muteIcon(sfx.isMuted());
 }
 function renderHud(): void {
-  scoreEl.textContent = String(game.score);
+  scoreEl.textContent = fmtScore(game.score);
   streakEl.textContent = String(game.streak);
   livesEl.innerHTML = livesHtml(game.lives, 3);
-  bestEl.textContent = String(game.best);
+  bestEl.textContent = fmtScore(game.best);
 }
 
 function playCurrent(): void {
@@ -130,8 +131,8 @@ function endGame(newBest: boolean): void {
   modal.innerHTML = `
     <h2>Out of lives</h2>
     <p class="sub">Score</p>
-    <div class="big">${game.score}</div>
-    <p class="sub">Best ${best}</p>
+    <div class="big">${fmtScore(game.score)}</div>
+    <p class="sub">Best ${fmtScore(best)}</p>
     ${answerHtml(
       'The last one was',
       `${game.current.name} · ${noteName(game.rootMidi)} → ${noteName(game.rootMidi + game.current.semis)}`
@@ -145,12 +146,13 @@ function endGame(newBest: boolean): void {
   overlay.classList.add('show');
   mountRank(modal, 'interval', best);
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
+    const text = intervalShareText(game.score, best, newBest);
     const blob = await canvasToBlob(
       intervalShareCard(game.score, best, game.rootMidi, game.current.semis, game.current.name)
     );
     const outcome = await shareResult({
       title: 'Interval',
-      text: intervalShareText(game.score, best, newBest),
+      text,
       url: 'https://games.vanshul.com/interval/',
       blob,
       filename: 'interval.png',

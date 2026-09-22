@@ -191,12 +191,13 @@ function openEndlessModal(): void {
   void submitScore('chromatic', best);
   mountRank(modal, 'chromatic', best);
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
+    const text = endlessShareText(game.score, game.level, best);
     const blob = await canvasToBlob(
       chromaticShareCard(game.score, game.level, best, game.target, game.guess, game.lastResult?.accuracy ?? 0)
     );
     const outcome = await shareResult({
       title: 'Chromatic',
-      text: endlessShareText(game.score, game.level, best),
+      text,
       url: 'https://games.vanshul.com/chromatic/',
       blob,
       filename: 'chromatic.png',

@@ -334,10 +334,11 @@ function showResult(r: RoundResult): void {
   void submitScore('flash', game.store.bestWpm);
   mountRank(modal, 'flash', game.store.bestWpm);
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
+    const text = flashShareText(r, game.store.bestWpm);
     const blob = await canvasToBlob(flashShareCard(r, game.store.bestWpm));
     const outcome = await shareResult({
       title: 'Flash',
-      text: flashShareText(r, game.store.bestWpm),
+      text,
       url: 'https://games.vanshul.com/flash/',
       blob,
       filename: 'flash.png',

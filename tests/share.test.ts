@@ -22,6 +22,26 @@ describe('share text builders', () => {
 });
 
 describe('shared/clipboard', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.body.replaceChildren();
+  });
+
+  it('cleans up the fallback and restores focus even when legacy copying throws', async () => {
+    Object.assign(navigator, { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
+    const button = document.createElement('button');
+    document.body.appendChild(button);
+    button.focus();
+    const original = document.execCommand;
+    document.execCommand = vi.fn(() => { throw new Error('unavailable'); });
+    try {
+      expect(await copyToClipboard('private result')).toBe(false);
+      expect(document.querySelector('textarea')).toBeNull();
+      expect(document.activeElement).toBe(button);
+    } finally {
+      document.execCommand = original;
+    }
+  });
   it('uses the async Clipboard API when available', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
@@ -78,11 +98,25 @@ describe('shared/share', () => {
     expect(share.mock.calls[1][0]).toEqual({ title: 'T', text: 'hi', url: 'u' });
   });
 
-  it('treats a user-cancelled share sheet as shared', async () => {
+  it.each([true, false])('keeps cancellation terminal without falsely reporting success (mobile: %s)', async mobile => {
     const share = vi.fn().mockRejectedValue(new DOMException('cancelled', 'AbortError'));
-    Object.assign(navigator, { share, canShare: () => true });
+    const writeText = vi.fn();
+    Object.assign(navigator, { share, canShare: () => true, userAgentData: { mobile }, clipboard: { writeText } });
     const blob = new Blob(['img'], { type: 'image/png' });
-    expect(await shareResult({ title: 'T', text: 'hi', blob })).toBe('shared');
+    expect(await shareResult({ title: 'T', text: 'hi', blob })).toBe('cancelled');
+    expect(share).toHaveBeenCalledOnce();
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
+  it('falls back to native text when a capability check throws', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      share,
+      canShare: () => { throw new Error('unavailable'); },
+      userAgentData: { mobile: true },
+    });
+    expect(await shareResult({ title: 'T', text: 'caption', blob: new Blob(['image']) })).toBe('shared');
+    expect(share).toHaveBeenCalledExactlyOnceWith({ title: 'T', text: 'caption', url: undefined });
   });
 
   it('falls back to copying the caption text when nothing else is available', async () => {
@@ -100,6 +134,7 @@ describe('shared/share', () => {
 
   it('maps outcomes to friendly toast messages', () => {
     expect(shareToast('shared')).toMatch(/shared/i);
+    expect(shareToast('cancelled')).toMatch(/cancelled/i);
     expect(shareToast('copied-image')).toMatch(/image/i);
     expect(shareToast('copied-text')).toMatch(/copied/i);
     expect(shareToast('failed')).toMatch(/could not/i);

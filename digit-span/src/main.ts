@@ -177,10 +177,11 @@ function gameOver(): void {
   overlay.classList.add('show');
   mountRank(modal, 'digit-span', Math.max(0, ...Object.values(game.store.best)));
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
+    const text = digitShareText(reached, game.mode, game.best, newBest);
     const blob = await canvasToBlob(digitShareCard(game.expected(), reached, game.mode, game.best));
     const outcome = await shareResult({
       title: 'Digit Span',
-      text: digitShareText(reached, game.mode, game.best, newBest),
+      text,
       url: 'https://games.vanshul.com/digit-span/',
       blob,
       filename: 'digit-span.png',

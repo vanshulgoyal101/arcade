@@ -24,6 +24,14 @@ requested identifiers, deduplicates and validates them, and returns between 1
 and 50 rows per game (default 5). Equal scores use competition ranking.
 Anonymous execute grants are explicitly removed from restore, submit, and stats.
 
+Table privileges are also explicit: public roles can read only safe score
+columns and insert analytics; authenticated players can additionally insert or
+update scores and select/insert/update their own profiles under RLS. Neither
+role receives DELETE, TRUNCATE, TRIGGER, or REFERENCES on Arcade tables. RLS
+does not protect TRUNCATE, so a missing policy is not a substitute for revoking
+that privilege. The September 23 audit confirmed these excessive inherited
+grants in production; the current REST API did not expose a truncate endpoint.
+
 Profiles are private rows, but the display name and avatar copied into a score
 row remain public leaderboard identity. Never put secrets in those fields.
 New analytics events do not retain caller-provided account IDs. Their visitor
@@ -48,6 +56,12 @@ third-party scripts or render unsanitized names, URLs, or stored HTML.
 Canonical schemas: `supabase/arcade_scores.sql`, then `supabase/analytics.sql`.
 Do not reapply the entire legacy bootstrap to production for a small change:
 it contains historical cleanup statements. Use the targeted migration.
+
+The runner applies `20260916_security.sql` followed by the additive
+`20260923_privileges.sql`. It checks repeat application and effective grant
+parity with the canonical schema, and backs up table/column grants as well as
+function definitions and policies before a production application. The privilege
+migration does not modify or delete player rows.
 
 ```sh
 npm ci

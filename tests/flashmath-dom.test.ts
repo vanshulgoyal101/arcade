@@ -25,6 +25,27 @@ describe('flashmath/dom', () => {
     expect(text(app.querySelector('#score'))).toBe('0');
   });
 
+  it('formats large scores without changing the saved best', async () => {
+    let frame: FrameRequestCallback = () => {};
+    const app = await mountGame(() => {
+      globalThis.requestAnimationFrame = callback => { frame = callback; return 1; };
+      return import('../flashmath/src/main.ts');
+    }, () => {
+      localStorage.setItem('flashmath.v1', JSON.stringify({ bestScore: 1500000, bestLevel: 50, muted: true }));
+    });
+    expect(text(app.querySelector('#best'))).toBe('1.5M');
+    for (let index = 0; index < 20; index++) {
+      typeNumber(solve(text(app.querySelector('#problem'))));
+      key('Enter');
+    }
+    expect(text(app.querySelector('#score'))).toMatch(/^\d+(\.\d)?k$/);
+    const score = text(app.querySelector('#score'));
+    frame(performance.now() + 60_000);
+    expect(text(app.querySelector('#modal .big'))).toBe(score);
+    expect(text(app.querySelector('#modal'))).toContain('Best 1.5M');
+    expect(JSON.parse(localStorage.getItem('flashmath.v1')!).bestScore).toBe(1500000);
+  });
+
   it('a correct answer scores and moves to the next problem', async () => {
     const app = await load();
     const first = text(app.querySelector('#problem'));
@@ -39,6 +60,19 @@ describe('flashmath/dom', () => {
     typeNumber(solve(text(app.querySelector('#problem'))) + 1);
     key('Enter');
     expect(text(app.querySelector('#score'))).toBe('0');
+  });
+
+  it('does not erase a new answer when wrong-answer feedback expires', async () => {
+    const app = await load();
+    const answer = solve(text(app.querySelector('#problem')));
+    typeNumber(answer + 1);
+    key('Enter');
+    typeNumber(answer);
+    await vi.advanceTimersByTimeAsync(350);
+    expect(text(app.querySelector('#answer'))).toBe(String(answer));
+    expect(app.querySelector('#answer')!.classList.contains('flash-bad')).toBe(false);
+    key('Enter');
+    expect(Number(text(app.querySelector('#score')))).toBeGreaterThan(0);
   });
 
   it('builds a combo across several correct answers', async () => {

@@ -12,6 +12,14 @@ describe('interval/dom', () => {
     expect(app.querySelector('#play')).not.toBeNull();
   });
 
+  it('formats large best scores without changing stored values', async () => {
+    const app = await mountGame(() => import('../interval/src/main.ts'), () => {
+      localStorage.setItem('interval.v1', JSON.stringify({ bestScore: 162060, muted: true }));
+    });
+    expect(text(app.querySelector('#best'))).toBe('162.1k');
+    expect(JSON.parse(localStorage.getItem('interval.v1')!).bestScore).toBe(162060);
+  });
+
   it('answering reveals exactly one correct option and locks input', async () => {
     const app = await load();
     const opts = app.querySelectorAll<HTMLButtonElement>('#options .opt');

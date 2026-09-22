@@ -1,4 +1,5 @@
 import './styles.css';
+import { fmtScore } from '../../shared/format';
 import { makeDismissable } from '../../shared/overlay';
 import { MathGame, ROUND_TIME, type Op } from './game';
 import { loadStore, saveStore } from './storage';
@@ -98,9 +99,9 @@ function renderMute(): void {
 }
 function renderHud(): void {
   levelEl.textContent = String(game.level);
-  scoreEl.textContent = String(game.score);
+  scoreEl.textContent = fmtScore(game.score);
   comboEl.textContent = `x${game.multiplier}`;
-  bestEl.textContent = String(game.store.bestScore);
+  bestEl.textContent = fmtScore(game.store.bestScore);
 }
 function renderProblem(): void {
   const p = game.problem;
@@ -112,6 +113,9 @@ function renderProblem(): void {
 function type(ch: string): void {
   if (!game.playing) return;
   if (entry.length >= 6) return;
+  clearTimeout(answerResetTimer);
+  answerResetTimer = 0;
+  answerEl.classList.remove('flash-bad');
   entry += ch;
   answerEl.textContent = entry;
 }
@@ -124,7 +128,7 @@ function submit(): void {
   const res = game.submit(Number(entry), performance.now());
   if (res.correct) {
     sfx.correct(game.combo);
-    popup(`+${res.points}`, res.fast ? '#ffd93d' : '#4ecdc4');
+    popup(`+${fmtScore(res.points)}`, res.fast ? '#ffd93d' : '#4ecdc4');
     bump(pScore);
     bump(pLevel);
     if (game.multiplier >= 2) {
@@ -191,8 +195,8 @@ function endGame(): void {
   modal.innerHTML = `
     <h2>Time!</h2>
     <p class="sub">Score</p>
-    <div class="big">${game.score}</div>
-    <p class="sub">${game.solved} solved · reached level ${game.level} · Best ${game.store.bestScore}</p>
+    <div class="big">${fmtScore(game.score)}</div>
+    <p class="sub">${game.solved} solved · reached level ${game.level} · Best ${fmtScore(game.store.bestScore)}</p>
     ${answerHtml('The one on screen was', `${p.a} ${OP_LABEL[p.op]} ${p.b} = ${p.answer}`)}
     ${newBest ? `<p class="newbest">${ICON_TROPHY} New best score!</p>` : ''}
     <div class="row">
@@ -203,10 +207,11 @@ function endGame(): void {
   overlay.classList.add('show');
   mountRank(modal, 'flashmath', game.store.bestScore);
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
+    const text = mathShareText(game.score, game.solved, game.store.bestScore, newBest);
     const blob = await canvasToBlob(mathShareCard(game.score, game.solved, game.level, game.store.bestScore));
     const outcome = await shareResult({
       title: 'Flashmath',
-      text: mathShareText(game.score, game.solved, game.store.bestScore, newBest),
+      text,
       url: 'https://games.vanshul.com/flashmath/',
       blob,
       filename: 'flashmath.png',

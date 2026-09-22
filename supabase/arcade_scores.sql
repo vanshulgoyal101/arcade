@@ -55,7 +55,8 @@ create policy arcade_scores_update
 -- table-wide SELECT grant, so drop the table grant and re-grant SELECT only on
 -- the safe columns (leaderboard reads user_id/display_name/avatar_url/best).
 -- Own-row restore goes through the SECURITY DEFINER restore_my_scores() RPC.
-revoke select on public.arcade_scores from anon, authenticated;
+revoke all on public.arcade_scores from public, anon, authenticated;
+grant insert, update on public.arcade_scores to authenticated;
 grant select (user_id, game, best, display_name, avatar_url, updated_at)
   on public.arcade_scores to anon, authenticated;
 
@@ -128,6 +129,9 @@ create table if not exists public.arcade_profiles (
 alter table public.arcade_profiles add column if not exists theme text;
 
 alter table public.arcade_profiles enable row level security;
+
+revoke all on public.arcade_profiles from public, anon, authenticated;
+grant select, insert, update on public.arcade_profiles to authenticated;
 
 drop policy if exists arcade_profiles_read on public.arcade_profiles;
 create policy arcade_profiles_read

@@ -80,7 +80,7 @@ function saveProfileHarness(profileError: Error | null) {
     supabase, { id: 'user-a' }, () => 'Google Name', cacheProfile,
     { display_name: 'Old Name', avatar: 'a:owl' }
   ) as { saveProfile: (name: string, avatar: string) => Promise<void>; getProfile: () => unknown; switchUser: () => void };
-  return { ...harness, profileUpsert, scoreUpdate, cacheProfile };
+  return { ...harness, profileUpsert, scoreUpdate, scoreEq, cacheProfile };
 }
 
 function restoreHarness(rows: unknown[], error: Error | null = null) {
@@ -149,6 +149,58 @@ function onUserHarness(options: {
 
 describe('hub score sync', () => {
   beforeEach(() => localStorage.clear());
+
+  it('does not report a saved profile as failed when identity restamping rejects', async () => {
+    const harness = saveProfileHarness(null);
+    harness.scoreEq.mockRejectedValueOnce(new Error('offline'));
+    await expect(harness.saveProfile('New Name', 'a:owl')).resolves.toBeUndefined();
+    expect(harness.getProfile()).toEqual({ display_name: 'New Name', avatar: 'a:owl' });
+    expect(harness.cacheProfile).toHaveBeenCalledWith('user-a');
+  });
+
+  it.each(['resolved', 'rejected'])('shows retryable sign-in and sign-out failures (%s)', async failure => {
+    const document = new JSDOM('<button id="signin"></button><button id="pfSignout"></button><p id="pfError"></p>').window.document;
+    const fail = () => failure === 'resolved'
+      ? Promise.resolve({ error: new Error('offline') })
+      : Promise.reject(new Error('offline'));
+    const factory = new Function('document', 'supabase', 'location', 'confirm', `
+      let authVersion = 0;
+      ${between('async function signIn()', '// ---- leaderboard ----')}
+      return { signIn, signOut };
+    `);
+    const actions = factory(document, { auth: { signInWithOAuth: fail, signOut: fail } },
+      { origin: 'https://games.vanshul.com', pathname: '/' }, () => true);
+    await actions.signIn();
+    expect(document.getElementById('signin')!.textContent).toContain('Try again');
+    expect((document.getElementById('signin') as HTMLButtonElement).disabled).toBe(false);
+    await actions.signOut();
+    expect(document.getElementById('pfError')!.textContent).toContain('Could not sign out');
+    expect((document.getElementById('pfSignout') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('preserves the theme when completing a theme-only profile', async () => {
+    const { loadProfile } = loadProfileHarness({ data: { theme: 'classic' }, error: null });
+    await expect(loadProfile({ id: 'user-a' })).resolves.toMatchObject({ theme: 'classic' });
+  });
+
+  it.each([null, { id: 'user-b' }])('does not save a deferred theme change after switching to %j', nextUser => {
+    const document = new JSDOM('<button id="themeBtn"></button>').window.document;
+    const upsert = vi.fn().mockResolvedValue({ error: null });
+    let deferred: () => void = () => {};
+    const factory = new Function('document', 'supabase', 'localStorage', 'setTimeout', `
+      let currentUser = { id: 'user-a' };
+      let authVersion = 0;
+      let profile = {};
+      ${between("document.getElementById('themeBtn')?.addEventListener", "lbBtn?.addEventListener")}
+      return user => { currentUser = user; authVersion++; };
+    `);
+    const switchUser = factory(document, { from: () => ({ upsert }) }, localStorage,
+      (callback: () => void) => { deferred = callback; });
+    document.getElementById('themeBtn')!.click();
+    switchUser(nextUser);
+    expect(() => deferred()).not.toThrow();
+    expect(upsert).not.toHaveBeenCalled();
+  });
 
   it('registers retry listeners only after auth state exists', () => {
     const state = source.indexOf('let currentUser = null;');

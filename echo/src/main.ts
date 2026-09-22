@@ -235,10 +235,11 @@ function showGameOver(reached: number, newBest: boolean): void {
   overlay.classList.add('show');
   mountRank(modal, 'echo', Math.max(0, ...Object.values(game.store.best)));
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
+    const text = echoShareText(reached, game.strict, game.pads, game.best, newBest);
     const blob = await canvasToBlob(echoShareCard(reached, game.strict, game.pads, game.best));
     const outcome = await shareResult({
       title: 'Echo',
-      text: echoShareText(reached, game.strict, game.pads, game.best, newBest),
+      text,
       url: 'https://games.vanshul.com/echo/',
       blob,
       filename: 'echo.png',

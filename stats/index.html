@@ -212,6 +212,10 @@
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
         authVersion++;
         if (event === 'SIGNED_OUT') signInView('This page is private — sign in as the owner.');
+        else {
+          root.textContent = 'Loading...';
+          actions.replaceChildren();
+        }
         setTimeout(() => { void load(); }, 0);
       }
     });

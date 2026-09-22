@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { mountGame, pointerdown, oddChild, plainChild, text, gameEnv } from './helpers/dom';
 import { fmtScore } from '../shared/format';
 
@@ -12,6 +12,34 @@ const load = () => mountGame(() => import('../hue-hunt/src/main.ts'));
 
 describe('hue-hunt/dom', () => {
   gameEnv();
+  const spies: Array<{ mockRestore(): void }> = [];
+  afterEach(() => spies.splice(0).forEach(spy => spy.mockRestore()));
+
+  it('keeps the shared caption matched to the encoded run after replay', async () => {
+    let frame: FrameRequestCallback = () => {};
+    let finish!: (blob: Blob | null) => void;
+    let expected = '';
+    const shareResult = vi.fn().mockResolvedValue('shared');
+    const app = await mountGame(async () => {
+      globalThis.requestAnimationFrame = callback => { frame = callback; return 1; };
+      const share = await import('../hue-hunt/src/share');
+      expected = share.hueShareText(25, 1, 25);
+      spies.push(vi.spyOn(share, 'hueShareCard').mockReturnValue(document.createElement('canvas')));
+      spies.push(vi.spyOn(share, 'shareResult').mockImplementation(shareResult));
+      const card = await import('../shared/card');
+      spies.push(vi.spyOn(card, 'canvasToBlob').mockImplementation(() => new Promise(resolve => { finish = resolve; })));
+      await import('../hue-hunt/src/main');
+    });
+    pointerdown(oddChild(app.querySelector('#board')!));
+    await vi.advanceTimersByTimeAsync(80);
+    frame(performance.now() + 60_000);
+    await vi.advanceTimersByTimeAsync(900);
+    app.querySelector<HTMLButtonElement>('#m-share')!.click();
+    app.querySelector<HTMLButtonElement>('#m-again')!.click();
+    finish(null);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(shareResult).toHaveBeenCalledWith(expect.objectContaining({ text: expected }));
+  });
 
   it('boots a full board and HUD', async () => {
     const app = await load();

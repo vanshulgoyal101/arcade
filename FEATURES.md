@@ -1,6 +1,6 @@
 # Tiny Arcade Feature Catalog
 
-Status: September 16, 2026. "Implemented" describes repository behavior, not a
+Status: September 23, 2026. "Implemented" describes repository behavior, not a
 guarantee about every browser or future deployment. See
 [DOCUMENTATION.md](DOCUMENTATION.md) for architecture, commands, and contracts.
 
@@ -50,6 +50,20 @@ hub, its ItemList, and its public leaderboard contain ten games.
   smoke tests, service-worker tests, dependency audits, and a release CI workflow.
 
 ## Historical Changes
+
+The September 23 audit completed compact point-score labels in Flashmath and
+Interval, fixed delayed share-caption races in seven games, distinguished
+cancelled sharing from success, and cleaned up failed clipboard fallback nodes.
+Flashmath no longer clears a rapidly corrected answer with an old feedback timer.
+Hub theme writes are tied to the account that initiated them; partial profiles
+retain their theme, authentication errors remain retryable, and a failed score
+identity refresh does not misreport a saved profile as failed. The private stats
+page clears the prior dashboard immediately on an account transition. Database
+table grants now follow explicit least privilege in addition to RLS.
+
+These changes address specific reproduced defects, not a claim that all future
+states or devices are covered. The proposed work below requires separate product
+or infrastructure decisions and is not represented as already implemented.
 
 Chromatic's former daily mode and unused shared daily-leaderboard groundwork
 were removed; they are not current features. Word replaced Interval in the

@@ -18,7 +18,7 @@ describe('stats dates', () => {
 });
 
 describe('stats auth lifecycle', () => {
-  it('does not repaint private data from an in-flight request after sign-out', async () => {
+  it.each(['SIGNED_OUT', 'SIGNED_IN'])('clears private data immediately and rejects stale responses after %s', async event => {
     const dom = new JSDOM('<div id="root"></div><div id="actions"></div>', {
       url: 'https://arcade.test/stats/', runScripts: 'outside-only',
     });
@@ -30,7 +30,8 @@ describe('stats auth lifecycle', () => {
         getSession: async () => ({ data: { session }, error: null }),
         onAuthStateChange: (listener: typeof onAuth) => { onAuth = listener; },
       },
-      rpc: vi.fn(() => new Promise((resolve) => { finish = resolve; })),
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'not authorized' } })
+        .mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; })),
     };
     (dom.window as unknown as { backend: unknown }).backend = backend;
     const module = html.match(/<script type="module">([\s\S]*?)<\/script>/)![1]
@@ -39,8 +40,12 @@ describe('stats auth lifecycle', () => {
     try {
       dom.window.eval(module);
       await vi.waitFor(() => expect(backend.rpc).toHaveBeenCalledOnce());
-      session = null;
-      onAuth('SIGNED_OUT');
+      dom.window.document.querySelector('#root')!.textContent = '12,345 private visits';
+      dom.window.document.querySelector('#actions')!.textContent = 'Owner actions';
+      session = event === 'SIGNED_OUT' ? null : { user: { id: 'other-user' } };
+      onAuth(event);
+      expect(dom.window.document.body.textContent).not.toContain('12,345');
+      expect(dom.window.document.querySelector('#actions')!.textContent).toBe('');
       finish({ data: { total_visits: 12345 }, error: null });
       await vi.waitFor(() => expect(dom.window.document.querySelector('#si')).not.toBeNull());
       await new Promise((resolve) => dom.window.setTimeout(resolve, 20));

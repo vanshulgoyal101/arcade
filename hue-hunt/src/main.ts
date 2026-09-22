@@ -202,10 +202,11 @@ function showResults(newBest: boolean): void {
   overlay.classList.add('show');
   mountRank(modal, 'hue-hunt', game.store.bestScore);
   modal.querySelector<HTMLButtonElement>('#m-share')!.onclick = async () => {
+    const text = hueShareText(game.score, reached, game.store.bestScore);
     const blob = await canvasToBlob(hueShareCard(game.round, game.score, reached, game.store.bestScore));
     const outcome = await shareResult({
       title: 'Hue Hunt',
-      text: hueShareText(game.score, reached, game.store.bestScore),
+      text,
       url: 'https://games.vanshul.com/hue-hunt/',
       blob,
       filename: 'hue-hunt.png',

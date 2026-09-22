@@ -6,18 +6,20 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     return true;
   } catch {
     // Fallback for insecure contexts / older browsers.
+    const focused = document.activeElement;
+    const ta = document.createElement('textarea');
     try {
-      const ta = document.createElement('textarea');
       ta.value = text;
       ta.style.position = 'fixed';
       ta.style.opacity = '0';
       document.body.appendChild(ta);
       ta.select();
-      const ok = document.execCommand('copy');
-      document.body.removeChild(ta);
-      return ok;
+      return document.execCommand('copy');
     } catch {
       return false;
+    } finally {
+      ta.remove();
+      if (focused instanceof HTMLElement && focused.isConnected) focused.focus({ preventScroll: true });
     }
   }
 }

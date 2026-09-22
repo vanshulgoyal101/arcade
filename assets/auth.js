@@ -184,7 +184,7 @@ async function loadProfile(user) {
     return { display_name: data.display_name || googleName(user), avatar: data.avatar || googleAvatar(user) || 'a:panda', theme: data.theme || null };
   } else {
     // First sign-in: seed a profile from the Google identity.
-    const seeded = { display_name: googleName(user), avatar: googleAvatar(user) || pickRandomAvatar(), theme: null };
+    const seeded = { display_name: googleName(user), avatar: googleAvatar(user) || pickRandomAvatar(), theme: data?.theme || null };
     const { error: seedError } = await supabase.from('arcade_profiles').upsert(
       { user_id: user.id, display_name: seeded.display_name, avatar: seeded.avatar },
       { onConflict: 'user_id' }
@@ -225,9 +225,11 @@ async function saveProfile(name, avatar) {
   profile = next;
   cacheProfile(user.id);
   // Re-stamp the player's score rows so the leaderboard shows the new identity.
-  await supabase.from('arcade_scores')
-    .update({ display_name: profile.display_name, avatar_url: profile.avatar })
-    .eq('user_id', user.id);
+  try {
+    await supabase.from('arcade_scores')
+      .update({ display_name: profile.display_name, avatar_url: profile.avatar })
+      .eq('user_id', user.id);
+  } catch { /* the profile is saved; retry the identity refresh on the next upload */ }
   // A restamp failure does not undo the saved profile; the next score upload
   // writes the same identity to every game row again.
 }
@@ -461,10 +463,21 @@ async function onUser(user) {
 }
 
 async function signIn() {
-  await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: location.origin + location.pathname },
-  });
+  const button = document.getElementById('signin');
+  const version = authVersion;
+  if (button?.disabled) return;
+  if (button) button.disabled = true;
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: location.origin + location.pathname },
+    });
+    if (error) throw error;
+  } catch {
+    if (version === authVersion && button?.isConnected) button.textContent = 'Sign-in failed. Try again';
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 async function signOut() {
@@ -474,7 +487,21 @@ async function signOut() {
   // headline `best` is practiceBest and so isn't uploaded for daily-only players).
   // OWNER_KEY is kept so that if a *different* account signs in next, onUser()
   // still detects the switch and clears/replaces the scores then.
-  await supabase.auth.signOut();
+  const button = document.getElementById('pfSignout');
+  const version = authVersion;
+  if (button?.disabled) return;
+  if (button) button.disabled = true;
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch {
+    if (version === authVersion) {
+      const error = document.getElementById('pfError');
+      if (error) error.textContent = 'Could not sign out. Please try again.';
+    }
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 // ---- leaderboard ----
@@ -554,13 +581,16 @@ function closeLeaderboard() {
 
 // Persist the colour theme to the signed-in account when it's toggled.
 document.getElementById('themeBtn')?.addEventListener('click', () => {
-  if (!currentUser) return;
+  const user = currentUser;
+  const version = authVersion;
+  if (!user) return;
   // Read the value the inline toggle just wrote, then mirror it to the cloud.
   setTimeout(() => {
+    if (version !== authVersion || currentUser?.id !== user.id) return;
     const theme = localStorage.getItem('arcade.theme') === 'classic' ? 'classic' : 'refined';
     if (profile) profile.theme = theme;
     supabase.from('arcade_profiles')
-      .upsert({ user_id: currentUser.id, theme, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      .upsert({ user_id: user.id, theme, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       .then(() => {}, () => {});
   }, 0);
 });

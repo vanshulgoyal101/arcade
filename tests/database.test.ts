@@ -2,7 +2,7 @@
 import type { PGlite } from '@electric-sql/pglite';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { createTestDatabase } from '../scripts/db-test.mjs';
-import { securityMigration } from '../scripts/db-migrate.mjs';
+import { securityMigration, tablePermissions } from '../scripts/db-migrate.mjs';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 let database: PGlite;
@@ -20,6 +20,12 @@ beforeAll(async () => {
   expect(await securityMigration(database)).toBe(migration);
   await database.exec(migration);
   await database.exec(migration);
+  const privileges = readFileSync('supabase/migrations/20260923_privileges.sql', 'utf8');
+  const canonicalPermissions = await tablePermissions(database);
+  await database.exec('grant all on arcade_scores, arcade_profiles, arcade_events to anon, authenticated');
+  await database.exec(privileges);
+  await database.exec(privileges);
+  expect(await tablePermissions(database)).toEqual(canonicalPermissions);
   await database.exec(`insert into auth.users values ('${firstUser}'), ('${secondUser}')`);
 }, 30000);
 
@@ -28,6 +34,25 @@ afterEach(async () => { await database.exec('rollback'); });
 afterAll(async () => { await database.close(); });
 
 describe('database security contracts', () => {
+  it('still allows owner profile writes and aggregate analytics without raw-event grants', async () => {
+    await database.exec("insert into arcade_events (kind, game) values ('visit','hub')");
+    await authenticate('a0c64b9b-7d84-45d4-8ef7-522a6b294b42');
+    const stats = await database.query<{ stats: { total_visits: number } }>('select arcade_stats(7) stats');
+    expect(stats.rows[0].stats.total_visits).toBe(1);
+    await database.exec('reset role');
+    await authenticate();
+    await database.query("insert into arcade_profiles (user_id, display_name) values ($1, 'Before')", [firstUser]);
+    await database.exec("update arcade_profiles set display_name = 'After'");
+    expect((await database.query('select display_name from arcade_profiles')).rows).toEqual([{ display_name: 'After' }]);
+  });
+  it.each(['anon', 'authenticated'])('denies destructive table privileges to %s', async role => {
+    const permissions = await database.query<{ unsafe: boolean }>(`
+      select has_table_privilege($1, 'public.' || table_name, 'TRUNCATE,TRIGGER,REFERENCES,DELETE') unsafe
+      from unnest(array['arcade_scores','arcade_profiles','arcade_events']) table_name
+    `, [role]);
+    expect(permissions.rows).toEqual([{ unsafe: false }, { unsafe: false }, { unsafe: false }]);
+  });
+
   it('accepts every shipped game, including the two hidden games', async () => {
     const games = readdirSync('.').filter(name => existsSync(`${name}/src/main.ts`));
     for (const game of games) {
@@ -71,8 +96,17 @@ describe('database security contracts', () => {
   it('does not expose analytics rows or aggregates to non-owners', async () => {
     await database.exec("insert into arcade_events (kind, game) values ('visit', 'hub')");
     await authenticate();
-    expect((await database.query('select * from arcade_events')).rows).toEqual([]);
     await expect(database.query('select arcade_stats(7)')).rejects.toThrow(/not authorized/i);
+  });
+
+  it.each(['anon', 'authenticated'])('denies raw analytics reads to %s', async role => {
+    await database.exec(`set role ${role}`);
+    await expect(database.query('select * from arcade_events')).rejects.toThrow(/permission denied/i);
+  });
+
+  it.each(['anon', 'authenticated'])('denies direct table truncation to %s', async role => {
+    await database.exec(`set role ${role}`);
+    await expect(database.exec('truncate arcade_events')).rejects.toThrow(/permission denied/i);
   });
 
   it('rejects unknown game slugs through direct writes', async () => {

@@ -7,7 +7,17 @@ import { createTestDatabase } from './db-test.mjs';
 
 const project = 'tmngedsmgcgbkbkmsnsw';
 const migrationFile = new URL('../supabase/migrations/20260916_security.sql', import.meta.url);
+const privilegeFile = new URL('../supabase/migrations/20260923_privileges.sql', import.meta.url);
 const signatures = ['arcade_valid_game(text)', 'arcade_scores_guard()', 'arcade_leaderboard(text[],integer)', 'arcade_events_guard()'];
+
+export async function tablePermissions(database) {
+  return (await database.query(`select role_name, table_name, permission,
+    has_table_privilege(role_name, 'public.' || table_name, permission) allowed
+    from unnest(array['anon','authenticated']) role_name
+    cross join unnest(array['arcade_scores','arcade_profiles','arcade_events']) table_name
+    cross join unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) permission
+    order by role_name, table_name, permission`)).rows;
+}
 
 export async function securityMigration(database) {
   const definitions = [];
@@ -45,8 +55,16 @@ async function main() {
   let sql;
   try {
     sql = await securityMigration(database);
+    const canonicalPermissions = await tablePermissions(database);
     await database.exec(sql);
     await database.exec(sql);
+    const privileges = readFileSync(privilegeFile, 'utf8');
+    await database.exec('grant all on arcade_scores, arcade_profiles, arcade_events to anon, authenticated');
+    await database.exec(privileges);
+    await database.exec(privileges);
+    if (JSON.stringify(await tablePermissions(database)) !== JSON.stringify(canonicalPermissions)) {
+      throw new Error('Migrated table grants differ from the canonical schema');
+    }
   } finally {
     await database.close();
   }
@@ -56,6 +74,7 @@ async function main() {
   } else if (readFileSync(migrationFile, 'utf8') !== sql) {
     throw new Error('Migration differs from the tested canonical schema; regenerate and review it');
   }
+  sql += '\n' + readFileSync(privilegeFile, 'utf8');
   const digest = createHash('sha256').update(sql).digest('hex');
   console.log(`Migration validated (including repeat application): ${digest}`);
   if (mode !== '--apply') return;
@@ -81,6 +100,8 @@ async function main() {
     'functions', (select jsonb_agg(pg_get_functiondef(oid)) from pg_proc where pronamespace = 'public'::regnamespace and proname like 'arcade_%' or pronamespace = 'public'::regnamespace and proname in ('submit_score','restore_my_scores')),
     'policies', (select jsonb_agg(to_jsonb(policies)) from pg_policies policies where schemaname = 'public' and tablename like 'arcade_%'),
     'grants', (select jsonb_agg(to_jsonb(grants)) from information_schema.role_routine_grants grants where routine_schema = 'public' and (routine_name like 'arcade_%' or routine_name in ('submit_score','restore_my_scores'))),
+    'table_grants', (select jsonb_agg(to_jsonb(grants)) from information_schema.table_privileges grants where table_schema = 'public' and table_name in ('arcade_scores','arcade_profiles','arcade_events')),
+    'column_grants', (select jsonb_agg(to_jsonb(grants)) from information_schema.column_privileges grants where table_schema = 'public' and table_name in ('arcade_scores','arcade_profiles','arcade_events')),
     'event_identity', (select identity_generation from information_schema.columns where table_schema='public' and table_name='arcade_events' and column_name='id')
   ) schema_backup`);
   const directory = mkdtempSync(join(tmpdir(), 'arcade-schema-backup-'));
@@ -95,10 +116,13 @@ async function main() {
     has_function_privilege('anon','public.restore_my_scores()','execute') anonymous_restore,
     has_function_privilege('anon','public.submit_score(text,integer,jsonb)','execute') anonymous_submit,
     has_function_privilege('anon','public.arcade_stats(integer)','execute') anonymous_stats,
-    public.arcade_valid_game('invented-game') accepts_unknown_game`);
+    public.arcade_valid_game('invented-game') accepts_unknown_game,
+    (select bool_or(has_table_privilege(role_name, 'public.' || table_name, 'TRUNCATE,TRIGGER,REFERENCES,DELETE'))
+      from unnest(array['anon','authenticated']) role_name
+      cross join unnest(array['arcade_scores','arcade_profiles','arcade_events']) table_name) unsafe_table_grants`);
   console.log(JSON.stringify({ project, before, after }));
   const checks = after[0];
-  if (checks.anonymous_restore || checks.anonymous_submit || checks.anonymous_stats || checks.accepts_unknown_game) {
+  if (checks.anonymous_restore || checks.anonymous_submit || checks.anonymous_stats || checks.accepts_unknown_game || checks.unsafe_table_grants) {
     throw new Error('Post-migration privilege checks failed');
   }
 }

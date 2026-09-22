@@ -1,6 +1,6 @@
 # Tiny Arcade: Architecture and Operations
 
-This guide describes the repository as of September 19, 2026. There are twelve
+This guide describes the repository as of September 23, 2026. There are twelve
 playable applications and ten featured hub games. Word of the Day and Interval
 remain available at their own URLs, but are excluded from the featured grid,
 public hub leaderboard, and sitemap. Hidden does not mean private or disabled.

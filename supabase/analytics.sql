@@ -45,6 +45,9 @@ alter table public.arcade_events add constraint arcade_events_bounds
 
 alter table public.arcade_events enable row level security;
 
+revoke all on public.arcade_events from public, anon, authenticated;
+grant insert on public.arcade_events to anon, authenticated;
+
 -- Anyone may log an event (anonymous). Only 'visit'/'play' kinds are accepted.
 drop policy if exists arcade_events_insert on public.arcade_events;
 create policy arcade_events_insert

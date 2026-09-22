@@ -5,7 +5,7 @@
 export { copyToClipboard } from './clipboard';
 import { copyToClipboard } from './clipboard';
 
-export type ShareOutcome = 'shared' | 'copied-image' | 'copied-text' | 'failed';
+export type ShareOutcome = 'shared' | 'cancelled' | 'copied-image' | 'copied-text' | 'failed';
 
 export interface ShareResultOptions {
   /** Title for the share sheet, and the name used in the default caption. */
@@ -51,12 +51,14 @@ export async function shareResult(opts: ShareResultOptions): Promise<ShareOutcom
   const file = blob ? new File([blob], filename, { type: blob.type || 'image/png' }) : null;
 
   // 1. Mobile: native share sheet with the image attached.
-  if (file && isMobileLike() && canNativeShare && canShare && nav.canShare({ files: [file] })) {
+  if (file && isMobileLike() && canNativeShare && canShare) {
     try {
-      await nav.share({ title, text: caption, files: [file] });
-      return 'shared';
+      if (nav.canShare({ files: [file] })) {
+        await nav.share({ title, text: caption, files: [file] });
+        return 'shared';
+      }
     } catch (err) {
-      if (isAbort(err)) return 'shared'; // user opened the sheet then dismissed
+      if (isAbort(err)) return 'cancelled';
     }
   }
   if (canNativeShare) {
@@ -65,7 +67,7 @@ export async function shareResult(opts: ShareResultOptions): Promise<ShareOutcom
       await nav.share({ title, text: message, url });
       return 'shared';
     } catch (err) {
-      if (isAbort(err)) return 'shared';
+      if (isAbort(err)) return 'cancelled';
     }
   }
 
@@ -91,6 +93,8 @@ export function shareToast(outcome: ShareOutcome): string {
   switch (outcome) {
     case 'shared':
       return 'Shared!';
+    case 'cancelled':
+      return 'Sharing cancelled';
     case 'copied-image':
       return 'Image copied to clipboard!';
     case 'copied-text':
