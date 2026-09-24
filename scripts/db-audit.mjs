@@ -11,17 +11,15 @@
 //
 // Changes nothing. Run: node scripts/db-audit.mjs
 import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 
 const PROJECT = 'tmngedsmgcgbkbkmsnsw';
-const token = (readFileSync(new URL('../.env', import.meta.url), 'utf8').match(/^SUPABASE_TOKEN=(.+)$/m) || [])[1]
-  ?.trim()
-  .replace(/^['"]|['"]$/g, '');
-if (!token) {
-  console.error('✗ SUPABASE_TOKEN not found in arcade/.env');
-  process.exit(1);
-}
 
 async function q(sql) {
+  const token = (readFileSync(new URL('../.env', import.meta.url), 'utf8').match(/^SUPABASE_TOKEN=(.+)$/m) || [])[1]
+    ?.trim()
+    .replace(/^['"]|['"]$/g, '');
+  if (!token) throw new Error('SUPABASE_TOKEN not found in arcade/.env');
   const r = await fetch(`https://api.supabase.com/v1/projects/${PROJECT}/database/query`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -35,9 +33,9 @@ async function q(sql) {
 // Mirrors the HEADLINE map in shared/cloud.ts. jsonb_typeof guards keep a
 // malformed blob from aborting the whole audit with a cast error.
 const num = (field) => `case when jsonb_typeof(data->'${field}')='number' then (data->>'${field}')::numeric end`;
-const mapMax = `(select max(value::numeric) from jsonb_each_text(case when jsonb_typeof(data->'best')='object' then data->'best' else '{}'::jsonb end) where value ~ '^-?[0-9.]+$')`;
+const mapMax = `(select max(case when jsonb_typeof(value)='number' then (value #>> '{}')::numeric end) from jsonb_each(case when jsonb_typeof(data->'best')='object' then data->'best' else '{}'::jsonb end))`;
 
-const HEADLINE = `case game
+export const HEADLINE = `case game
   when '2048'       then ${num('best')}
   when 'hue-hunt'   then ${num('bestScore')}
   when 'chromatic'  then ${num('endlessBest')}
@@ -52,7 +50,8 @@ const HEADLINE = `case game
   when 'digit-span' then ${mapMax}
 end`;
 
-const rows = await q(`
+async function main() {
+  const rows = await q(`
   with h as (
     select user_id, game, best, ${HEADLINE} as headline
     from public.arcade_scores
@@ -66,21 +65,21 @@ const rows = await q(`
          coalesce(max(headline - best) filter (where headline > best), 0) as worst_gap
   from h group by game order by game`);
 
-let underReported = 0;
-let unreadable = 0;
-console.log('game          rows  unreadable  blob_ahead  best_ahead  worst_gap');
-for (const r of rows) {
-  underReported += Number(r.blob_ahead);
-  unreadable += Number(r.unreadable);
-  const flag = Number(r.blob_ahead) > 0 ? '  <-- under-reported on the board' : '';
-  console.log(
-    `${r.game.padEnd(12)} ${String(r.rows).padStart(5)} ${String(r.unreadable).padStart(11)} ${String(r.blob_ahead).padStart(11)} ${String(r.best_ahead).padStart(11)} ${String(r.worst_gap).padStart(10)}${flag}`
-  );
-}
+  let underReported = 0;
+  let unreadable = 0;
+  console.log('game          rows  unreadable  blob_ahead  best_ahead  worst_gap');
+  for (const row of rows) {
+    underReported += Number(row.blob_ahead);
+    unreadable += Number(row.unreadable);
+    const flag = Number(row.blob_ahead) > 0 ? '  <-- under-reported on the board' : '';
+    console.log(
+      `${row.game.padEnd(12)} ${String(row.rows).padStart(5)} ${String(row.unreadable).padStart(11)} ${String(row.blob_ahead).padStart(11)} ${String(row.best_ahead).padStart(11)} ${String(row.worst_gap).padStart(10)}${flag}`
+    );
+  }
 
-if (underReported) {
-  console.log(`\n${underReported} row(s) where a real score never reached the board. Details:`);
-  const detail = await q(`
+  if (underReported) {
+    console.log(`\n${underReported} row(s) where the saved headline exceeds the board. Details:`);
+    const detail = await q(`
     with h as (
       select user_id, game, best, display_name, ${HEADLINE} as headline
       from public.arcade_scores
@@ -88,9 +87,12 @@ if (underReported) {
     )
     select game, coalesce(display_name,'(no name)') as who, best, headline
     from h where headline > best order by (headline - best) desc limit 20`);
-  for (const d of detail) console.log(`  ${d.game.padEnd(12)} ${d.who.padEnd(22)} board ${d.best} vs local ${d.headline}`);
-} else {
-  console.log('\n✓ No under-reported scores among readable saved stores.');
+    for (const row of detail) console.log(`  ${row.game.padEnd(12)} ${row.who.padEnd(22)} board ${row.best} vs local ${row.headline}`);
+  } else {
+    console.log('\n✓ No under-reported scores among readable saved stores.');
+  }
+  if (unreadable) console.error(`\n${unreadable} saved store(s) could not be audited.`);
+  if (underReported || unreadable) process.exitCode = 1;
 }
-if (unreadable) console.error(`\n${unreadable} saved store(s) could not be audited.`);
-if (underReported || unreadable) process.exitCode = 1;
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main();

@@ -3,6 +3,7 @@ import type { PGlite } from '@electric-sql/pglite';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { createTestDatabase } from '../scripts/db-test.mjs';
 import { securityMigration, tablePermissions } from '../scripts/db-migrate.mjs';
+import { HEADLINE } from '../scripts/db-audit.mjs';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 let database: PGlite;
@@ -34,6 +35,22 @@ afterEach(async () => { await database.exec('rollback'); });
 afterAll(async () => { await database.close(); });
 
 describe('database security contracts', () => {
+  it.each([
+    ['echo', { best: { valid: 7, invalid: '1..2' } }, 7],
+    ['sprint', { best: { 15: '.', 30: '5', 60: 12 } }, 12],
+    ['sprint', { best: { 15: '999', 30: 5 } }, 5],
+    ['digit-span', { best: { forward: 1e-7, reverse: true } }, 1e-7],
+    ['echo', { best: { invalid: '1..2' } }, null],
+    ['echo', { best: [] }, null],
+  ])('audits %s maps using JSON number types (%#)', async (game, data, expected) => {
+    const result = await database.query<{ headline: string | null }>(
+      `select ${HEADLINE} as headline from (select $1::text as game, $2::jsonb as data) saved`,
+      [game, JSON.stringify(data)]
+    );
+    const headline = result.rows[0].headline;
+    expect(headline === null ? null : Number(headline)).toBe(expected);
+  });
+
   it('still allows owner profile writes and aggregate analytics without raw-event grants', async () => {
     await database.exec("insert into arcade_events (kind, game) values ('visit','hub')");
     await authenticate('a0c64b9b-7d84-45d4-8ef7-522a6b294b42');
