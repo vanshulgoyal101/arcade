@@ -130,6 +130,16 @@ only wires Random to select uniformly among those links; it does not filter,
 rearrange, or persist catalog state. Update ItemList and the fixed-order tests
 when intentionally changing the featured catalog.
 
+### Error Recovery
+
+The error page has a branded recovery action and visual links to the first four
+featured games. Its root base URL keeps assets and links correct when served as
+a 404 response at nested missing paths. For direct file previews only, assets
+resolve beside the local HTML and navigation points to the live site; games still
+require HTTP/HTTPS to run. Browser regressions cover local-file and nested-URL
+rendering at 320, 390, and 1280 pixels, both themes, reduced motion, keyboard focus,
+and return-to-hub navigation. The page remains noindex and makes no analytics calls.
+
 ### Worker Registration
 
 [assets/register-sw.js](assets/register-sw.js) is loaded once by the hub and each

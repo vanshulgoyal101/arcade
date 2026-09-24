@@ -2,6 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <base href="/" />
+  <script>
+    if (location.protocol === 'file:') {
+      document.querySelector('base').href = new URL('./', location.href).href;
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('a[href]').forEach(link => {
+          link.href = new URL(link.getAttribute('href'), 'https://games.vanshul.com/').href;
+        });
+      });
+    }
+  </script>
   <script>try{if(localStorage.getItem('arcade.theme')==='classic')document.documentElement.setAttribute('data-theme','classic')}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0c0d12" />
@@ -9,32 +20,67 @@
   <meta name="robots" content="noindex, follow" />
   <title>Page not found — Tiny Arcade</title>
   <link rel="canonical" href="https://games.vanshul.com/" />
-  <link rel="stylesheet" href="/assets/style.css?v=13" />
+  <link rel="stylesheet" href="assets/style.css?v=13" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23f4f4f5' stroke-width='7' stroke-linecap='round'%3E%3Crect x='18' y='22' width='64' height='56' rx='12'/%3E%3Cpath d='M32 42v18M23 51h18M61 46h.1M70 57h.1' stroke-width='9'/%3E%3C/svg%3E" />
   <style>
-    .nf { max-width: 640px; margin: 0 auto; padding: 18vh 20px 40px; text-align: center; }
-    .nf .code { font-size: clamp(3.4rem, 16vw, 6rem); font-weight: 900; letter-spacing: -.04em; line-height: 1; }
-    .nf h1 { font-size: 1.3rem; margin: 14px 0 6px; }
-    .nf p { color: var(--muted); margin: 0 auto 26px; max-width: 42ch; }
-    .nf .cta { display: inline-block; font-weight: 700; color: #10131c; background: var(--accent, #fb7185);
-      border-radius: 999px; padding: 12px 26px; text-decoration: none; }
-    .nf .links { margin-top: 22px; color: var(--muted); font-size: .85rem; }
-    .nf .links a { color: var(--muted); }
+    .error-page { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; letter-spacing: 0; }
+    .nf-header, .nf, .nf-footer { width: min(100% - 40px, 960px); margin-inline: auto; }
+    .nf-header { padding-block: max(24px, env(safe-area-inset-top)) 20px; border-bottom: 1px solid var(--line); }
+    .nf-brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 1rem; font-weight: 800; }
+    .nf-brand img { width: 32px; height: 32px; }
+    .nf { flex: 1; }
+    .nf-message { padding: 40px 0 44px; text-align: center; }
+    .nf-code { margin: 0; font: 900 112px/1 Consolas, "Liberation Mono", monospace; color: var(--accent); }
+    .nf-code span { color: var(--muted); }
+    .nf h1 { margin: 18px 0 12px; font-size: 2rem; line-height: 1.2; font-weight: 800; text-wrap: balance; }
+    .nf-description { margin: 0 auto; max-width: 38ch; color: var(--muted); font-size: 1rem; line-height: 1.6; text-wrap: pretty; }
+    .nf-cta { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 24px; padding: 12px 24px; border-radius: 8px; background: var(--accent); color: var(--bg); font-weight: 750; }
+    .nf-games { border-top: 1px solid var(--line); padding-top: 24px; padding-bottom: 32px; }
+    .nf-games h2 { margin: 0 0 18px; font-size: 1rem; font-weight: 650; }
+    .nf-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .nf-game { display: block; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-soft); }
+    .nf-game img { display: block; width: 100%; height: auto; aspect-ratio: 400 / 260; background: var(--bg); }
+    .nf-game span { display: block; padding: 13px 14px; border-top: 1px solid var(--line); font-size: .95rem; font-weight: 700; }
+    .nf-game:focus-visible, .nf-cta:focus-visible, .nf-brand:focus-visible, .nf-footer a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+    .nf-footer { display: flex; justify-content: space-between; gap: 16px; padding-block: 20px max(24px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); color: var(--muted); font-size: .8rem; }
+    @media (hover: hover) {
+      .nf-game:hover { border-color: var(--accent); }
+      .nf-cta:hover { filter: brightness(1.1); }
+      .nf-footer a:hover { color: var(--text); }
+    }
+    @media (max-width: 600px) {
+      .nf-message { padding-block: 28px 32px; }
+      .nf-code { font-size: 88px; }
+      .nf h1 { font-size: 1.65rem; }
+      .nf-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .nf-message { animation: nf-arrive .35s ease-out both; }
+      @keyframes nf-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    }
   </style>
 </head>
-<body class="hub">
+<body class="error-page">
+  <header class="nf-header">
+    <a class="nf-brand" href="/"><img src="assets/icons/icon-192.png" width="32" height="32" alt="" />Tiny Arcade</a>
+  </header>
   <main class="nf">
-    <div class="code">404</div>
-    <h1>This round doesn’t exist</h1>
-    <p>The page you’re after isn’t here — but there are ten tiny games one tap away.</p>
-    <a class="cta" href="/">← Back to Tiny Arcade</a>
-    <p class="links">
-      <a href="/wordle/">Wordle</a> ·
-      <a href="/where/">Where</a> ·
-      <a href="/2048/">2048</a> ·
-      <a href="/echo/">Echo</a> ·
-      <a href="/flashmath/">Flashmath</a>
-    </p>
+    <section class="nf-message" aria-labelledby="error-title">
+      <p class="nf-code" aria-label="Error 404">4<span>0</span>4</p>
+      <h1 id="error-title">This round doesn’t exist.</h1>
+      <p class="nf-description">That link may be broken or the page may have moved. There’s still a good game waiting.</p>
+      <a class="nf-cta" href="/">Back to games</a>
+    </section>
+    <nav class="nf-games" aria-labelledby="games-title">
+      <h2 id="games-title">Or jump straight in</h2>
+      <div class="nf-grid">
+        <a class="nf-game" href="/hue-hunt/"><img src="assets/art/hue-hunt.svg" width="400" height="260" alt="" /><span>Hue Hunt</span></a>
+        <a class="nf-game" href="/wordle/"><img src="assets/art/wordle.svg" width="400" height="260" alt="" /><span>Wordle</span></a>
+        <a class="nf-game" href="/where/"><img src="assets/art/where.svg" width="400" height="260" alt="" /><span>Where</span></a>
+        <a class="nf-game" href="/2048/"><img src="assets/art/2048.svg" width="400" height="260" alt="" /><span>2048</span></a>
+      </div>
+    </nav>
   </main>
+  <footer class="nf-footer"><span>A little break. One more game.</span><a href="/privacy/">Privacy</a></footer>
 </body>
 </html>

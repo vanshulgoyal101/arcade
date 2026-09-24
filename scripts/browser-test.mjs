@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { readdirSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, extname, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import { GAME_ORDER, gameName } from '../assets/games.js';
@@ -21,13 +21,56 @@ const server = createServer(async (request, response) => {
     if ((await stat(file)).isDirectory()) file = resolve(file, 'index.html');
     response.writeHead(200, { 'Content-Type': types[extname(file)] || 'application/octet-stream' });
     response.end(await readFile(file));
-  } catch { response.writeHead(404).end('Not found'); }
+  } catch {
+    response.writeHead(404, { 'Content-Type': 'text/html' });
+    response.end(await readFile(resolve(root, '404.html')));
+  }
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}`;
 let browser;
 try {
   browser = await chromium.launch();
+  for (const width of [1280, 390, 320]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block', reducedMotion: 'reduce' });
+    await context.route('https://**', route => route.abort());
+    const classic = width === 390;
+    await context.addInitScript(classic => {
+      try { localStorage.setItem('arcade.theme', classic ? 'classic' : 'refined'); } catch {}
+    }, classic);
+    for (const localFile of [false, true]) {
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', error => errors.push(error.message));
+      const url = localFile ? pathToFileURL(resolve(root, '404.html')).href : `${base}/missing/nested/page`;
+      const response = await page.goto(url, { waitUntil: 'load' });
+      if (!localFile) assert.equal(response.status(), 404);
+      await page.locator('img').evaluateAll(images => Promise.all(images.map(image => image.decode())));
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `404: overflow at ${width}`);
+      assert.equal(await page.locator('body').evaluate(element => getComputedStyle(element).color), classic ? 'rgb(238, 241, 247)' : 'rgb(242, 244, 249)', '404: stylesheet loaded');
+      assert.equal(await page.locator('.nf-message').evaluate(element => getComputedStyle(element).animationName), 'none', '404: reduced motion');
+      assert.deepEqual(await page.locator('.nf-game span').allTextContents(), GAME_ORDER.slice(0, 4).map(gameName));
+      assert.equal(await page.locator('.nf-cta').evaluate(element => element.href), localFile ? 'https://games.vanshul.com/' : `${base}/`);
+      const heading = await page.locator('h1').boundingBox();
+      const description = await page.locator('.nf-description').boundingBox();
+      const button = await page.locator('.nf-cta').boundingBox();
+      const gamesHeading = await page.locator('#games-title').boundingBox();
+      assert(heading.y + heading.height <= description.y && description.y + description.height <= button.y && button.y + button.height <= gamesHeading.y, '404: content must not overlap');
+      await page.keyboard.press('Tab');
+      await page.keyboard.press('Tab');
+      assert.equal(await page.locator('.nf-cta').evaluate(element => element === document.activeElement && getComputedStyle(element).outlineStyle === 'solid'), true, '404: keyboard recovery action');
+      if (artifacts) await page.screenshot({ path: resolve(artifacts, `404-${width}-${localFile ? 'file' : 'http'}.png`), fullPage: true });
+      assert.deepEqual(errors, [], '404: runtime errors');
+      if (!localFile) {
+        await page.locator('.nf-cta').click();
+        await page.waitForURL(`${base}/`);
+        assert.equal(await page.locator('.grid a.card').count(), 10);
+      }
+      console.log(`PASS 404 ${width}px ${localFile ? 'file' : 'HTTP'}: art, theme, focus, layout, recovery links`);
+      await page.close();
+    }
+    await context.close();
+  }
   for (const width of [1280, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
     await context.route('https://esm.sh/**', route => route.fulfill({ contentType: 'text/javascript', body: 'export function createClient(){throw new Error("Cloud intentionally unavailable in offline browser test")}' }));

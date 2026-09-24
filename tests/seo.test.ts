@@ -12,6 +12,21 @@ const schemas = (document: Document) => [...document.querySelectorAll('script[ty
   });
 
 describe('search and accessibility contracts', () => {
+  it('keeps error-page recovery links in featured order with working local artwork', () => {
+    const error = parse('404.html');
+    const hub = parse('index.html');
+    expect(error.querySelector('base')?.getAttribute('href')).toBe('/');
+    expect(error.querySelectorAll('h1')).toHaveLength(1);
+    expect(error.querySelector('.nf-cta')?.getAttribute('href')).toBe('/');
+    expect([...error.querySelectorAll('.nf-game')].map(link => link.getAttribute('href'))).toEqual(
+      [...hub.querySelectorAll('.grid a.card')].slice(0, 4).map(link => '/' + link.getAttribute('href'))
+    );
+    for (const image of error.querySelectorAll('img')) {
+      expect(existsSync(image.getAttribute('src')!)).toBe(true);
+      expect(image.hasAttribute('width') && image.hasAttribute('height')).toBe(true);
+    }
+  });
+
   it.each(games)('%s publishes the metadata and structured data from its source', game => {
     const source = parse(`${game}/template.html`);
     const published = parse(`${game}/index.html`);
