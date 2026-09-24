@@ -26,6 +26,19 @@ describe('digit-span/dom', () => {
     expect(app.querySelector('#keypad')!.classList.contains('locked')).toBe(false);
   });
 
+  it('keeps typing and deletion working with Mute focused', async () => {
+    const app = await load();
+    click(app.querySelector('#startBtn')!);
+    await vi.advanceTimersByTimeAsync(1200);
+    const mute = app.querySelector<HTMLButtonElement>('#mute')!;
+    mute.focus();
+    mute.click();
+    mute.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true }));
+    expect(text(app.querySelector('#stage .entry'))).toBe('1');
+    mute.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+    expect(text(app.querySelector('#stage .entry'))).toBe('');
+  });
+
   it('a correct recall continues the game', async () => {
     const app = await load();
     click(app.querySelector('#startBtn')!);

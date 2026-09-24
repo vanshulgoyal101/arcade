@@ -92,6 +92,14 @@ focused keypad button a second time, ignore browser shortcuts and repeated digit
 keypresses, and preserve normal activation of other controls. Digit Span keeps
 its keypad visible but disabled during playback and feedback, and rejects a
 second Start while a run is active so sequence playback cannot overlap.
+Echo also rejects duplicate Start actions and keeps its settings locked until the
+missed-pad reveal finishes, so the results cannot inherit a different mode or pad
+count. Wordle's on-screen keys support native keyboard/assistive activation without
+doubling pointer input. Its toolbar controls no longer submit guesses when activated
+with Enter; held letters, secondary pointer presses, and input behind an open
+overlay are ignored.
+Physical letters and digits still reach these games after using a toolbar button;
+only Enter/Space are reserved for that button's normal activation.
 Hub theme writes are tied to the account that initiated them; partial profiles
 retain their theme, authentication errors remain retryable, and a failed score
 identity refresh does not misreport a saved profile as failed. The private stats

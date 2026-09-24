@@ -221,7 +221,8 @@ keypad.querySelectorAll<HTMLButtonElement>('.key').forEach((btn) => {
 document.addEventListener('keydown', (e) => {
   if (!running || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
   const target = e.target;
-  if (target instanceof HTMLElement && target.closest('button, a, input, textarea, select, [contenteditable]') && !keypad.contains(target)) return;
+  if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable]')) return;
+  if (target instanceof HTMLElement && target.closest('button, a') && !keypad.contains(target) && (e.key === 'Enter' || e.key === ' ')) return;
   if (!/^[0-9]$/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Enter') return;
   e.preventDefault();
   if (e.repeat && e.key !== 'Backspace') return;

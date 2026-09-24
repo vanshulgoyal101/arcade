@@ -56,6 +56,17 @@ describe('flashmath/dom', () => {
     expect(text(app.querySelector('#level'))).toBe('1');
   });
 
+  it('keeps typing and deletion working with Mute focused', async () => {
+    const app = await load();
+    const mute = app.querySelector<HTMLButtonElement>('#mute')!;
+    mute.focus();
+    mute.click();
+    mute.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true }));
+    expect(text(app.querySelector('#answer'))).toBe('1');
+    mute.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
+    expect(text(app.querySelector('#answer'))).toBe('');
+  });
+
   it('formats large scores without changing the saved best', async () => {
     let frame: FrameRequestCallback = () => {};
     const app = await mountGame(() => {

@@ -85,8 +85,12 @@ function makeKey(key: string, label: string, extra = ''): HTMLButtonElement {
   btn.textContent = label;
   btn.dataset.key = key;
   btn.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.isPrimary === false) return;
     e.preventDefault();
     handleKey(key);
+  });
+  btn.addEventListener('click', (e) => {
+    if (e.detail === 0) handleKey(key);
   });
   keyEls[key] = btn;
   return btn;
@@ -175,6 +179,7 @@ function bounceRow(row: number, myRun: number): void {
 
 function handleKey(key: string): void {
   if (locked || game.status !== 'playing') return;
+  if (overlay.classList.contains('show') || statsOverlay.classList.contains('show')) return;
   if (key === 'enter') {
     onSubmit();
   } else if (key === 'backspace') {
@@ -315,7 +320,16 @@ function newGame(): void {
 // ---- wiring ----
 window.addEventListener('keydown', (e) => {
   if (overlay.classList.contains('show') || statsOverlay.classList.contains('show')) return;
-  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+  const target = e.target;
+  if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable]')) return;
+  if (target instanceof HTMLElement && target.closest('button, a') && (e.key === 'Enter' || e.key === ' ')) {
+    if (keyboardEl.contains(target) && e.repeat) e.preventDefault();
+    return;
+  }
+  if (!/^[a-zA-Z]$/.test(e.key) && e.key !== 'Enter' && e.key !== 'Backspace') return;
+  e.preventDefault();
+  if (e.repeat && e.key !== 'Backspace') return;
   if (e.key === 'Enter') handleKey('enter');
   else if (e.key === 'Backspace') handleKey('backspace');
   else if (/^[a-zA-Z]$/.test(e.key)) handleKey(e.key.toLowerCase());

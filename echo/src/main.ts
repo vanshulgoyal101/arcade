@@ -205,7 +205,6 @@ async function onPad(i: number): Promise<void> {
 
 function gameOver(): void {
   acceptingInput = false;
-  playing = false;
   sfx.gameOver();
   const reached = game.sequence.length - 1;
   const newBest = game.recordBest();
@@ -221,6 +220,8 @@ function gameOver(): void {
 }
 
 function showGameOver(reached: number, newBest: boolean): void {
+  playing = false;
+  renderToggles();
   modal.innerHTML = `
     <h2>Game Over</h2>
     <p class="sub">You remembered</p>
@@ -253,8 +254,10 @@ function showGameOver(reached: number, newBest: boolean): void {
 }
 
 function startGame(): void {
+  if (playing) return;
   clearTimeout(revealTimer);
   overlay.classList.remove('show');
+  acceptingInput = false;
   playing = true;
   game.reset();
   buildPads();
