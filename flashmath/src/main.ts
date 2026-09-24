@@ -183,7 +183,12 @@ keypad.querySelectorAll<HTMLButtonElement>('.key').forEach((btn) => {
 });
 
 document.addEventListener('keydown', (e) => {
-  if (!game.playing) return;
+  if (!game.playing || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+  const target = e.target;
+  if (target instanceof HTMLElement && target.closest('button, a, input, textarea, select, [contenteditable]') && !keypad.contains(target)) return;
+  if (!/^[0-9]$/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Enter') return;
+  e.preventDefault();
+  if (e.repeat && e.key !== 'Backspace') return;
   if (e.key >= '0' && e.key <= '9') type(e.key);
   else if (e.key === 'Backspace') backspace();
   else if (e.key === 'Enter') submit();

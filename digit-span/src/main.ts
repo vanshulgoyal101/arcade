@@ -69,6 +69,7 @@ const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 
 let entry: number[] = [];
 let accepting = false;
+let running = false;
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -85,8 +86,9 @@ function renderHud(): void {
   bestEl.textContent = String(game.best);
 }
 function setKeypad(on: boolean): void {
-  keypad.classList.toggle('hidden', !on);
+  keypad.classList.remove('hidden');
   keypad.classList.toggle('locked', !on);
+  keypad.querySelectorAll<HTMLButtonElement>('button').forEach(button => { button.disabled = !on; });
 }
 
 function renderEntry(bad = false): void {
@@ -155,6 +157,7 @@ function flashOk(): void {
 }
 
 function gameOver(): void {
+  running = false;
   accepting = false;
   setKeypad(false);
   const reached = game.sequence.length - 1;
@@ -195,6 +198,8 @@ function gameOver(): void {
 }
 
 function startRun(): void {
+  if (running) return;
+  running = true;
   overlay.classList.remove('show');
   startWrap.classList.add('hidden');
   modeToggle.classList.add('locked');
@@ -214,6 +219,12 @@ keypad.querySelectorAll<HTMLButtonElement>('.key').forEach((btn) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  if (!running || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+  const target = e.target;
+  if (target instanceof HTMLElement && target.closest('button, a, input, textarea, select, [contenteditable]') && !keypad.contains(target)) return;
+  if (!/^[0-9]$/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Enter') return;
+  e.preventDefault();
+  if (e.repeat && e.key !== 'Backspace') return;
   if (e.key >= '0' && e.key <= '9') typeDigit(Number(e.key));
   else if (e.key === 'Backspace') backspace();
   else if (e.key === 'Enter') submit();

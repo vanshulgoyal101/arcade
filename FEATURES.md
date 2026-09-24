@@ -87,6 +87,11 @@ confirmation; Enter or the tick can submit immediately. Incomplete entries wait
 for more input. Fast-answer bonuses use the answer-completion time, and the next
 problem's timing starts when it appears. The round countdown continues normally;
 expiry or replay cancels any pending submission.
+Flashmath and Digit Span consume gameplay keyboard events without triggering a
+focused keypad button a second time, ignore browser shortcuts and repeated digit
+keypresses, and preserve normal activation of other controls. Digit Span keeps
+its keypad visible but disabled during playback and feedback, and rejects a
+second Start while a run is active so sequence playback cannot overlap.
 Hub theme writes are tied to the account that initiated them; partial profiles
 retain their theme, authentication errors remain retryable, and a failed score
 identity refresh does not misreport a saved profile as failed. The private stats

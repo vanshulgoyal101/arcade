@@ -25,6 +25,37 @@ describe('flashmath/dom', () => {
     expect(text(app.querySelector('#score'))).toBe('0');
   });
 
+  it('consumes Enter on a focused keypad key without activating it again', async () => {
+    const app = await load();
+    typeNumber(solve(text(app.querySelector('#problem'))));
+    const digit = app.querySelector<HTMLButtonElement>('[data-k="1"]')!;
+    digit.focus();
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    digit.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    expect(text(app.querySelector('#level'))).toBe('2');
+    expect(text(app.querySelector('#answer'))).toBe('');
+  });
+
+  it('ignores browser shortcuts and held number keys', async () => {
+    const app = await load();
+    for (const options of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }, { repeat: true }]) {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true, ...options }));
+    }
+    expect(text(app.querySelector('#answer'))).toBe('');
+  });
+
+  it('leaves Enter on non-game controls to the browser', async () => {
+    const app = await load();
+    typeNumber(solve(text(app.querySelector('#problem'))));
+    const mute = app.querySelector<HTMLButtonElement>('#mute')!;
+    mute.focus();
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    mute.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(text(app.querySelector('#level'))).toBe('1');
+  });
+
   it('formats large scores without changing the saved best', async () => {
     let frame: FrameRequestCallback = () => {};
     const app = await mountGame(() => {
