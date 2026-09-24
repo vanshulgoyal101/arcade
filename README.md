@@ -17,15 +17,15 @@ No installs or account required. Optional sign-in syncs progress and leaderboard
 | Game | What it trains |
 |------|----------------|
 | 🎨 **Hue Hunt** | Spot the odd colour before the timer runs out — reflex + perception |
+| 🟩 **Wordle** | Unlimited 5-letter word puzzles |
+| 🗺️ **Where** | Geography — flags & capitals of ~200 countries |
+| 🔢 **2048** | Slide and merge tiles to reach 2048 — then keep going |
 | 🔊 **Echo** | Simon-style sequence memory (strict & forgiving modes) |
 | 🌈 **Chromatic** | Match a target colour with RGB sliders |
 | ⚡ **Flash** | RSVP speed-reading trainer with comprehension quizzes |
-| 🧮 **Flashmath** | Mental-arithmetic beat-the-clock |
 | ⌨️ **Sprint** | Typing speed & accuracy (15 / 30 / 60s) |
 | 🔢 **Digit Span** | Working-memory digit recall (forward & reverse) |
-| 🔢 **2048** | Slide and merge tiles to reach 2048 — then keep going |
-| 🗺️ **Where** | Geography — flags & capitals of ~200 countries |
-| 🟩 **Wordle** | Unlimited 5-letter word puzzles |
+| 🧮 **Flashmath** | Mental-arithmetic beat-the-clock |
 
 Word of the Day and Interval remain playable at their own URLs but are not featured on the hub.
 

@@ -8,7 +8,7 @@ const SUPABASE_URL = 'https://tmngedsmgcgbkbkmsnsw.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_qFZySs9l19_7bISrvmLHIw_vwt-DUdx';
 
 // Game names + glyphs live in one place, shared with the stats page.
-import { gameIcon, gameName } from './games.js?v=2';
+import { gameIcon, gameName, GAME_ORDER } from './games.js?v=3';
 
 // Podium medal (rank 1/2/3), coloured gold/silver/bronze via currentColor.
 const MEDAL_COLOR = ['#facc15', '#cbd5e1', '#c2793d'];
@@ -42,7 +42,8 @@ const GAMES = [
 ];
 
 // The games the hub actually shows (cards + leaderboard sections).
-const BOARD_GAMES = GAMES.filter((g) => !g.hidden);
+const BOARD_GAMES = GAMES.filter((g) => !g.hidden)
+  .sort((left, right) => GAME_ORDER.indexOf(left.slug) - GAME_ORDER.indexOf(right.slug));
 
 function num(v) { return typeof v === 'number' && isFinite(v) ? v : 0; }
 function isStore(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }

@@ -8,16 +8,16 @@ guarantee about every browser or future deployment. See
 
 | Game | Experience | Discovery |
 | --- | --- | --- |
-| 2048 | Sliding tiles, progressive spawns with small-tile partner recovery, merge score, best tile, legal continuation after a win | Featured |
 | Hue Hunt | Timed odd-color selection, increasing grids, combo scoring | Featured |
+| Wordle | Unlimited five-letter puzzles, six guesses, streak/statistics view | Featured |
+| Where | Flag/capital geography quiz, easy/hard pools | Featured |
+| 2048 | Sliding tiles, progressive spawns with small-tile partner recovery, merge score, best tile, legal continuation after a win | Featured |
 | Echo | Pad-sequence memory, strict/forgiving modes, four/six pads | Featured |
 | Chromatic | RGB matching, endless rounds, difficulty and accuracy feedback | Featured |
 | Flash | RSVP reading, comprehension questions, adaptive WPM | Featured |
-| Flashmath | Timed arithmetic, growing operand ranges, combo multiplier | Featured |
 | Sprint | 15/30/60-second typing, WPM, accuracy, trouble keys | Featured |
 | Digit Span | Forward/reverse digit recall with growing sequence lengths | Featured |
-| Where | Flag/capital geography quiz, easy/hard pools | Featured |
-| Wordle | Unlimited five-letter puzzles, six guesses, streak/statistics view | Featured |
+| Flashmath | Timed arithmetic, growing operand ranges, combo multiplier | Featured |
 | Word of the Day | Daily vocabulary quiz, learned-word tracking, practice | Direct URL; hidden from hub |
 | Interval | Two-note musical interval recognition and missed-interval practice | Direct URL; hidden from hub |
 
@@ -99,6 +99,27 @@ disabled intentionally, or the entire site had no backend no longer describe
 the current implementation. Git history is the detailed historical record.
 
 ## Discovery and Update Contracts
+
+### Fixed Game Order
+
+The featured order is Hue Hunt, Wordle, Where, 2048, Echo, Chromatic, Flash,
+Sprint, Digit Span, Flashmath. It was chosen from the September 24, 2026 recorded
+page-load counts (253, 169, 117, 31, 68, 59, 57, 41, 40, 39 respectively), with
+2048 explicitly placed immediately after Where. These are historical counts,
+not live counters, completed rounds, or a strictly descending popularity rank.
+
+[assets/games.js](assets/games.js) owns the frozen `GAME_ORDER` list. Leaderboard
+game sections and stats use it; static hub cards and JSON-LD positions are checked
+against it by [tests/registry-parity.test.ts](tests/registry-parity.test.ts).
+Search filters the existing cards without changing their relative order. Player
+rankings within each game's leaderboard remain score-based.
+
+Stats lists the featured games first, then the hidden Word and Interval games.
+It shows zero when a game has no plays in the selected period; changing counts,
+auto-refreshing analytics, or choosing a date range never changes row order.
+Hidden games remain excluded from the hub and its leaderboard. There is no
+popularity RPC, scheduled reorder, polling-based catalog update, or mid-game
+navigation. Future ordering changes require an explicit code change and release.
 
 ### Catalog Search
 

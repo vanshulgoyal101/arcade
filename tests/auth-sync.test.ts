@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
+import { GAME_ORDER } from '../assets/games.js';
 
 const source = readFileSync(process.cwd() + '/assets/auth.js', 'utf8');
 const between = (start: string, end: string): string => {
@@ -486,7 +487,7 @@ describe('complete hub module boot', () => {
     };
     (dom.window as unknown as { sdk: unknown }).sdk = { createClient: () => backend };
     const executable = source
-      .replace(/import \{ gameIcon, gameName \} from '[^']+';/, 'const gameIcon = () => ""; const gameName = (slug) => slug;')
+      .replace(/import \{ gameIcon, gameName, GAME_ORDER \} from '[^']+';/, `const gameIcon = () => ""; const gameName = (slug) => slug; const GAME_ORDER = ${JSON.stringify(GAME_ORDER)};`)
       .replace(/await import\('https:\/\/esm.sh\/[^']+'\)/, 'await Promise.resolve(globalThis.sdk)');
     try {
       await dom.window.eval(`(async () => { ${executable} })()`);

@@ -84,7 +84,7 @@
 
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4?bundle';
-    import { gameIcon, gameName } from '../assets/games.js?v=2';
+    import { gameIcon, gameName, GAME_ORDER } from '../assets/games.js?v=3';
     const SUPABASE_URL = 'https://tmngedsmgcgbkbkmsnsw.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_qFZySs9l19_7bISrvmLHIw_vwt-DUdx';
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -108,7 +108,7 @@
         supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
     }
 
-    /** Ranked horizontal bars: `items` are pre-sorted {slug, value}. */
+    /** Horizontal bars: `items` are in catalog order as {slug, value}. */
     function bars(items, label) {
       const max = Math.max(1, ...items.map((i) => i.value));
       return items.map((i) => {
@@ -158,9 +158,10 @@
         title: `${String(x.hour).padStart(2, '0')}:00`,
         value: (x.visits || 0) + (x.plays || 0),
       }));
-      const perGame = (s.per_game || [])
-        .map((g) => ({ slug: g.game, value: g.plays || 0 }))
-        .sort((a, b) => b.value - a.value);
+      const perGame = GAME_ORDER.map(slug => ({
+        slug,
+        value: (s.per_game || []).find(game => game.game === slug)?.plays || 0,
+      }));
       root.innerHTML =
         `${rangesBar()}<div class="cards">
           <div class="card"><div class="n">${nf.format(s.total_visits)}</div><div class="l">Visits</div></div>

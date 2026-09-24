@@ -6,6 +6,11 @@
 // `color:var(--accent)` lets a glyph take its game's accent wherever the page
 // scopes one (the hub does, per .card[data-game] / .lb-game[data-game]).
 
+export const GAME_ORDER = Object.freeze([
+  'hue-hunt', 'wordle', 'where', '2048', 'echo', 'chromatic',
+  'flash', 'sprint', 'digit-span', 'flashmath', 'word', 'interval',
+]);
+
 export const GAME_ART = {
   'hue-hunt': {
     name: 'Hue Hunt',

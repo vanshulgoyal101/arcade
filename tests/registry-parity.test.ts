@@ -5,6 +5,7 @@
 // player's scores. These tests parse both registries and fail on any drift.
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { GAME_ORDER } from '../assets/games.js';
 
 const root = process.cwd() + '/'; // vitest runs from the arcade project root
 const authSrc = readFileSync(root + 'assets/auth.js', 'utf8');
@@ -52,6 +53,22 @@ const gameDirs = readdirSync(root, { withFileTypes: true })
   .sort();
 
 describe('game registry parity (hub auth.js vs shared/cloud.ts)', () => {
+  it('keeps cards, leaderboard sections and structured data in the agreed fixed order', () => {
+    const featured = ['hue-hunt', 'wordle', 'where', '2048', 'echo', 'chromatic', 'flash', 'sprint', 'digit-span', 'flashmath'];
+    expect(GAME_ORDER).toEqual([...featured, 'word', 'interval']);
+    expect(Object.isFrozen(GAME_ORDER)).toBe(true);
+    expect([...GAME_ORDER].sort()).toEqual(gameDirs);
+    const document = new DOMParser().parseFromString(readFileSync(root + 'index.html', 'utf8'), 'text/html');
+    expect([...document.querySelectorAll('.grid a.card')].map(card => card.getAttribute('data-game'))).toEqual(featured);
+    const graph = JSON.parse(document.querySelector('script[type="application/ld+json"]')!.textContent!)['@graph'];
+    const items = graph.find((item: { '@type': string }) => item['@type'] === 'ItemList').itemListElement;
+    expect(items.map((item: { url: string }) => new URL(item.url).pathname.split('/')[1])).toEqual(featured);
+    expect(items.map((item: { position: number }) => item.position)).toEqual(featured.map((_, index) => index + 1));
+    const registry = authSrc.slice(authSrc.indexOf('const GAMES ='), authSrc.indexOf('function num('));
+    const board = new Function('GAME_ORDER', `${registry}; return BOARD_GAMES.map(game => game.slug);`)(GAME_ORDER);
+    expect(board).toEqual(featured);
+  });
+
   it('parses both registries', () => {
     expect(gameDirs.length).toBeGreaterThanOrEqual(11);
     expect(Object.keys(auth).length).toBe(gameDirs.length);

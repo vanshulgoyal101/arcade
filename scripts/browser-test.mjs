@@ -6,6 +6,7 @@ import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
+import { GAME_ORDER, gameName } from '../assets/games.js';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const games = readdirSync(root).filter(name => existsSync(resolve(root, name, 'src/main.ts')));
@@ -34,6 +35,7 @@ try {
     const hub = await context.newPage();
     await hub.goto(base, { waitUntil: 'networkidle' });
     assert.equal(await hub.locator('.grid a.card').count(), 10);
+    assert.deepEqual(await hub.locator('.grid a.card').evaluateAll(cards => cards.map(card => card.dataset.game)), GAME_ORDER.slice(0, 10));
     const search = hub.locator('#game-search');
     await search.fill('typing');
     assert.equal(await hub.locator('.grid a.card:visible').count(), 1);
@@ -49,6 +51,7 @@ try {
     assert.equal(await hub.locator('#game-count').innerText(), 'No games match.');
     await hub.locator('#catalog-search button[type="reset"]').click();
     assert.equal(await hub.locator('.grid a.card:visible').count(), 10);
+    assert.deepEqual(await hub.locator('.grid a.card:visible').evaluateAll(cards => cards.map(card => card.dataset.game)), GAME_ORDER.slice(0, 10));
     assert.equal(await search.evaluate(element => element === document.activeElement), true);
     assert.equal(await hub.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `hub: overflow at ${width}`);
     for (const image of await hub.locator('.card-art img').all()) {
@@ -188,13 +191,20 @@ try {
     await context.route('https://esm.sh/**', route => route.fulfill({
       contentType: 'text/javascript',
       body: `export function createClient() { return { auth: {
-        getSession: async () => ({ data: { session: null } }),
+        getSession: async () => ({ data: { session: location.pathname === '/stats/' ? { user: { id: 'browser-owner' } } : null } }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
         signInWithOAuth: async () => {
           globalThis.oauthAttempts = (globalThis.oauthAttempts || 0) + 1;
           return { error: new Error('Test-only auth outage') };
         }
-      } }; }`,
+      }, rpc: async (name, args) => ({ data: name === 'arcade_leaderboard'
+        ? Object.fromEntries([...args.p_games].reverse().map(slug => [slug, { top: [
+            { rank: 1, best: 20, display_name: 'First' },
+            { rank: 2, best: 10, display_name: 'Second' }
+          ] }]))
+        : { total_visits: 10, unique_visitors: 2, total_plays: 1000, visits_today: 1, plays_today: 2,
+            per_game: [{ game: 'flashmath', plays: args.p_days ? 1 : 999 }, { game: 'hue-hunt', plays: args.p_days ? 999 : 1 }] }
+      }) }; }`,
     }));
     await context.addInitScript(() => {
       Math.random = () => 0;
@@ -202,6 +212,22 @@ try {
       localStorage.setItem('word.v1', JSON.stringify({ practiceBest: 5 }));
     });
     const page = await context.newPage();
+    await page.goto(base, { waitUntil: 'networkidle' });
+    await page.locator('#lbBtn').click();
+    await page.locator('.lb-game').first().waitFor();
+    assert.deepEqual(await page.locator('.lb-game').evaluateAll(sections => sections.map(section => section.dataset.game)), GAME_ORDER.slice(0, 10));
+    await page.locator('.lb-game summary').first().click();
+    assert.deepEqual(await page.locator('.lb-game').first().locator('.lb-who').allTextContents(), ['First', 'Second']);
+    if (artifacts) await page.screenshot({ path: resolve(artifacts, `leaderboard-${width}.png`), fullPage: true });
+    await page.goto(`${base}/stats/`, { waitUntil: 'networkidle' });
+    await page.locator('.row').first().waitFor();
+    assert.deepEqual(await page.locator('.row .k b').allTextContents(), GAME_ORDER.map(gameName));
+    await page.locator('.chip[data-days="1"]').click();
+    await page.waitForFunction(() => document.querySelector('.chip.on')?.getAttribute('data-days') === '1');
+    assert.deepEqual(await page.locator('.row .k b').allTextContents(), GAME_ORDER.map(gameName));
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `stats: overflow at ${width}`);
+    if (artifacts) await page.screenshot({ path: resolve(artifacts, `stats-${width}.png`), fullPage: true });
+    console.log(`PASS fixed order ${width}px: leaderboard sections, player ranks, stats range changes`);
     await page.goto(`${base}/word/`, { waitUntil: 'networkidle' });
     await page.locator('[data-tab="practice"]').click();
     for (let round = 0; round < 3; round++) {

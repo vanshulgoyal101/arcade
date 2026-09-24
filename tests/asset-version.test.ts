@@ -12,7 +12,7 @@ const VERSIONED = [
   { file: 'assets/style.css', version: 12, digest: 'ebe0ff21dfa54939' },
   { file: 'assets/catalog.js', version: 1, digest: '01eda4a64c659301' },
   { file: 'assets/register-sw.js', version: 1, digest: '4b3388c2fa5f59a3' },
-  { file: 'assets/auth.js', version: 28, digest: '8d1954687b8ed8a5' },
+  { file: 'assets/auth.js', version: 29, digest: '0d33496b3521c025' },
   { file: 'assets/analytics.js', version: 3, digest: 'f62fba657cd5bead' },
 ] as const;
 
@@ -20,8 +20,8 @@ const VERSIONED = [
 // by both importers, so its ?v= is pinned where those imports live.
 const SHARED_MODULE = {
   file: 'assets/games.js',
-  version: 2,
-  digest: 'f3b506ad2e783d2a',
+  version: 3,
+  digest: '7b1c89b5a4858c17',
   importers: ['assets/auth.js', 'stats/index.html'],
 } as const;
 
