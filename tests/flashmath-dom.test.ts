@@ -46,13 +46,52 @@ describe('flashmath/dom', () => {
     expect(JSON.parse(localStorage.getItem('flashmath.v1')!).bestScore).toBe(1500000);
   });
 
-  it('a correct answer scores and moves to the next problem', async () => {
+  it('automatically submits a correct keyboard answer exactly once', async () => {
     const app = await load();
-    const first = text(app.querySelector('#problem'));
-    typeNumber(solve(first));
+    typeNumber(solve(text(app.querySelector('#problem'))));
+    const score = text(app.querySelector('#score'));
+    expect(Number(score)).toBeGreaterThan(0);
+    expect(text(app.querySelector('#level'))).toBe('2');
+    expect(text(app.querySelector('#answer'))).toBe('');
     key('Enter');
-    expect(Number(text(app.querySelector('#score')))).toBeGreaterThan(0);
-    expect(text(app.querySelector('#problem'))).not.toBe(first); // advanced
+    expect(text(app.querySelector('#score'))).toBe(score);
+    expect(text(app.querySelector('#level'))).toBe('2');
+  });
+
+  it('automatically submits keypad answers but leaves partial answers unsubmitted', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.25);
+    try {
+      const app = await load();
+      const answer = String(solve(text(app.querySelector('#problem'))));
+      expect(answer).toBe('10');
+      for (const [index, digit] of [...answer].entries()) {
+        app.querySelector<HTMLButtonElement>(`[data-k="${digit}"]`)!.click();
+        if (index < answer.length - 1) {
+          expect(text(app.querySelector('#score'))).toBe('0');
+          expect(text(app.querySelector('#level'))).toBe('1');
+          expect(text(app.querySelector('#answer'))).toBe(answer.slice(0, index + 1));
+        }
+      }
+      expect(Number(text(app.querySelector('#score')))).toBeGreaterThan(0);
+      expect(text(app.querySelector('#level'))).toBe('2');
+      app.querySelector<HTMLButtonElement>('[data-k="enter"]')!.click();
+      expect(text(app.querySelector('#level'))).toBe('2');
+    } finally {
+      random.mockRestore();
+    }
+  });
+
+  it('automatically submits a zero answer', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.75);
+    try {
+      const app = await load();
+      expect(solve(text(app.querySelector('#problem')))).toBe(0);
+      key('0');
+      expect(text(app.querySelector('#level'))).toBe('2');
+      expect(text(app.querySelector('#answer'))).toBe('');
+    } finally {
+      random.mockRestore();
+    }
   });
 
   it('a wrong answer does not score', async () => {
@@ -68,11 +107,14 @@ describe('flashmath/dom', () => {
     typeNumber(answer + 1);
     key('Enter');
     typeNumber(answer);
+    const score = text(app.querySelector('#score'));
+    expect(Number(score)).toBeGreaterThan(0);
+    const partial = String(solve(text(app.querySelector('#problem')))).startsWith('1') ? '2' : '1';
+    key(partial);
     await vi.advanceTimersByTimeAsync(350);
-    expect(text(app.querySelector('#answer'))).toBe(String(answer));
+    expect(text(app.querySelector('#answer'))).toBe(partial);
     expect(app.querySelector('#answer')!.classList.contains('flash-bad')).toBe(false);
-    key('Enter');
-    expect(Number(text(app.querySelector('#score')))).toBeGreaterThan(0);
+    expect(text(app.querySelector('#score'))).toBe(score);
   });
 
   it('builds a combo across several correct answers', async () => {
@@ -133,10 +175,11 @@ describe('flashmath/dom', () => {
     key('Enter'); // arms the 300ms wrong-answer cleanup
     expire();
     app.querySelector<HTMLButtonElement>('#m-again')!.click();
-    typeNumber(7);
+    const partial = String(solve(text(app.querySelector('#problem')))).startsWith('1') ? '2' : '1';
+    key(partial);
 
     await vi.advanceTimersByTimeAsync(350);
 
-    expect(text(app.querySelector('#answer'))).toBe('7');
+    expect(text(app.querySelector('#answer'))).toBe(partial);
   });
 });

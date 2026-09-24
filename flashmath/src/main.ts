@@ -118,6 +118,7 @@ function type(ch: string): void {
   answerEl.classList.remove('flash-bad');
   entry += ch;
   answerEl.textContent = entry;
+  if (Number(entry) === game.problem.answer) submit();
 }
 function backspace(): void {
   entry = entry.slice(0, -1);
