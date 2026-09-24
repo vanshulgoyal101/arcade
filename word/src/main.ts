@@ -179,11 +179,18 @@ function renderToday(): void {
 
   const optionsEl = view.querySelector<HTMLDivElement>('#options')!;
   optionsEl.querySelectorAll<HTMLButtonElement>('.option').forEach((btn) => {
-    btn.addEventListener('pointerdown', () => answerToday(Number(btn.dataset.i), opts, w, optionsEl));
+    btn.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.isPrimary === false) return;
+      answerToday(Number(btn.dataset.i), opts, w, optionsEl);
+    });
+    btn.addEventListener('click', (event) => {
+      if (event.detail === 0) answerToday(Number(btn.dataset.i), opts, w, optionsEl);
+    });
   });
 }
 
 function answerToday(i: number, opts: Option[], w: Word, optionsEl: HTMLDivElement): void {
+  if (store.daily.lastKey === todayKey()) return;
   const correctIndex = opts.findIndex((o) => o.correct);
   const correct = i === correctIndex;
   sfx.select();
@@ -269,7 +276,13 @@ function renderPractice(): void {
 
   const optionsEl = view.querySelector<HTMLDivElement>('#options')!;
   optionsEl.querySelectorAll<HTMLButtonElement>('.option').forEach((btn) => {
-    btn.addEventListener('pointerdown', () => answerPractice(Number(btn.dataset.i), optionsEl));
+    btn.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.isPrimary === false) return;
+      answerPractice(Number(btn.dataset.i), optionsEl);
+    });
+    btn.addEventListener('click', (event) => {
+      if (event.detail === 0) answerPractice(Number(btn.dataset.i), optionsEl);
+    });
   });
 }
 

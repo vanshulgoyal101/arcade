@@ -90,6 +90,25 @@ describe('hue-hunt/dom', () => {
     expect(board.querySelector('.correct')).not.toBeNull();
   });
 
+  it('accepts native activation with score feedback centered on the tile', async () => {
+    const app = await load();
+    const tile = oddChild(app.querySelector('#board')!);
+    spies.push(vi.spyOn(tile, 'getBoundingClientRect').mockReturnValue(new DOMRect(100, 200, 80, 80)));
+    tile.click();
+    expect(Number(text(app.querySelector('#score')))).toBeGreaterThan(0);
+    const popup = document.querySelector<HTMLElement>('.popup')!;
+    expect(popup.style.left).toBe('140px');
+    expect(popup.style.top).toBe('240px');
+    expect(tile.getAttribute('aria-label')).toMatch(/^Tile \d+$/);
+  });
+
+  it('ignores secondary pointer picks', async () => {
+    const app = await load();
+    oddChild(app.querySelector('#board')!).dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 2 }));
+    expect(text(app.querySelector('#score'))).toBe('0');
+    expect(app.querySelector('.tile.correct')).toBeNull();
+  });
+
   // Regression for the lost `advancing` guard: a fast second tap during the
   // 60ms board-rebuild after a correct pick must NOT be graded as a wrong pick.
   it('ignores a second tap on the stale board (no wrong grade)', async () => {

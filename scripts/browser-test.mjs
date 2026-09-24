@@ -71,7 +71,7 @@ try {
     }
     await context.close();
   }
-  for (const width of [1280, 390]) {
+  for (const width of [1280, 390, 320]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
     await context.route('https://esm.sh/**', route => route.fulfill({ contentType: 'text/javascript', body: 'export function createClient(){throw new Error("Cloud intentionally unavailable in offline browser test")}' }));
     await context.route('https://*.supabase.co/**', route => route.fulfill({ status: 204 }));
@@ -219,7 +219,7 @@ try {
     console.log(`PASS privacy ${width}px: persistent opt-out, no beacons`);
     await context.close();
   }
-  for (const width of [1280, 390]) {
+  for (const width of [1280, 390, 320]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
     await context.route('https://esm.sh/**', route => route.fulfill({
       contentType: 'text/javascript',

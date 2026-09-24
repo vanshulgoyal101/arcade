@@ -113,14 +113,21 @@ function buildBoard(): void {
   for (let i = 0; i < size * size; i++) {
     const b = document.createElement('button');
     b.className = 'tile';
+    b.setAttribute('aria-label', `Tile ${i + 1}`);
     b.style.background = hslCss(i === oddIndex ? odd : base);
-    b.addEventListener('pointerdown', (e) => onPick(i === oddIndex, b, e));
+    b.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.isPrimary === false) return;
+      onPick(i === oddIndex, b, event);
+    });
+    b.addEventListener('click', (event) => {
+      if (event.detail === 0) onPick(i === oddIndex, b);
+    });
     boardEl.appendChild(b);
   }
 }
 
 // ---- interactions ----
-function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
+function onPick(isOdd: boolean, el: HTMLButtonElement, ev?: PointerEvent): void {
   if (!game.playing || advancing) return;
 
   if (isOdd) {
@@ -132,7 +139,8 @@ function onPick(isOdd: boolean, el: HTMLButtonElement, ev: PointerEvent): void {
     void boardEl.offsetWidth;
     boardEl.classList.add('board-flash');
 
-    scorePopup(ev.clientX, ev.clientY, `+${fmtScore(points)}`, fast ? '#ffd93d' : '#4ecdc4');
+    const bounds = el.getBoundingClientRect();
+    scorePopup(ev?.clientX ?? bounds.left + bounds.width / 2, ev?.clientY ?? bounds.top + bounds.height / 2, `+${fmtScore(points)}`, fast ? '#ffd93d' : '#4ecdc4');
     if (game.multiplier >= 2 && game.combo % 3 === 0) {
       comboFlash.textContent = `COMBO x${game.multiplier}!`;
       comboFlash.classList.remove('show');

@@ -66,4 +66,17 @@ describe('flash/dom', () => {
     click(submit);
     expect(text(app.querySelector('#hud-done'))).toBe('1'); // one passage read
   });
+
+  it.each(['keyboard', 'secondary pointer'])('handles %s quiz activation correctly', async (input) => {
+    const app = await load();
+    click(app.querySelector('#startBtn')!);
+    await vi.advanceTimersByTimeAsync(120000);
+    const options = app.querySelectorAll<HTMLButtonElement>('.question .option:first-child');
+    for (const option of options) {
+      if (input === 'keyboard') option.click();
+      else option.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 2 }));
+    }
+    expect(app.querySelectorAll('.option.selected')).toHaveLength(input === 'keyboard' ? options.length : 0);
+    expect(app.querySelector<HTMLButtonElement>('#submitBtn')!.disabled).toBe(input !== 'keyboard');
+  });
 });

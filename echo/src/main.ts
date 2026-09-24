@@ -109,7 +109,13 @@ function buildPads(): void {
     const b = document.createElement('button');
     b.className = `pad c${i}`;
     b.setAttribute('aria-label', `pad ${i + 1}`);
-    b.addEventListener('pointerdown', () => onPad(i));
+    b.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.isPrimary === false) return;
+      void onPad(i);
+    });
+    b.addEventListener('click', (event) => {
+      if (event.detail === 0) void onPad(i);
+    });
     padsEl.appendChild(b);
   }
 }

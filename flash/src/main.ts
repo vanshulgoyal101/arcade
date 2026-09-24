@@ -255,12 +255,19 @@ function showQuiz(): void {
       const b = document.createElement('button');
       b.className = 'option';
       b.textContent = opt;
-      b.addEventListener('pointerdown', () => {
+      const selectOption = () => {
         sfx.select();
         answers[qi] = oi;
         opts.querySelectorAll('.option').forEach((el) => el.classList.remove('selected'));
         b.classList.add('selected');
         submitBtn.disabled = answers.includes(-1);
+      };
+      b.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0 || event.isPrimary === false) return;
+        selectOption();
+      });
+      b.addEventListener('click', (event) => {
+        if (event.detail === 0) selectOption();
       });
       opts.appendChild(b);
     });

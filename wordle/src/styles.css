@@ -223,6 +223,9 @@ button { font-family: inherit; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 @media (max-width: 380px) {
+  .topbar { flex-wrap: wrap; }
+  .topbar .title { order: -1; flex-basis: 100%; text-align: center; }
+  .back { white-space: nowrap; }
   .key { height: 50px; }
 }
 

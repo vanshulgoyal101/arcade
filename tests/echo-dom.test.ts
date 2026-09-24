@@ -67,4 +67,21 @@ describe('echo/dom', () => {
     expect(app.querySelector('.overlay.show')).toBeNull();
     expect(text(app.querySelector('#status'))).toContain('Your turn');
   });
+
+  it.each(['keyboard', 'secondary pointer'])('handles %s pad activation correctly', async (input) => {
+    const app = await load();
+    click(app.querySelector('#startBtn')!);
+    await vi.advanceTimersByTimeAsync(500);
+    const correct = app.querySelector<HTMLButtonElement>('#pads .pad.lit')!;
+    expect(correct).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(1500);
+    if (input === 'keyboard') {
+      correct.click();
+      expect(text(app.querySelector('#status'))).toContain('Nice!');
+    } else {
+      correct.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 2 }));
+      expect(text(app.querySelector('#status'))).toContain('Your turn');
+      expect(app.querySelector('#pads .pad.lit')).toBeNull();
+    }
+  });
 });

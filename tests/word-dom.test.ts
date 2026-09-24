@@ -69,6 +69,29 @@ describe('word/dom · daily', () => {
     expect(submitScore).toHaveBeenCalledWith('word', expect.any(Number), { backup: true });
   });
 
+  it.each(['today', 'practice'])('supports native answers and rejects secondary presses in %s', async (tab) => {
+    const app = await load();
+    app.querySelector<HTMLButtonElement>(`.tab[data-tab="${tab}"]`)!.click();
+    const option = app.querySelector<HTMLButtonElement>('#options .option')!;
+    option.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 2 }));
+    expect(app.querySelectorAll('#options .correct')).toHaveLength(0);
+    expect(option.disabled).toBe(false);
+    option.click();
+    expect(app.querySelectorAll('#options .correct')).toHaveLength(1);
+    expect(option.disabled).toBe(true);
+  });
+
+  it('reveals a daily answer only once after repeated presses', async () => {
+    const app = await load();
+    const option = app.querySelector(`.option[data-i="${correctIndex()}"]`)!;
+    pointerdown(option);
+    pointerdown(option);
+    await vi.advanceTimersByTimeAsync(700);
+    expect(app.querySelectorAll('.reveal-anim')).toHaveLength(1);
+    expect(app.querySelectorAll('#toPractice')).toHaveLength(1);
+    expect(submitScore).toHaveBeenCalledTimes(1);
+  });
+
   it('a wrong answer marks the day done but resets the streak to 0', async () => {
     const app = await load();
     const wrong = dailyOptions().findIndex((o) => !o.correct);
