@@ -176,24 +176,26 @@ export function reconcileRestore(slug: string, localRaw: string | null, row: Clo
  */
 export async function restoreGame(slug: string): Promise<boolean> {
   if (!Object.prototype.hasOwnProperty.call(LS_KEYS, slug)) return false;
-  await init();
-  void flushPending(); // every game load is a chance to land an offline score
-  if (!client || !user) return false;
   const key = LS_KEYS[slug];
-  if (!key || !HEADLINE[slug]) return false;
   try {
-    const { data, error } = await client.rpc('restore_my_scores');
-    if (sessionChanged || error) return false;
-    const row: CloudRow | null = (data || []).find((r: any) => r.game === slug) || null;
-    const blob = reconcileRestore(slug, localStorage.getItem(key), row);
-    if (blob != null) {
+    const localRaw = localStorage.getItem(key);
+    await init();
+    if (!client || !ownsLocalStores()) return false;
+    return await withGameLock(slug, async () => {
+      if (!ownsLocalStores()) return false;
+      const { data, error } = await client.rpc('restore_my_scores');
+      if (!ownsLocalStores() || error || localStorage.getItem(key) !== localRaw) return false;
+      const row: CloudRow | null = (data || []).find((entry: any) => entry.game === slug) || null;
+      const blob = reconcileRestore(slug, localRaw, row);
+      if (blob == null) return false;
       localStorage.setItem(key, JSON.stringify(blob));
       return true;
-    }
+    });
   } catch {
-    /* ignore */
+    return false;
+  } finally {
+    void flushPending();
   }
-  return false;
 }
 
 import { codedAvatarSvg } from './avatars';
@@ -238,10 +240,14 @@ async function init(): Promise<void> {
         if (sessionChanged || client !== sessionClient) return;
         const nextUser = session?.user ?? null;
         let owner: string | null = null;
-        try { owner = localStorage.getItem('arcade.sync.owner'); } catch { /* ignore */ }
+        let migrating = false;
+        try {
+          owner = localStorage.getItem('arcade.sync.owner');
+          migrating = localStorage.getItem('arcade.sync.migration') !== null;
+        } catch { /* ignore */ }
         const differentOwner = nextUser && owner && owner !== nextUser.id;
-        if ((sessionKnown && user?.id !== nextUser?.id) || differentOwner) {
-          const differentAccount = differentOwner || (user && nextUser && user.id !== nextUser.id);
+        if ((sessionKnown && user?.id !== nextUser?.id) || differentOwner || (nextUser && migrating)) {
+          const differentAccount = migrating || differentOwner || (user && nextUser && user.id !== nextUser.id);
           sessionChanged = true;
           user = null;
           profile = null;
@@ -296,18 +302,16 @@ export function isSignedIn(): boolean {
 }
 
 /** Start Google sign-in from within a game, returning to this page afterwards. */
-export async function signIn(): Promise<void> {
+export async function signIn(): Promise<boolean> {
   await init();
-  if (!client || sessionChanged) return;
+  if (!client || sessionChanged) return false;
   try {
-    await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
+    const { error } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
+    return !error && !sessionChanged;
   } catch {
-    /* ignore */
+    return false;
   }
 }
-// Exposed so a self-contained nudge button (rendered as an HTML string in every
-// game's game-over modal) can trigger sign-in without per-game wiring.
-try { (globalThis as { __arcadeSignIn?: () => void }).__arcadeSignIn = signIn; } catch { /* ignore */ }
 
 /** The signed-in player's display name + avatar, or null when signed out. */
 export function cloudProfile(): CloudProfile | null {
@@ -335,22 +339,42 @@ export async function submitScore(game: string, best: number, opts?: { backup?: 
     if (hasStoredSession()) queuePending(game, safeBest);
     return;
   }
-  const data = readBlob(game);
   queuePending(game, safeBest);
-  if (await push(game, safeBest, data)) unqueuePending(game, safeBest, data);
-  else queuePending(game, safeBest);
+  await push(game, safeBest);
+}
+
+const gameOperations = new Map<string, Promise<boolean>>();
+
+async function withGameLock(game: string, operation: () => Promise<boolean>): Promise<boolean> {
+  const previous = gameOperations.get(game) ?? Promise.resolve(false);
+  const current = previous.catch(() => false).then(operation);
+  gameOperations.set(game, current);
+  try {
+    return await current;
+  } finally {
+    if (gameOperations.get(game) === current) gameOperations.delete(game);
+  }
+}
+
+async function push(game: string, best: number): Promise<boolean> {
+  return withGameLock(game, async () => {
+    const data = readBlob(game);
+    const saved = await pushNow(game, best, data);
+    if (saved) unqueuePending(game, best, data);
+    return saved;
+  });
 }
 
 /** One write attempt. Resolves `true` only when the score actually landed. */
-async function push(game: string, best: number, data: unknown): Promise<boolean> {
-  if (sessionChanged || !user) return false;
+async function pushNow(game: string, best: number, data: unknown): Promise<boolean> {
+  if (!ownsLocalStores()) return false;
   try {
     const rpc = await client.rpc('submit_score', { p_game: game, p_best: best, p_data: data });
-    if (!rpc?.error) return !sessionChanged;
+    if (!rpc?.error) return ownsLocalStores();
   } catch {
     /* fall through to the direct upsert */
   }
-  if (sessionChanged || !user) return false;
+  if (!ownsLocalStores()) return false;
   try {
     const res = await client.from('arcade_scores').upsert(
       {
@@ -363,7 +387,7 @@ async function push(game: string, best: number, data: unknown): Promise<boolean>
       },
       { onConflict: 'user_id,game' }
     );
-    return !sessionChanged && !res?.error;
+    return ownsLocalStores() && !res?.error;
   } catch {
     return false;
   }
@@ -378,6 +402,16 @@ function hasStoredSession(): boolean {
   try {
     const ref = SUPABASE_URL.replace('https://', '').split('.')[0];
     return localStorage.getItem(`sb-${ref}-auth-token`) != null;
+  } catch {
+    return false;
+  }
+}
+
+function ownsLocalStores(): boolean {
+  if (sessionChanged || !user) return false;
+  try {
+    return localStorage.getItem('arcade.sync.migration') === null &&
+      localStorage.getItem('arcade.sync.owner') === user.id;
   } catch {
     return false;
   }
@@ -398,8 +432,7 @@ export async function flushPending(): Promise<void> {
     for (const game of games) {
       if (sessionChanged) return;
       const best = queue[game];
-      const data = readBlob(game);
-      if (await push(game, best, data)) unqueuePending(game, best, data);
+      await push(game, best);
     }
   } catch {
     /* ignore */
@@ -428,6 +461,18 @@ export function mountRank(modal: Element, game: string, score: number): void {
     if (rankRequests.get(modal) !== request) return;
     const badge = rankBadgeHtml(info);
     if (badge) modal.querySelector('.row, .row-btns')?.insertAdjacentHTML('beforebegin', badge);
+    const button = modal.querySelector<HTMLButtonElement>('.cloud-signin');
+    if (!button) return;
+    const label = button.innerHTML;
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
+      button.disabled = true;
+      button.innerHTML = label;
+      const started = await signIn();
+      if (!button.isConnected) return;
+      button.disabled = false;
+      if (!started) button.textContent = 'Sign-in failed. Try again';
+    });
   });
 }
 

@@ -166,6 +166,45 @@ try {
     console.log(`PASS privacy ${width}px: persistent opt-out, no beacons`);
     await context.close();
   }
+  for (const width of [1280, 390]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block' });
+    await context.route('https://esm.sh/**', route => route.fulfill({
+      contentType: 'text/javascript',
+      body: `export function createClient() { return { auth: {
+        getSession: async () => ({ data: { session: null } }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+        signInWithOAuth: async () => {
+          globalThis.oauthAttempts = (globalThis.oauthAttempts || 0) + 1;
+          return { error: new Error('Test-only auth outage') };
+        }
+      } }; }`,
+    }));
+    await context.addInitScript(() => {
+      Math.random = () => 0;
+      localStorage.setItem('arcade.analytics.disabled', '1');
+      localStorage.setItem('word.v1', JSON.stringify({ practiceBest: 5 }));
+    });
+    const page = await context.newPage();
+    await page.goto(`${base}/word/`, { waitUntil: 'networkidle' });
+    await page.locator('[data-tab="practice"]').click();
+    for (let round = 0; round < 3; round++) {
+      await page.locator('#options .option').first().click();
+      if (round < 2) await page.locator('#p-next').click();
+    }
+    const signIn = page.locator('#overlay.show .cloud-signin');
+    await signIn.waitFor({ state: 'visible' });
+    assert.equal(await signIn.getAttribute('onclick'), null);
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      await signIn.click();
+      await page.waitForFunction(expected => globalThis.oauthAttempts === expected &&
+        document.querySelector('.cloud-signin')?.textContent.includes('Sign-in failed'), attempt);
+      assert.equal(await signIn.isEnabled(), true);
+    }
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    if (artifacts) await page.screenshot({ path: resolve(artifacts, `signin-${width}.png`), fullPage: true });
+    console.log(`PASS sign-in ${width}px: local event handler, visible failure, retry, no redirect`);
+    await context.close();
+  }
   const offlineContext = await browser.newContext();
   await offlineContext.addInitScript(() => localStorage.setItem('arcade.analytics.disabled', '1'));
   const offlinePage = await offlineContext.newPage();

@@ -53,7 +53,8 @@ describe('shared/rank · rankBadgeHtml', () => {
   it('nudges signed-out players to sign in instead of showing a rank', () => {
     const html = rankBadgeHtml({ rank: 0, total: 0, signedOut: true });
     expect(html).toContain('Sign in');
-    expect(html).toContain('__arcadeSignIn');
+    expect(html).toContain('cloud-signin');
+    expect(html).not.toContain('onclick=');
     expect(html).not.toContain('of 0');
   });
 
@@ -70,7 +71,7 @@ describe('shared/rank · rankBadgeHtml', () => {
     expect(html).toContain('Saved');
     expect(html).toContain('syncs when you’re back online');
     expect(html).not.toContain('of 0');
-    expect(html).not.toContain('__arcadeSignIn'); // signing in needs a network
+    expect(html).not.toContain('cloud-signin'); // signing in needs a network
   });
 });
 

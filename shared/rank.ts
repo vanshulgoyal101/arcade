@@ -1,6 +1,6 @@
 // Tiny presentation helpers for showing a player's leaderboard rank in a
 // game-over modal. Pure formatting — no cloud calls — so games can render
-// whatever `getRank()` / `getDailyRank()` resolve to.
+// whatever `getRank()` resolves to.
 
 import type { RankInfo } from './cloud';
 
@@ -43,7 +43,7 @@ export function rankBadgeHtml(info: RankInfo | null | undefined, label = 'Global
   if (info && info.signedOut) {
     return (
       `<div class="cloud-rank" style="text-align:center;margin:12px 0 0">` +
-      `<button type="button" onclick="window.__arcadeSignIn&&window.__arcadeSignIn()" style="${pill};cursor:pointer;font-family:inherit">` +
+      `<button type="button" class="cloud-signin" style="${pill};cursor:pointer;font-family:inherit">` +
       `<span style="color:var(--accent,#fb7185);font-weight:800">Sign in</span>` +
       `<span style="color:var(--muted,#949cb0);font-weight:600">to join the leaderboard</span>` +
       `</button></div>`

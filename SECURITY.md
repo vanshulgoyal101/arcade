@@ -47,6 +47,19 @@ local progress. Same-user token refresh does not interrupt play. Late restores,
 profile results, and upload acknowledgements cannot mutate the new session's
 state. The retry queue preserves higher scores and changed equal-score blobs.
 
+Account migration records `arcade.sync.migration` before clearing old stores.
+Storage errors leave that marker in place, so partially replaced stores must be
+restored through the hub before either account can upload them. Ownership is
+committed only after all restore writes succeed. This cannot undo already removed
+data when storage fails mid-migration; it prevents partial state being mistaken
+for an account's completed restore. Game operations also recheck stored ownership
+and the migration marker before writes and acknowledgements.
+
+Game-page restores and uploads are serialized per game, with upload snapshots
+read at execution time. Late restores do not replace progress saved during the
+request. This protects one page's ordering, not arbitrary concurrent histories
+across tabs or devices.
+
 Cloud game and coded-avatar allowlists require own registry properties; inherited
 names such as `constructor` are not valid entries. Nonfinite score submissions
 are rejected before network initialization. Rank HTML escapes labels and accepts

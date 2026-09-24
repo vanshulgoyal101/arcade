@@ -6,6 +6,7 @@ import { WORDS } from '../word/src/content';
 // Word's main.ts imports shared/cloud (submitScore/getRank). Stub it so no
 // network runs and we can assert the streak backup fires.
 const submitScore = vi.fn();
+const restoreGame = vi.fn().mockResolvedValue(false);
 vi.mock('../shared/cloud', () => ({
   submitScore,
   getRank: vi.fn().mockResolvedValue(null),
@@ -15,8 +16,10 @@ vi.mock('../shared/cloud', () => ({
   cloudAvatarImage: () => null,
   isSignedIn: () => false,
   signIn: vi.fn(),
-  restoreGame: vi.fn().mockResolvedValue(false),
+  restoreGame,
 }));
+
+afterEach(() => restoreGame.mockReset().mockResolvedValue(false));
 
 const load = () => mountGame(() => import('../word/src/main.ts'));
 const store = () => JSON.parse(localStorage.getItem('word.v1') || '{}');
@@ -37,6 +40,17 @@ describe('word/dom · daily', () => {
     const app = await load();
     expect(app.querySelectorAll('#options .option').length).toBe(4);
     expect(app.querySelector('.pill .v')?.textContent).toContain('0');
+  });
+
+  it('repaints a daily completion restored after the quiz has mounted', async () => {
+    let finish!: (updated: boolean) => void;
+    restoreGame.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const app = await load();
+    localStorage.setItem('word.v1', JSON.stringify({ daily: { streak: 5, maxStreak: 5, lastKey: todayKey() }, practiceBest: 500, learnedIds: ['restored'] }));
+    finish(true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(app.querySelector('#options')).toBeNull();
+    expect(app.textContent).toContain('learned today');
   });
 
   it('a correct answer advances + persists the streak and learned word', async () => {
@@ -97,6 +111,26 @@ describe('word/dom · daily', () => {
 
 describe('word/dom · practice lifecycle', () => {
   gameEnv();
+
+  it('retains the restored best without restarting the active practice round', async () => {
+    let finish!: (updated: boolean) => void;
+    restoreGame.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const app = await load();
+    app.querySelector<HTMLButtonElement>('.tab[data-tab="practice"]')!.click();
+    const word = app.querySelector('.card h2')!.textContent;
+    localStorage.setItem('word.v1', JSON.stringify({ daily: { streak: 0, maxStreak: 0, lastKey: '' }, practiceBest: 500, learnedIds: [] }));
+    finish(true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(app.querySelector('.card h2')!.textContent).toBe(word);
+    expect(app.querySelector('#hud')!.textContent).toContain('500');
+    for (let life = 3; life > 0; life--) {
+      pointerdown(practiceWrong(app));
+      if (life > 1) app.querySelector<HTMLButtonElement>('#p-next')!.click();
+    }
+    await vi.advanceTimersByTimeAsync(900);
+    expect(store().practiceBest).toBe(500);
+    expect(app.querySelector('#modal')!.textContent).toContain('Best 500');
+  });
 
   it('does not open the old Practice result after switching to Today', async () => {
     const app = await load();

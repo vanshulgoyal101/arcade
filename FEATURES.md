@@ -51,6 +51,15 @@ hub, its ItemList, and its public leaderboard contain ten games.
 
 ## Historical Changes
 
+The deeper September 24 follow-up fixed overlapping cloud writes and late
+restores that could replace newer progress. Game pages coordinate restores and
+uploads per game. Interrupted account migrations are quarantined until a hub
+restore succeeds, rather than treating partial stores as a completed migration.
+Word now applies restored daily completion and Practice bests to its live UI and
+model. In-game sign-in reports retryable errors through a local event listener
+instead of a global inline handler. Cross-device history merging remains future
+work.
+
 The September 24 follow-up tightened cloud and avatar registry membership,
 rejected nonfinite score inputs, and escaped rank labels with numeric runtime
 validation. In-game OAuth redirects no longer carry query strings or fragments.

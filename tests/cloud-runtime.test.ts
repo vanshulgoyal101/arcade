@@ -27,6 +27,136 @@ function client() {
 }
 
 describe('cloud runtime failures', () => {
+  it.each(['resolved', 'rejected'])('makes in-game OAuth failures retryable without duplicate requests (%s)', async failure => {
+    const backend = client();
+    backend.auth.getSession.mockResolvedValue({ data: { session: null } });
+    let finish!: () => void;
+    const signInWithOAuth = vi.fn(() => new Promise((resolve, reject) => {
+      finish = () => failure === 'resolved' ? resolve({ error: new Error('offline') }) : reject(new Error('offline'));
+    }));
+    Object.assign(backend.auth, { signInWithOAuth });
+    sdk.createClient.mockReturnValue(backend);
+    const cloud = await import('../shared/cloud');
+    const modal = document.createElement('div');
+    modal.innerHTML = '<div class="row"></div>';
+    document.body.appendChild(modal);
+    try {
+      cloud.mountRank(modal, 'wordle', 5);
+      await vi.waitFor(() => expect(modal.querySelector('button')).not.toBeNull());
+      const button = modal.querySelector('button')!;
+      button.click();
+      button.click();
+      await vi.waitFor(() => expect(signInWithOAuth).toHaveBeenCalledOnce());
+      expect(button.disabled).toBe(true);
+      finish();
+      await vi.waitFor(() => expect(button.disabled).toBe(false));
+      expect(button.textContent).toContain('Sign-in failed');
+      signInWithOAuth.mockResolvedValueOnce({ error: null });
+      button.click();
+      await vi.waitFor(() => expect(signInWithOAuth).toHaveBeenCalledTimes(2));
+      await vi.waitFor(() => expect(button.disabled).toBe(false));
+    } finally {
+      modal.remove();
+    }
+  });
+
+  it.each(['migration', 'owner'])('blocks writes when another tab changes local %s before an auth event arrives', async change => {
+    const backend = client();
+    sdk.createClient.mockReturnValue(backend);
+    const cloud = await import('../shared/cloud');
+    await cloud.cloudReady();
+    localStorage.setItem(`arcade.sync.${change}`, change === 'migration' ? '1' : 'user-b');
+    await cloud.submitScore('wordle', 20);
+    expect(await cloud.restoreGame('wordle')).toBe(false);
+    expect(backend.rpc).not.toHaveBeenCalled();
+  });
+
+  it('releases the game queue after a rejected restore so pending progress can retry', async () => {
+    const backend = client();
+    sdk.createClient.mockReturnValue(backend);
+    const cloud = await import('../shared/cloud');
+    await cloud.cloudReady();
+    localStorage.setItem('wordle.v1', '{"maxStreak":5}');
+    cloud.queuePending('wordle', 5);
+    backend.rpc.mockRejectedValueOnce(new Error('offline'));
+    expect(await cloud.restoreGame('wordle')).toBe(false);
+    await vi.waitFor(() => expect(cloud.readPending()).toEqual({}));
+    expect(backend.rpc.mock.calls.map(call => call[0])).toEqual(['restore_my_scores', 'submit_score']);
+  });
+
+  it('routes an interrupted account migration to the hub without uploading partial stores', async () => {
+    const backend = client();
+    sdk.createClient.mockReturnValue(backend);
+    const replace = vi.fn();
+    vi.stubGlobal('location', { replace, reload: vi.fn() });
+    localStorage.setItem('arcade.sync.owner', 'user-a');
+    localStorage.setItem('arcade.sync.migration', '1');
+    const cloud = await import('../shared/cloud');
+    await cloud.submitScore('wordle', 20);
+    expect(backend.rpc).not.toHaveBeenCalled();
+    expect(replace).toHaveBeenCalledWith('/');
+    expect(cloud.isSignedIn()).toBe(false);
+  });
+
+  it('does not overwrite progress saved while a restore is in flight', async () => {
+    const backend = client();
+    sdk.createClient.mockReturnValue(backend);
+    const cloud = await import('../shared/cloud');
+    await cloud.cloudReady();
+    localStorage.setItem('word.v1', JSON.stringify({ practiceBest: 5, learnedIds: ['first'] }));
+    let finish!: (response: unknown) => void;
+    backend.rpc.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const restore = cloud.restoreGame('word');
+    await vi.waitFor(() => expect(backend.rpc).toHaveBeenCalledOnce());
+    const latest = JSON.stringify({ practiceBest: 5, learnedIds: ['first', 'second'] });
+    localStorage.setItem('word.v1', latest);
+    finish({ data: [{ game: 'word', best: 10, data: { practiceBest: 10, learnedIds: ['older'] } }] });
+    expect(await restore).toBe(false);
+    expect(localStorage.getItem('word.v1')).toBe(latest);
+  });
+
+  it('restores before retrying so a pending upload does not overwrite the unread cloud snapshot', async () => {
+    const backend = client();
+    sdk.createClient.mockReturnValue(backend);
+    const cloud = await import('../shared/cloud');
+    await cloud.cloudReady();
+    localStorage.setItem('wordle.v1', '{"maxStreak":5,"played":5}');
+    cloud.queuePending('wordle', 5);
+    let finish!: (response: unknown) => void;
+    backend.rpc.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const restore = cloud.restoreGame('wordle');
+    await vi.waitFor(() => expect(backend.rpc).toHaveBeenCalled());
+    const callsBeforeRestore = backend.rpc.mock.calls.length;
+    finish({ data: [{ game: 'wordle', best: 10, data: { maxStreak: 10, played: 20 } }] });
+    expect(await restore).toBe(true);
+    await vi.waitFor(() => expect(backend.rpc).toHaveBeenCalledTimes(2));
+    expect(callsBeforeRestore).toBe(1);
+    expect(backend.rpc.mock.calls[1][1].p_data).toEqual({ maxStreak: 10, played: 20 });
+  });
+
+  it('serializes same-game writes so an older backup cannot land last', async () => {
+    const backend = client();
+    sdk.createClient.mockReturnValue(backend);
+    const cloud = await import('../shared/cloud');
+    await cloud.cloudReady();
+    let finish!: (response: { error: null }) => void;
+    backend.rpc.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    localStorage.setItem('word.v1', JSON.stringify({ practiceBest: 5, learnedIds: ['first'] }));
+    const older = cloud.submitScore('word', 5);
+    await vi.waitFor(() => expect(backend.rpc).toHaveBeenCalledOnce());
+    localStorage.setItem('word.v1', JSON.stringify({ practiceBest: 5, learnedIds: ['first', 'second'] }));
+    const newer = cloud.submitScore('word', 5);
+    await cloud.submitScore('echo', 10);
+    const gamesBeforeCompletion = backend.rpc.mock.calls.map(call => call[1].p_game);
+    finish({ error: null });
+    await Promise.all([older, newer]);
+
+    expect(gamesBeforeCompletion).toEqual(['word', 'echo']);
+    expect(backend.rpc.mock.calls.map(call => call[1].p_game)).toEqual(['word', 'echo', 'word']);
+    expect(backend.rpc.mock.calls[2][1].p_data.learnedIds).toEqual(['first', 'second']);
+    expect(cloud.readPending()).toEqual({});
+  });
+
   it('does not propagate callback credentials into OAuth return URLs', async () => {
     const backend = client();
     const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });

@@ -273,10 +273,16 @@ async function restoreScores(overwrite = false, isCurrent = () => true) {
   const { data, error } = await supabase.rpc('restore_my_scores');
   if (error) throw error;
   if (!isCurrent()) return;
+  if (!Array.isArray(data) || data.some(row => !isStore(row) || typeof row.game !== 'string')) {
+    throw new Error('Invalid score restore response');
+  }
   // On an account switch, don't erase the previous account until the new
   // account's authoritative snapshot has actually arrived.
-  if (overwrite) clearLocalScores();
-  for (const row of data || []) {
+  if (overwrite) {
+    localStorage.setItem(MIGRATION_KEY, '1');
+    clearLocalScores();
+  }
+  for (const row of data) {
     const g = GAMES.find((x) => x.slug === row.game);
     if (!g || !isStore(row.data)) continue;
     // Overwrite on an account switch; restore when this device has no local data
@@ -285,18 +291,19 @@ async function restoreScores(overwrite = false, isCurrent = () => true) {
       // Heal a stale blob whose headline dropped below the monotonic cloud best
       // (e.g. after a device reset) so the in-game best matches the leaderboard.
       if (g.applyBest) { try { g.applyBest(row.data, num(row.best)); } catch { /* ignore */ } }
-      try { localStorage.setItem(g.key, JSON.stringify(row.data)); } catch { /* ignore */ }
+      localStorage.setItem(g.key, JSON.stringify(row.data));
     }
   }
 }
 
 // Which signed-in account the local scores currently belong to.
 const OWNER_KEY = 'arcade.sync.owner';
+const MIGRATION_KEY = 'arcade.sync.migration';
 // Mirrors shared/cloud.ts; pending writes belong to the same account as scores.
 const PENDING_KEY = 'arcade.pending.v1';
 function clearLocalScores() {
-  for (const g of GAMES) { try { localStorage.removeItem(g.key); } catch { /* ignore */ } }
-  try { localStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
+  for (const g of GAMES) localStorage.removeItem(g.key);
+  localStorage.removeItem(PENDING_KEY);
 }
 
 // Render (or clear) the personal-best chip on each hub card's bottom row (beside
@@ -440,7 +447,7 @@ async function onUser(user) {
     }
     try {
       const owner = localStorage.getItem(OWNER_KEY);
-      if (owner && owner !== user.id) {
+      if (localStorage.getItem(MIGRATION_KEY) !== null || (owner && owner !== user.id)) {
         // A different account signed in on this browser — don't carry over the
         // previous account's scores; this account's cloud data is authoritative.
         await restoreScores(true, isCurrent);
@@ -452,6 +459,7 @@ async function onUser(user) {
       }
       if (!isCurrent()) return;
       localStorage.setItem(OWNER_KEY, user.id);
+      localStorage.removeItem(MIGRATION_KEY);
     } catch {
       if (!isCurrent()) return;
       syncedFor = null; // preserve a retry path on reconnect / bfcache return

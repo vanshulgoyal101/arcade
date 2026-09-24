@@ -83,7 +83,7 @@ function saveProfileHarness(profileError: Error | null) {
   return { ...harness, profileUpsert, scoreUpdate, scoreEq, cacheProfile };
 }
 
-function restoreHarness(rows: unknown[], error: Error | null = null) {
+function restoreHarness(rows: unknown, error: Error | null = null) {
   const supabase = { rpc: vi.fn().mockResolvedValue({ data: rows, error }) };
   const GAMES = [{
     slug: 'wordle',
@@ -92,7 +92,7 @@ function restoreHarness(rows: unknown[], error: Error | null = null) {
     applyBest: (s: { maxStreak?: number }, best: number) => { s.maxStreak = Math.max(s.maxStreak || 0, best); },
   }];
   const factory = new Function(
-    'supabase', 'GAMES', 'readLocal', 'localBest', 'num', 'localStorage', 'isStore', 'clearLocalScores',
+    'supabase', 'GAMES', 'readLocal', 'localBest', 'num', 'localStorage', 'isStore', 'clearLocalScores', 'MIGRATION_KEY',
     `${between('async function restoreScores', '// Which signed-in account')} return restoreScores;`
   );
   const clearLocalScores = vi.fn(() => {
@@ -108,6 +108,7 @@ function restoreHarness(rows: unknown[], error: Error | null = null) {
     localStorage,
     (v: unknown) => v !== null && typeof v === 'object' && !Array.isArray(v),
     clearLocalScores,
+    'arcade.sync.migration',
   ) as (overwrite?: boolean, isCurrent?: () => boolean) => Promise<void>;
   return { restore, clearLocalScores };
 }
@@ -130,7 +131,7 @@ function onUserHarness(options: {
   const factory = new Function(
     'renderAccount', 'paintCardBests', 'signIn', 'hydrateProfileFromCache', 'loadProfile',
     'cacheProfile', 'applyTheme', 'clearLocalScores', 'restoreScores', 'uploadScores',
-    'localStorage', 'OWNER_KEY', 'currentUser', 'syncedFor', 'pendingSignIn', 'profile',
+    'localStorage', 'OWNER_KEY', 'currentUser', 'syncedFor', 'pendingSignIn', 'profile', 'MIGRATION_KEY',
     `let authVersion = 0;
     const closeProfile = () => {};
     const closeLeaderboard = () => {};
@@ -142,13 +143,69 @@ function onUserHarness(options: {
   const harness = factory(
     renderAccount, paintCardBests, vi.fn(), () => options.cached === true, loadProfile,
     vi.fn(), vi.fn(), vi.fn(), restoreScores, uploadScores, localStorage,
-    'arcade.sync.owner', null, null, false, profile
+    'arcade.sync.owner', null, null, false, profile, 'arcade.sync.migration'
   ) as { onUser: (user: { id: string } | null) => Promise<void>; getSyncedFor: () => string | null };
   return { ...harness, uploadScores, restoreScores, renderAccount, loadProfile };
 }
 
 describe('hub score sync', () => {
   beforeEach(() => localStorage.clear());
+
+  it.each([null, {}, [null]])('does not treat malformed restore response %j as an empty account', async response => {
+    localStorage.setItem('wordle.v1', '{"maxStreak":7}');
+    const { restore, clearLocalScores } = restoreHarness(response);
+    await expect(restore(true)).rejects.toThrow();
+    expect(clearLocalScores).not.toHaveBeenCalled();
+    expect(localStorage.getItem('wordle.v1')).toBe('{"maxStreak":7}');
+  });
+
+  it('reports a restore storage failure instead of committing an incomplete migration', async () => {
+    const { restore } = restoreHarness([{ game: 'wordle', best: 20, data: { maxStreak: 20 } }]);
+    const setItem = Storage.prototype.setItem;
+    const write = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (key === 'wordle.v1') throw new Error('quota exceeded');
+      setItem.call(this, key, value);
+    });
+    try {
+      await expect(restore(true)).rejects.toThrow('quota exceeded');
+      expect(localStorage.getItem('arcade.sync.migration')).toBe('1');
+    } finally {
+      write.mockRestore();
+    }
+  });
+
+  it('reports failure to clear the previous account stores', () => {
+    const clear = clearHarness();
+    const remove = vi.spyOn(Storage.prototype, 'removeItem').mockImplementationOnce(() => { throw new Error('storage blocked'); });
+    try {
+      expect(clear).toThrow('storage blocked');
+    } finally {
+      remove.mockRestore();
+    }
+  });
+
+  it('keeps the old owner and retries an incomplete account migration', async () => {
+    localStorage.setItem('arcade.sync.owner', 'previous-user');
+    const harness = onUserHarness();
+    harness.restoreScores.mockRejectedValueOnce(new Error('storage blocked'));
+    await harness.onUser({ id: 'user-a' });
+    expect(localStorage.getItem('arcade.sync.owner')).toBe('previous-user');
+    expect(harness.getSyncedFor()).toBeNull();
+    expect(harness.uploadScores).not.toHaveBeenCalled();
+    await harness.onUser({ id: 'user-a' });
+    expect(harness.restoreScores).toHaveBeenCalledTimes(2);
+    expect(localStorage.getItem('arcade.sync.owner')).toBe('user-a');
+  });
+
+  it('never uploads a partial migration when the previous account signs back in', async () => {
+    localStorage.setItem('arcade.sync.owner', 'user-a');
+    localStorage.setItem('arcade.sync.migration', '1');
+    const harness = onUserHarness();
+    await harness.onUser({ id: 'user-a' });
+    expect(harness.restoreScores).toHaveBeenCalledWith(true, expect.any(Function));
+    expect(harness.uploadScores).not.toHaveBeenCalled();
+    expect(localStorage.getItem('arcade.sync.migration')).toBeNull();
+  });
 
   it('only renders own avatar registry entries as SVG', () => {
     const factory = new Function('AV', 'esc', `${between('function isUrl', '// Hand-drawn')} return avatarHtml;`);

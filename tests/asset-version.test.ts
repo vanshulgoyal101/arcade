@@ -10,7 +10,7 @@ const sha = (name: string) =>
 // Query versions select new content immediately instead of waiting for revalidation.
 const VERSIONED = [
   { file: 'assets/style.css', version: 11, digest: '237efc37a64a7380' },
-  { file: 'assets/auth.js', version: 27, digest: '12fb8d9f95ec266e' },
+  { file: 'assets/auth.js', version: 28, digest: '8d1954687b8ed8a5' },
   { file: 'assets/analytics.js', version: 3, digest: 'f62fba657cd5bead' },
 ] as const;
 

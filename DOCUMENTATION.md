@@ -172,12 +172,17 @@ Do not remove a hidden game from account cleanup or it can leak progress between
 accounts on the same browser.
 
 The principal local keys beyond game stores are `arcade.sync.owner`,
-`arcade.pending.v1`, `arcade.theme`, and the Supabase SDK session key. Some sound
+`arcade.sync.migration`, `arcade.pending.v1`, `arcade.theme`, and the Supabase SDK session key. Some sound
 preferences are separate per-game mute keys. The owner marker is a consistency
 mechanism, not an authentication credential.
 
-The hub restores before uploading. A failed restore does not clear the previous
-owner's local data or advance ownership. First sign-in can claim guest progress;
+The hub restores before uploading. A failed network request or malformed response
+does not clear the previous owner's data. Local storage failures abort migration
+without advancing ownership. Before replacing stores, the hub records an
+in-progress migration; partial stores cannot be uploaded by either account.
+An authoritative hub restore must finish before the marker is cleared. This is
+recovery isolation, not an atomic localStorage transaction or a rollback of
+already removed local data. First sign-in can claim guest progress;
 switching accounts must not submit the previous account's saved results.
 In-game auth listeners invalidate stale asynchronous work and route a different
 account to the hub. Sign-out reloads the game without deleting local progress;
@@ -188,6 +193,18 @@ The queue keeps the highest headline and reads current saved progress on retry.
 Acknowledgements must not remove a higher queued score or newer equal-score
 progress. Game load and online events retry pending work. Guests do not enqueue
 leaderboard submissions simply by playing.
+
+Within a game page, restores and uploads use one operation queue per game.
+Different games remain independent. Uploads read the latest blob when their turn
+starts; rejected operations release the queue. A restore that observes local
+progress changed since it began does not overwrite it. Load-time retries wait
+until the restore finishes. Operations recheck owner and migration state before
+network writes and acknowledgements, including changes made by another tab.
+
+Word refreshes its daily view and Practice model after restore without resetting
+an active Practice round. Result-modal sign-in buttons use local event listeners,
+disable duplicate requests, and show retryable SDK failures; no global inline
+sign-in hook is needed.
 
 The database stores a monotonic `best` and a separately updated object `data`.
 Restore can heal scalar headline fields from `best`; it must not invent an

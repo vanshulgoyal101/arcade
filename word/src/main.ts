@@ -356,4 +356,14 @@ function practiceOver(newBest: boolean): void {
 renderMute();
 renderToday();
 // On load, pull this player's saved best down from the cloud (signed-in only).
-void restoreGame('word').then((updated) => { if (updated) { Object.assign(store, loadStore()); renderHud(); } });
+void restoreGame('word').then((updated) => {
+  if (!updated) return;
+  Object.assign(store, loadStore());
+  practice.best = Math.max(practice.best, store.practiceBest);
+  if (mode === 'today') {
+    viewId++;
+    renderToday();
+  } else {
+    renderHud();
+  }
+});
