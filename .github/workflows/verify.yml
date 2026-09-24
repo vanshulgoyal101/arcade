@@ -3,7 +3,7 @@ name: verify
 on:
   push:
     branches: [main]
-    paths-ignore: ['sitemap.xml', 'robots.txt']
+    paths-ignore: ['sitemap.xml']
   pull_request:
   workflow_dispatch:
 

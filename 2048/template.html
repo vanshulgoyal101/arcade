@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <script>try{var t=localStorage.getItem('arcade.theme')==='classic'?'classic':'refined';if(t==='classic')document.documentElement.setAttribute('data-theme','classic');addEventListener('DOMContentLoaded',function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='classic'?'#12141c':'#0c0d12')})}catch(e){}</script>
-  <script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(function(){})})}</script>
+  <script defer src="/assets/register-sw.js?v=1"></script>
   <script defer src="/assets/analytics.js?v=3"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0c0d12" />
@@ -15,7 +15,7 @@
   <meta name="application-name" content="2048" />
 
   <title>2048 — Free Online Sliding Puzzle | Merge Tiles, No Download</title>
-  <meta name="description" content="Play 2048 free in your browser. Swipe or use the arrow keys to slide tiles, merge matching numbers and build the 2048 tile — then keep going for 4096. No download, no sign-up, high score saved on your device." />
+  <meta name="description" content="Play 2048 online: slide tiles with swipes or arrow keys, merge matching numbers and keep going beyond 2048. Free browser puzzle with saved high scores." />
   <meta name="author" content="Tiny Arcade" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
   <link rel="canonical" href="https://games.vanshul.com/2048/" />
@@ -45,13 +45,13 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "VideoGame",
+    "@type": ["VideoGame", "WebApplication"],
     "name": "2048",
     "url": "https://games.vanshul.com/2048/",
     "image": "https://games.vanshul.com/assets/og/2048.png",
     "description": "A free browser version of the 2048 sliding puzzle: slide the board, merge matching tiles and combine your way to the 2048 tile.",
     "genre": ["Puzzle", "Strategy", "Number"],
-    "applicationCategory": "Game",
+    "applicationCategory": "GameApplication",
     "operatingSystem": "Any (modern web browser)",
     "gamePlatform": ["Web browser", "Desktop", "Mobile"],
     "inLanguage": "en",

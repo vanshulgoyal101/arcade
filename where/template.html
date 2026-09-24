@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <script>try{var t=localStorage.getItem('arcade.theme')==='classic'?'classic':'refined';if(t==='classic')document.documentElement.setAttribute('data-theme','classic');addEventListener('DOMContentLoaded',function(){var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',t==='classic'?'#12141c':'#0c0d12')})}catch(e){}</script>
-  <script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).catch(function(){})})}</script>
+  <script defer src="/assets/register-sw.js?v=1"></script>
   <script defer src="/assets/analytics.js?v=3"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0c0d12" />
@@ -14,7 +14,7 @@
   <meta name="apple-mobile-web-app-title" content="Where" />
   <meta name="application-name" content="Where" />
   <title>Where — Geography Quiz | Guess the Country by Flag &amp; Capital</title>
-  <meta name="description" content="How well do you know the world? Where is a free geography quiz — identify the country from its flag or capital city, with four choices each round across nearly 200 countries. Learn flags and capitals fast. Plays instantly in your browser." />
+  <meta name="description" content="Guess countries from flags or capitals in Where. Choose a difficulty, answer four-option questions and revisit missed countries. Free geography quiz." />
   <meta name="author" content="Tiny Arcade" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
   <link rel="canonical" href="https://games.vanshul.com/where/" />
@@ -44,13 +44,13 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "VideoGame",
+    "@type": ["VideoGame", "WebApplication"],
     "name": "Where",
     "url": "https://games.vanshul.com/where/",
     "image": "https://games.vanshul.com/assets/og/where.png",
     "description": "A free geography quiz: identify the country from its flag or capital city, choosing from four options each round across nearly 200 countries.",
     "genre": ["Educational", "Trivia", "Geography"],
-    "applicationCategory": "Game",
+    "applicationCategory": "GameApplication",
     "operatingSystem": "Any (modern web browser)",
     "gamePlatform": ["Web browser", "Desktop", "Mobile"],
     "inLanguage": "en",

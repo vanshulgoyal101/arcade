@@ -77,6 +77,11 @@ Local scores and preferences are device data, not a secure vault. A script
 running on this origin can read them and the SDK's session. Do not add arbitrary
 third-party scripts or render unsanitized names, URLs, or stored HTML.
 
+Catalog search is local-only: its module neither persists nor transmits the query
+and never renders it as HTML. Filtering does not modify account or score data.
+Allowing crawlers to fetch the stats page exposes its noindex directive, not its
+owner-only database results. Robots directives are not access controls.
+
 ## Database Changes and Tests
 
 Canonical schemas: `supabase/arcade_scores.sql`, then `supabase/analytics.sql`.
@@ -103,6 +108,17 @@ failures, or a complete hosted Supabase installation. Each security test rolls
 back its data. The migration is checked against canonical function definitions
 and tested for repeat application. The audit command is read-only against the
 configured live project and requires a local management token.
+
+The audit exports its headline SQL without loading credentials or making network
+requests on import. Map extraction accepts only JSON numbers through a guarded
+SQL CASE; numeric strings, booleans, and malformed values cannot trigger unsafe
+numeric casts. An empty or non-object map produces an unreadable headline rather
+than an invented zero. Isolated SQL regressions exercise mixed maps, malformed
+strings, numeric strings, and scientific-notation numbers. The CLI reports
+unreadable stores and blob-ahead rows with a nonzero exit code; a higher monotonic
+board best may reflect a stale blob. These are consistency signals, not proof
+that a client-reported score was genuinely earned. Investigate before any repair;
+the audit never applies one automatically.
 
 ```sh
 node scripts/db-migrate.mjs --write

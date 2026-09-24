@@ -34,15 +34,32 @@ try {
     const hub = await context.newPage();
     await hub.goto(base, { waitUntil: 'networkidle' });
     assert.equal(await hub.locator('.grid a.card').count(), 10);
+    const search = hub.locator('#game-search');
+    await search.fill('typing');
+    assert.equal(await hub.locator('.grid a.card:visible').count(), 1);
+    assert.equal(await hub.locator('.grid a.card:visible').getAttribute('data-game'), 'sprint');
+    await search.press('Enter');
+    assert.equal(hub.url(), `${base}/`);
+    await hub.locator('#randomBtn').click();
+    await hub.waitForURL(`${base}/sprint/`);
+    await hub.goBack({ waitUntil: 'networkidle' });
+    await search.fill('no-such-game');
+    assert.equal(await hub.locator('.grid a.card:visible').count(), 0);
+    assert.equal(await hub.locator('#randomBtn').isDisabled(), true);
+    assert.equal(await hub.locator('#game-count').innerText(), 'No games match.');
+    await hub.locator('#catalog-search button[type="reset"]').click();
+    assert.equal(await hub.locator('.grid a.card:visible').count(), 10);
+    assert.equal(await search.evaluate(element => element === document.activeElement), true);
     assert.equal(await hub.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `hub: overflow at ${width}`);
     for (const image of await hub.locator('.card-art img').all()) {
       await image.scrollIntoViewIfNeeded();
       await image.evaluate(image => image.decode());
     }
     assert.equal(await hub.evaluate(() => [...document.images].some(image => !image.complete || !image.naturalWidth)), false, 'hub: broken art');
+    if (artifacts) await hub.screenshot({ path: resolve(artifacts, `hub-${width}.png`), fullPage: true });
     await hub.locator('a[href="/privacy/"]').click();
     assert.equal(await hub.locator('#analytics-enabled').count(), 1);
-    console.log(`PASS hub ${width}px: catalog, art, layout, privacy navigation`);
+    console.log(`PASS hub ${width}px: search, reset, filtered random, art, layout, privacy navigation`);
     await hub.close();
     for (const game of games) {
       const page = await context.newPage();
@@ -232,6 +249,21 @@ try {
   });
   assert.deepEqual(privateRequests, Array.from({ length: 4 }, () => ({ status: 200, cached: false })));
   console.log('PASS service worker: callback and private requests bypass offline storage');
+  const updatePage = await offlineContext.newPage();
+  await updatePage.goto(`${base}/wordle/`, { waitUntil: 'networkidle' });
+  await updatePage.keyboard.type('cra');
+  const guessBeforeUpdate = await updatePage.locator('#board').innerText();
+  assert(guessBeforeUpdate.includes('C'), 'Wordle: typed guess before update');
+  await updatePage.evaluate(async () => {
+    globalThis.updateMarker = true;
+    const controlled = new Promise(resolve => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true }));
+    await navigator.serviceWorker.register('/sw.js?test-update=1', { updateViaCache: 'none' });
+    await controlled;
+  });
+  assert.equal(await updatePage.evaluate(() => globalThis.updateMarker), true, 'Worker installation must not reload the page');
+  assert.equal(await updatePage.locator('#board').innerText(), guessBeforeUpdate, 'Wordle guess survives worker installation');
+  console.log('PASS service worker: installing an update preserves the active Wordle guess');
+  await updatePage.close();
   await offlineContext.setOffline(true);
   await offlinePage.reload({ waitUntil: 'networkidle' });
   assert.equal(await offlinePage.locator('.tile').count(), 2);

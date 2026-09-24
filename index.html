@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<!-- SEO: replace every "https://games.vanshul.com" below with your real production domain. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://esm.sh; font-src 'self'; base-uri 'self'; object-src 'none'" />
   <script>try{if(localStorage.getItem('arcade.theme')==='classic')document.documentElement.setAttribute('data-theme','classic')}catch(e){}</script>
-  <script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(function(r){r.update();setInterval(function(){r.update()},60000);document.addEventListener('visibilitychange',function(){document.hidden||r.update()});r.addEventListener('updatefound',function(){var n=r.installing;n&&n.addEventListener('statechange',function(){n.state==='installed'&&navigator.serviceWorker.controller&&location.reload()})})}).catch(function(){})})}</script>
+  <script defer src="/assets/register-sw.js?v=1"></script>
   <script defer src="/assets/analytics.js?v=3"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#0c0d12" />
@@ -16,8 +15,8 @@
   <meta name="apple-mobile-web-app-title" content="Tiny Arcade" />
   <meta name="application-name" content="Tiny Arcade" />
 
-  <title>Tiny Arcade — 10 Free Browser Brain &amp; Skill Games, No Download</title>
-  <meta name="description" content="Play ten free, instant browser games — no download, no signup. Reflex, memory and colour puzzles plus brain trainers: mental maths, typing speed, digit span, speed reading, geography, 2048 and unlimited Wordle. Works on mobile; scores saved locally." />
+  <title>Tiny Arcade | 10 Free Browser Games: 2048, Wordle &amp; More</title>
+  <meta name="description" content="Play 10 free browser games, including 2048, unlimited Wordle, typing, memory, mental math and geography. No download or signup; play on mobile or desktop." />
   <meta name="author" content="Tiny Arcade" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
   <link rel="canonical" href="https://games.vanshul.com/" />
@@ -48,8 +47,8 @@
   <link rel="preconnect" href="https://esm.sh" crossorigin />
   <link rel="preconnect" href="https://tmngedsmgcgbkbkmsnsw.supabase.co" crossorigin />
   <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2.45.4?bundle" crossorigin />
-  <link rel="stylesheet" href="assets/style.css?v=11" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%230c0d12'/><g fill='none' stroke='%23fb7185' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M6 10a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v3a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4v-3z'/><path d='M9 11v3M7.5 12.5h3M16 12h.01M18 14h.01'/></g></svg>" />
+  <link rel="stylesheet" href="assets/style.css?v=12" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-192.png" />
   <link rel="manifest" href="/site.webmanifest" />
   <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
 
@@ -71,7 +70,7 @@
         "@id": "https://games.vanshul.com/#org",
         "name": "Tiny Arcade",
         "url": "https://games.vanshul.com/",
-        "logo": "https://games.vanshul.com/assets/og/hub.png",
+        "logo": "https://games.vanshul.com/assets/icons/icon-512.png",
         "sameAs": [
           "https://vanshul.com",
           "https://github.com/vanshulgoyal101",
@@ -81,7 +80,18 @@
         ]
       },
       {
+        "@type": "CollectionPage",
+        "@id": "https://games.vanshul.com/#webpage",
+        "name": "Tiny Arcade Games",
+        "url": "https://games.vanshul.com/",
+        "isPartOf": { "@id": "https://games.vanshul.com/#website" },
+        "mainEntity": { "@id": "https://games.vanshul.com/#games" }
+      },
+      {
         "@type": "ItemList",
+        "@id": "https://games.vanshul.com/#games",
+        "numberOfItems": 10,
+        "itemListOrder": "https://schema.org/ItemListUnordered",
         "name": "Tiny Arcade games",
         "itemListElement": [
           { "@type": "ListItem", "position": 1, "name": "Hue Hunt", "url": "https://games.vanshul.com/hue-hunt/" },
@@ -109,9 +119,17 @@
       <button type="button" id="lbBtn" class="theme-btn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;color:#facc15" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3M12 13v3.2M9 19.5h6"/></svg> Leaderboard</button>
       <span id="account" class="account"></span>
     </div>
+    <form id="catalog-search" class="catalog-search" role="search" aria-label="Find a game" hidden>
+      <label for="game-search">Find a game</label>
+      <div class="catalog-fields">
+        <input id="game-search" type="search" placeholder="Name or category" maxlength="80" autocomplete="off" spellcheck="false" aria-controls="game-grid" />
+        <button type="reset" class="theme-btn">Clear</button>
+      </div>
+      <p id="game-count" role="status" aria-live="polite" aria-atomic="true"></p>
+    </form>
   </header>
 
-  <main class="grid">
+  <main class="grid" id="game-grid">
     <a class="card" data-game="hue-hunt" href="hue-hunt/">
       <div class="card-art"><img src="assets/art/hue-hunt.svg" alt="" loading="lazy" width="400" height="220" /><span class="card-emoji"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.4"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg></span></div>
       <h2>Hue Hunt</h2>
@@ -243,18 +261,6 @@
     })();
   </script>
   <script type="module" src="assets/auth.js?v=28"></script>
-  <script>
-    // "Surprise me": jump straight into a random game.
-    (function () {
-      var b = document.getElementById('randomBtn');
-      if (!b) return;
-      b.addEventListener('click', function () {
-        var cards = document.querySelectorAll('.grid a.card');
-        if (!cards.length) return;
-        var href = cards[Math.floor(Math.random() * cards.length)].getAttribute('href');
-        if (href) location.href = href;
-      });
-    })();
-  </script>
+  <script type="module" src="assets/catalog.js?v=1"></script>
 </body>
 </html>

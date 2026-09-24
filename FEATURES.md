@@ -33,7 +33,8 @@ hub, its ItemList, and its public leaderboard contain ten games.
 - Generated 1080-by-1080 result cards, native sharing where supported, and
   clipboard fallbacks. Result snapshots survive a replay during image encoding.
 - Restart, result dismissal/replay controls, answer feedback, and personal bests.
-- Hub random-game selection and best-score badges refreshed on return navigation.
+- Local catalog search by name, description, or category; Random selects from
+  current matches. Best-score badges refresh on return navigation.
 - Optional Google sign-in, editable profile/avatars, cloud backup and restoration.
 - Persistent retry queue, monotonic headline scores, competition-style tied ranks,
   bounded public leaderboard queries, and private saved-data/profile reads.
@@ -50,6 +51,15 @@ hub, its ItemList, and its public leaderboard contain ten games.
   smoke tests, service-worker tests, dependency audits, and a release CI workflow.
 
 ## Historical Changes
+
+The September 24 discovery release adds local catalog search, source-to-published
+SEO parity checks, a crawlable PNG favicon, and a CollectionPage linked to the
+ten-game ItemList. All game descriptions are distinct and concise; game schemas
+include WebApplication with GameApplication or EducationalApplication categories.
+Stats remains noindex but is crawlable so crawlers can read that directive.
+Shared worker registration replaces thirteen inline copies and never deliberately
+reloads an active game. The read-only database audit now checks JSON number types
+before casting map values, preventing malformed strings from aborting a scan.
 
 The deeper September 24 follow-up fixed overlapping cloud writes and late
 restores that could replace newer progress. Game pages coordinate restores and
@@ -87,6 +97,108 @@ Legacy `/game/dist/` URLs now redirect to `/game/`. Historical claims that all
 profile rows were public, database tests required production writes, zoom was
 disabled intentionally, or the entire site had no backend no longer describe
 the current implementation. Git history is the detailed historical record.
+
+## Discovery and Update Contracts
+
+### Catalog Search
+
+[assets/catalog.js](assets/catalog.js) progressively enhances the static hub.
+It indexes card headings, descriptions, and category tags once, excluding personal
+best badges and profile data. Whitespace and hyphens split search terms; all terms
+must match, ignoring case. British `colour` and American `color` are equivalent.
+This is a small substring filter, not fuzzy search or a remote search service.
+
+The form has a visible label, an 80-character input limit, and a polite result
+count. No matches hides the cards and disables Random. Clear restores every card
+and returns focus to the input. Enter does not navigate or submit a query. Random
+chooses uniformly among matching cards. Returning through browser history reruns
+the filter for any browser-restored input value. The ten links remain in the
+initial HTML; without JavaScript the search form stays hidden and navigation works.
+
+Search text is not written to storage, URLs, analytics, or network requests by
+the catalog module. Browser-managed form history is outside this guarantee.
+There are no generated search-result pages, SearchAction claims, new database
+tables, or changes to the featured-game registry. Adding a card automatically
+adds its visible text to the search index; update ItemList and sitemap policy
+when changing which games are featured.
+
+### Worker Registration
+
+[assets/register-sw.js](assets/register-sw.js) is loaded once by the hub and each
+of the twelve game templates. This supersedes older documentation describing
+automatic page reloads on worker installation. Registration uses
+`updateViaCache: 'none'`; checks occur on load, online/visibility events, and a
+60-second interval. Hidden or offline pages skip checks, concurrent requests are
+coalesced, and rejected registration/update attempts permit a later retry.
+
+Installation never calls page reload. Open games keep their in-memory state;
+updated application HTML and bundles take effect on normal navigation or reload.
+The worker still activates with `skipWaiting` and claims clients, so changes to
+its request handling must remain compatible with already-open older game code.
+There is no guaranteed offline first visit, complete pre-cache, or immediate UI
+upgrade. Cache eviction and external SDK/image availability remain browser/network
+constraints. Privacy exclusions and cache ownership are described in
+[SECURITY.md](SECURITY.md).
+
+### Search Engine Policy
+
+The hub graph links CollectionPage to an unordered ten-entry ItemList, matching
+the visible catalog. Its favicon and organization logo use existing same-origin
+square PNG files. Each game has its own concise description and canonical URL;
+the 180-character test limit is an editorial convention, not a search-engine
+snippet limit. Game schema describes the actual free web application without
+invented ratings, reviews, or invisible FAQs. No structured markup guarantees a
+rich result.
+
+Stats and the error page remain noindex. Robots allows stats crawling because a
+Disallow would prevent compliant crawlers from reading its noindex directive.
+This does not expose owner-only analytics: database authorization remains the
+security boundary. Word and Interval are still playable and potentially indexable
+through related links, but intentionally absent from the submitted sitemap and
+featured grid. Filtering does not alter canonical URLs or schema.
+
+After deployment, inspect the hub and representative game URLs in the owner's
+Search Console, check selected canonicals and rendered content, and submit
+`https://games.vanshul.com/sitemap.xml`. Review page-indexing exclusions and the
+actual stats noindex status. Compare relevant page/query impressions, clicks,
+CTR, and position over comparable 28-day windows, segmented by device and country.
+Record release dates and avoid attributing every change to one metadata edit.
+Use field Core Web Vitals when available; local screenshots and handler timings
+are not field LCP, INP, or CLS. Prioritize measured problems and useful original
+game content, not doorway pages or repeated keyword variations. Search Console
+submission, indexing outcomes, and ranking gains are not established by local tests.
+
+### Regression and Release Checks
+
+| Contract | Executable evidence |
+| --- | --- |
+| Catalog filtering, no-JS links, reset, focus, empty results, Random, history | [tests/catalog.test.ts](tests/catalog.test.ts) |
+| Metadata uniqueness, generated parity, schema/card agreement, favicon dimensions, internal links, noindex | [tests/seo.test.ts](tests/seo.test.ts) |
+| Sitemap exclusions, canonical handling, XML and path safety | [tests/sitemap.test.ts](tests/sitemap.test.ts) |
+| All thirteen worker imports, plain asset versions and content hashes | [tests/asset-version.test.ts](tests/asset-version.test.ts) |
+| Worker retries, concurrency, visibility/offline behavior and cache privacy | [tests/service-worker.test.ts](tests/service-worker.test.ts) |
+| Numeric map extraction, malformed values, SQL authorization and grants | [tests/database.test.ts](tests/database.test.ts) |
+| Desktop/mobile catalog navigation, real worker replacement preserving Wordle, offline replay | [scripts/browser-test.mjs](scripts/browser-test.mjs) |
+
+Run the focused files after editing their owner, then the full release gates:
+
+```sh
+npx vitest run --maxWorkers=2
+node scripts/db-migrate.mjs --check
+npm run build:games
+ARCADE_SCREENSHOTS=/tmp/arcade-shots npm run test:browser
+npm audit --audit-level=low
+git diff --check
+```
+
+Audit each of the twelve game dependency trees separately as well. The browser
+runner owns and closes a loopback server and uses isolated browser contexts;
+routine checks must not write test scores to production. With maintainer
+credentials, `node scripts/db-audit.mjs` separately checks live saved-headline
+consistency without modifying rows. Review staged paths, push the tested revision,
+watch both verification and Pages jobs, then compare live entry points/assets
+with the committed files. Pages currently publishes independently of verification.
+Robots-only changes now trigger verification; sitemap-only bot changes do not.
 
 ## Proposed, Not Implemented
 

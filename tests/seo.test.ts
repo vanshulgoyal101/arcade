@@ -1,11 +1,97 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import sharp from 'sharp';
 
 const games = readdirSync('.').filter(name => existsSync(`${name}/template.html`));
 const pages = ['index.html', 'privacy/index.html', ...games.map(game => `${game}/template.html`)];
 const parse = (path: string) => new DOMParser().parseFromString(readFileSync(path, 'utf8'), 'text/html');
+const schemas = (document: Document) => [...document.querySelectorAll('script[type="application/ld+json"]')]
+  .flatMap(script => {
+    const value = JSON.parse(script.textContent!);
+    return value['@graph'] ?? [value];
+  });
 
 describe('search and accessibility contracts', () => {
+  it.each(games)('%s publishes the metadata and structured data from its source', game => {
+    const source = parse(`${game}/template.html`);
+    const published = parse(`${game}/index.html`);
+    expect(published.title).toBe(source.title);
+    for (const selector of ['meta[name="description"]', 'meta[property="og:url"]', 'meta[property="og:image"]', 'link[rel="canonical"]']) {
+      expect(published.querySelector(selector)?.outerHTML).toBe(source.querySelector(selector)?.outerHTML);
+    }
+    expect(schemas(published)).toEqual(schemas(source));
+  });
+
+  it('uses unique titles and concise, distinct search descriptions', () => {
+    const documents = pages.map(parse);
+    const titles = documents.map(document => document.title);
+    const descriptions = documents.map(document => document.querySelector('meta[name="description"]')!.getAttribute('content')!);
+    expect(new Set(titles).size).toBe(pages.length);
+    expect(new Set(descriptions).size).toBe(pages.length);
+    for (const description of descriptions) expect(description.length).toBeLessThanOrEqual(180);
+  });
+
+  it('describes exactly the featured catalog in the homepage graph', () => {
+    const document = parse('index.html');
+    const graph = schemas(document);
+    const list = graph.find(schema => schema['@type'] === 'ItemList');
+    const collection = graph.find(schema => schema['@type'] === 'CollectionPage');
+    const cards = [...document.querySelectorAll('.grid a.card')];
+    expect(collection.mainEntity['@id']).toBe(list['@id']);
+    expect(list.numberOfItems).toBe(cards.length);
+    expect(list.itemListElement.map((item: { position: number }) => item.position)).toEqual(cards.map((_, index) => index + 1));
+    const items = list.itemListElement.map((item: { url: string; name: string }) => [item.url, item.name]);
+    for (const card of cards) {
+      expect(items).toContainEqual([new URL(card.getAttribute('href')!, 'https://games.vanshul.com/').href, card.querySelector('h2')!.textContent]);
+    }
+    expect(items).toHaveLength(cards.length);
+  });
+
+  it('lets crawlers read noindex on private and error pages', () => {
+    expect(readFileSync('robots.txt', 'utf8')).not.toMatch(/^Disallow:\s*\/stats\/?\s*$/mi);
+    for (const path of ['stats/index.html', '404.html']) {
+      expect(parse(path).querySelector('meta[name="robots"]')!.getAttribute('content')).toContain('noindex');
+    }
+  });
+
+  it.each(pages)('%s links only to existing local public pages', path => {
+    const document = parse(path);
+    const canonical = document.querySelector('link[rel="canonical"]')!.getAttribute('href')!;
+    for (const anchor of document.body.querySelectorAll('a[href]')) {
+      const url = new URL(anchor.getAttribute('href')!, canonical);
+      if (url.origin !== 'https://games.vanshul.com') continue;
+      const file = url.pathname.endsWith('/') ? `${url.pathname}index.html` : url.pathname;
+      expect(existsSync(file.slice(1)), `${path} links to missing ${file}`).toBe(true);
+    }
+  });
+
+  it.each(games)('%s keeps its application schema and breadcrumb aligned with its canonical page', game => {
+    const document = parse(`${game}/template.html`);
+    const graph = schemas(document);
+    const canonical = document.querySelector('link[rel="canonical"]')!.getAttribute('href');
+    const app = graph.find(schema => [schema['@type']].flat().includes('WebApplication'));
+    expect(app).toBeDefined();
+    expect(app.url).toBe(canonical);
+    expect(app.applicationCategory).toBe(['word', 'flash'].includes(game) ? 'EducationalApplication' : 'GameApplication');
+    expect(app.image).toBe(document.querySelector('meta[property="og:image"]')!.getAttribute('content'));
+    expect(Number(app.offers.price)).toBe(0);
+    expect(app.isAccessibleForFree).toBe(true);
+    const breadcrumb = graph.find(schema => schema['@type'] === 'BreadcrumbList');
+    expect(breadcrumb.itemListElement.map((item: { item: string }) => item.item)).toEqual(['https://games.vanshul.com/', canonical]);
+  });
+
+  it('publishes a crawlable square favicon for the site', async () => {
+    const document = parse('index.html');
+    const icon = document.querySelector('link[rel="icon"][type="image/png"]');
+    expect(icon).not.toBeNull();
+    const url = new URL(icon!.getAttribute('href')!, 'https://games.vanshul.com/');
+    expect(url.origin).toBe('https://games.vanshul.com');
+    const metadata = await sharp(url.pathname.slice(1)).metadata();
+    expect(metadata.format).toBe('png');
+    expect(metadata.width).toBeGreaterThanOrEqual(48);
+    expect(metadata.width).toBe(metadata.height);
+  });
+
   it.each(pages)('%s has one canonical URL, useful metadata, and working image references', (path) => {
     const document = parse(path);
     const expected = `https://games.vanshul.com/${path === 'index.html' ? '' : path.split('/')[0] + '/'}`;

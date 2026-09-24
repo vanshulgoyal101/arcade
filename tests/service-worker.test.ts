@@ -93,3 +93,75 @@ describe('service worker resilience', () => {
     await Promise.all(result.lifetime);
   });
 });
+
+function registration() {
+  const events: Record<string, () => unknown> = {};
+  const update = vi.fn().mockResolvedValue(undefined);
+  const register = vi.fn().mockResolvedValue({ update });
+  const navigator = { serviceWorker: { register }, onLine: true };
+  const document = { hidden: false, addEventListener: (event: string, handler: () => unknown) => { events[event] = handler; } };
+  const reload = vi.fn();
+  const setInterval = vi.fn();
+  runInNewContext(readFileSync('assets/register-sw.js', 'utf8'), {
+    navigator, document, location: { reload }, setInterval,
+    addEventListener: (event: string, handler: () => unknown) => { events[event] = handler; },
+  });
+  return { events, update, register, navigator, document, reload, setInterval };
+}
+
+describe('service worker registration lifecycle', () => {
+  it('registers without reloading the page or attaching install-time reload handlers', async () => {
+    const environment = registration();
+    environment.events.load();
+    await environment.register.mock.results[0].value;
+    expect(environment.register).toHaveBeenCalledExactlyOnceWith('/sw.js', { updateViaCache: 'none' });
+    expect(environment.setInterval).toHaveBeenCalledWith(expect.any(Function), 60000);
+    expect(environment.reload).not.toHaveBeenCalled();
+  });
+
+  it('retries rejected registration and update requests without leaking rejections', async () => {
+    const environment = registration();
+    environment.register.mockRejectedValueOnce(new Error('offline'));
+    await environment.events.online();
+    await environment.events.online();
+    expect(environment.register).toHaveBeenCalledTimes(2);
+    environment.update.mockRejectedValueOnce(new Error('offline'));
+    await environment.events.online();
+    await environment.events.online();
+    expect(environment.update).toHaveBeenCalledTimes(2);
+    expect(environment.reload).not.toHaveBeenCalled();
+  });
+
+  it('skips hidden and offline checks and resumes when visible and online', async () => {
+    const environment = registration();
+    environment.document.hidden = true;
+    await environment.events.visibilitychange();
+    environment.document.hidden = false;
+    environment.navigator.onLine = false;
+    await environment.events.online();
+    expect(environment.register).not.toHaveBeenCalled();
+    environment.navigator.onLine = true;
+    await environment.events.online();
+    expect(environment.register).toHaveBeenCalledOnce();
+  });
+
+  it('coalesces simultaneous update triggers', async () => {
+    const environment = registration();
+    let finish!: (value: { update: typeof environment.update }) => void;
+    environment.register.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const initial = environment.events.online();
+    await environment.events.visibilitychange();
+    await environment.events.online();
+    expect(environment.register).toHaveBeenCalledOnce();
+    finish({ update: environment.update });
+    await initial;
+    await environment.events.online();
+    expect(environment.update).toHaveBeenCalledOnce();
+  });
+
+  it('does nothing when service workers are unsupported', () => {
+    const addEventListener = vi.fn();
+    runInNewContext(readFileSync('assets/register-sw.js', 'utf8'), { navigator: {}, addEventListener });
+    expect(addEventListener).not.toHaveBeenCalled();
+  });
+});

@@ -9,7 +9,9 @@ const sha = (name: string) =>
 
 // Query versions select new content immediately instead of waiting for revalidation.
 const VERSIONED = [
-  { file: 'assets/style.css', version: 11, digest: '237efc37a64a7380' },
+  { file: 'assets/style.css', version: 12, digest: 'ebe0ff21dfa54939' },
+  { file: 'assets/catalog.js', version: 1, digest: '01eda4a64c659301' },
+  { file: 'assets/register-sw.js', version: 1, digest: '4b3388c2fa5f59a3' },
   { file: 'assets/auth.js', version: 28, digest: '8d1954687b8ed8a5' },
   { file: 'assets/analytics.js', version: 3, digest: 'f62fba657cd5bead' },
 ] as const;
@@ -26,6 +28,14 @@ const SHARED_MODULE = {
 const hub = read('index.html');
 
 describe('versioned hub assets', () => {
+  it('loads the shared worker registration once on the hub and every game', () => {
+    const games = readdirSync('.').filter(name => existsSync(`${name}/template.html`));
+    for (const file of ['index.html', ...games.map(game => `${game}/template.html`)]) {
+      const document = new DOMParser().parseFromString(read(file), 'text/html');
+      expect(document.querySelectorAll('script[src="/assets/register-sw.js?v=1"]'), file).toHaveLength(1);
+      expect(read(file), file).not.toContain('navigator.serviceWorker.register(');
+    }
+  });
   it('uses the same analytics version on every game and privacy page', () => {
     const games = readdirSync('.').filter(name => existsSync(`${name}/template.html`));
     for (const file of ['privacy/index.html', ...games.map(game => `${game}/template.html`)]) {
