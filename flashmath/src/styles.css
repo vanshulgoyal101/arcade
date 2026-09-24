@@ -111,6 +111,7 @@ button { font-family: inherit; }
   margin-bottom: 12px;
 }
 .answer.flash-bad { animation: shake .3s ease; color: var(--bad); }
+.answer.answer-ready { color: var(--good); }
 @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
 
 .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 360px; margin: 0 auto; }

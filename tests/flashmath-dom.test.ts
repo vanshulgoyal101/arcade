@@ -48,11 +48,20 @@ describe('flashmath/dom', () => {
 
   it('automatically submits a correct keyboard answer exactly once', async () => {
     const app = await load();
-    typeNumber(solve(text(app.querySelector('#problem'))));
+    const problem = text(app.querySelector('#problem'));
+    const answer = solve(problem);
+    typeNumber(answer);
+    expect(text(app.querySelector('#answer'))).toBe(String(answer));
+    expect(app.querySelector('#answer')!.classList.contains('answer-ready')).toBe(true);
+    await vi.advanceTimersByTimeAsync(299);
+    expect(text(app.querySelector('#problem'))).toBe(problem);
+    expect(text(app.querySelector('#score'))).toBe('0');
+    await vi.advanceTimersByTimeAsync(1);
     const score = text(app.querySelector('#score'));
     expect(Number(score)).toBeGreaterThan(0);
     expect(text(app.querySelector('#level'))).toBe('2');
     expect(text(app.querySelector('#answer'))).toBe('');
+    expect(app.querySelector('#answer')!.classList.contains('answer-ready')).toBe(false);
     key('Enter');
     expect(text(app.querySelector('#score'))).toBe(score);
     expect(text(app.querySelector('#level'))).toBe('2');
@@ -72,6 +81,7 @@ describe('flashmath/dom', () => {
           expect(text(app.querySelector('#answer'))).toBe(answer.slice(0, index + 1));
         }
       }
+      await vi.advanceTimersByTimeAsync(300);
       expect(Number(text(app.querySelector('#score')))).toBeGreaterThan(0);
       expect(text(app.querySelector('#level'))).toBe('2');
       app.querySelector<HTMLButtonElement>('[data-k="enter"]')!.click();
@@ -87,10 +97,59 @@ describe('flashmath/dom', () => {
       const app = await load();
       expect(solve(text(app.querySelector('#problem')))).toBe(0);
       key('0');
+      await vi.advanceTimersByTimeAsync(300);
       expect(text(app.querySelector('#level'))).toBe('2');
       expect(text(app.querySelector('#answer'))).toBe('');
     } finally {
       random.mockRestore();
+    }
+  });
+
+  it('cancels on edits and confirms again after a backspace correction', async () => {
+    const app = await load();
+    const answer = solve(text(app.querySelector('#problem')));
+    typeNumber(answer);
+    await vi.advanceTimersByTimeAsync(200);
+    key('1');
+    expect(app.querySelector('#answer')!.classList.contains('answer-ready')).toBe(false);
+    await vi.advanceTimersByTimeAsync(350);
+    expect(text(app.querySelector('#score'))).toBe('0');
+    expect(text(app.querySelector('#answer'))).toBe(`${answer}1`);
+    key('Backspace');
+    expect(app.querySelector('#answer')!.classList.contains('answer-ready')).toBe(true);
+    await vi.advanceTimersByTimeAsync(299);
+    expect(text(app.querySelector('#level'))).toBe('1');
+    await vi.advanceTimersByTimeAsync(1);
+    expect(text(app.querySelector('#level'))).toBe('2');
+  });
+
+  it('lets Enter bypass confirmation without a second delayed submission', async () => {
+    const app = await load();
+    typeNumber(solve(text(app.querySelector('#problem'))));
+    key('Enter');
+    const score = text(app.querySelector('#score'));
+    expect(Number(score)).toBeGreaterThan(0);
+    await vi.advanceTimersByTimeAsync(350);
+    expect(text(app.querySelector('#score'))).toBe(score);
+    expect(text(app.querySelector('#level'))).toBe('2');
+  });
+
+  it('does not charge confirmation time against either fast-answer bonus', async () => {
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(0);
+    try {
+      const app = await load();
+      clock.mockReturnValue(2490);
+      typeNumber(solve(text(app.querySelector('#problem'))));
+      clock.mockReturnValue(2790);
+      await vi.advanceTimersByTimeAsync(300);
+      expect(text(app.querySelector('#score'))).toBe('25');
+      clock.mockReturnValue(5280);
+      typeNumber(solve(text(app.querySelector('#problem'))));
+      clock.mockReturnValue(5580);
+      await vi.advanceTimersByTimeAsync(300);
+      expect(text(app.querySelector('#score'))).toBe('60');
+    } finally {
+      clock.mockRestore();
     }
   });
 
@@ -107,6 +166,7 @@ describe('flashmath/dom', () => {
     typeNumber(answer + 1);
     key('Enter');
     typeNumber(answer);
+    await vi.advanceTimersByTimeAsync(300);
     const score = text(app.querySelector('#score'));
     expect(Number(score)).toBeGreaterThan(0);
     const partial = String(solve(text(app.querySelector('#problem')))).startsWith('1') ? '2' : '1';
@@ -159,6 +219,22 @@ describe('flashmath/dom', () => {
     expect(Number.parseInt(text(countdown))).toBe(Number.parseInt(initial) - 1);
     expect(observer.takeRecords()).toHaveLength(1);
     observer.disconnect();
+  });
+
+  it('cancels pending confirmation on expiry and does not affect replay', async () => {
+    const { app, expire } = await loadWithFrame();
+    typeNumber(solve(text(app.querySelector('#problem'))));
+    expect(app.querySelector('#answer')!.classList.contains('answer-ready')).toBe(true);
+    expire();
+    expect(app.querySelector('#answer')!.classList.contains('answer-ready')).toBe(false);
+    await vi.advanceTimersByTimeAsync(350);
+    expect(text(app.querySelector('#score'))).toBe('0');
+    app.querySelector<HTMLButtonElement>('#m-again')!.click();
+    const partial = String(solve(text(app.querySelector('#problem')))).startsWith('1') ? '2' : '1';
+    key(partial);
+    await vi.advanceTimersByTimeAsync(350);
+    expect(text(app.querySelector('#answer'))).toBe(partial);
+    expect(text(app.querySelector('#level'))).toBe('1');
   });
 
   it('starts a replay with an empty answer', async () => {

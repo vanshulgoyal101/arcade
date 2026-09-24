@@ -81,9 +81,12 @@ The September 23 audit completed compact point-score labels in Flashmath and
 Interval, fixed delayed share-caption races in seven games, distinguished
 cancelled sharing from success, and cleaned up failed clipboard fallback nodes.
 Flashmath no longer clears a rapidly corrected answer with an old feedback timer.
-Correct answers now submit immediately from either the keypad or keyboard, including
-zero; incomplete entries wait for more input. Enter and the tick remain available
-for explicit submission but are not required for correct answers.
+Correct answers, including zero, turn green and remain visible for 300 ms before
+auto-submitting from either the keypad or keyboard. Edits cancel and recheck that
+confirmation; Enter or the tick can submit immediately. Incomplete entries wait
+for more input. Fast-answer bonuses use the answer-completion time, and the next
+problem's timing starts when it appears. The round countdown continues normally;
+expiry or replay cancels any pending submission.
 Hub theme writes are tied to the account that initiated them; partial profiles
 retain their theme, authentication errors remain retryable, and a failed score
 identity refresh does not misreport a saved profile as failed. The private stats

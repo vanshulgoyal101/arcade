@@ -69,6 +69,7 @@ let entry = '';
 let rafId = 0;
 let lastTick = 0;
 let answerResetTimer = 0;
+let autoSubmitTimer = 0;
 
 const OP_LABEL: Record<Op, string> = { '+': '+', '−': '−', '×': '×', '÷': '÷' };
 
@@ -110,6 +111,20 @@ function renderProblem(): void {
   answerEl.innerHTML = '&nbsp;';
 }
 
+function cancelAutoSubmit(): void {
+  clearTimeout(autoSubmitTimer);
+  autoSubmitTimer = 0;
+  answerEl.classList.remove('answer-ready');
+}
+
+function checkAnswer(): void {
+  cancelAutoSubmit();
+  if (entry === '' || Number(entry) !== game.problem.answer) return;
+  answerEl.classList.add('answer-ready');
+  const answeredAt = performance.now();
+  autoSubmitTimer = window.setTimeout(() => submit(answeredAt), 300);
+}
+
 function type(ch: string): void {
   if (!game.playing) return;
   if (entry.length >= 6) return;
@@ -118,16 +133,20 @@ function type(ch: string): void {
   answerEl.classList.remove('flash-bad');
   entry += ch;
   answerEl.textContent = entry;
-  if (Number(entry) === game.problem.answer) submit();
+  checkAnswer();
 }
 function backspace(): void {
+  if (!game.playing) return;
   entry = entry.slice(0, -1);
   answerEl.innerHTML = entry || '&nbsp;';
+  checkAnswer();
 }
-function submit(): void {
+function submit(answeredAt = performance.now()): void {
+  cancelAutoSubmit();
   if (!game.playing || entry === '') return;
-  const res = game.submit(Number(entry), performance.now());
+  const res = game.submit(Number(entry), answeredAt);
   if (res.correct) {
+    game.problemStart = performance.now();
     sfx.correct(game.combo);
     popup(`+${fmtScore(res.points)}`, res.fast ? '#ffd93d' : '#4ecdc4');
     bump(pScore);
@@ -189,6 +208,7 @@ function loop(ts: number): void {
 
 function endGame(): void {
   cancelAnimationFrame(rafId);
+  cancelAutoSubmit();
   const newBest = game.end();
   void submitScore('flashmath', game.store.bestScore);
   sfx.gameOver();
@@ -224,6 +244,7 @@ function endGame(): void {
 
 function start(): void {
   cancelAnimationFrame(rafId);
+  cancelAutoSubmit();
   clearTimeout(answerResetTimer);
   answerResetTimer = 0;
   entry = '';
