@@ -47,6 +47,19 @@ local progress. Same-user token refresh does not interrupt play. Late restores,
 profile results, and upload acknowledgements cannot mutate the new session's
 state. The retry queue preserves higher scores and changed equal-score blobs.
 
+Cloud game and coded-avatar allowlists require own registry properties; inherited
+names such as `constructor` are not valid entries. Nonfinite score submissions
+are rejected before network initialization. Rank HTML escapes labels and accepts
+only positive safe-integer ranks/totals with rank no greater than total. Current
+callers use fixed labels; this is defensive rendering, not evidence of a remote
+rank-label exploit.
+
+OAuth return URLs contain only origin and pathname. The service worker bypasses
+known authentication callback query parameters, Authorization headers, and
+`no-store` requests, and does not persist `private` or `no-store` responses.
+The `arcade-v3` activation removes prior Arcade caches. This does not erase browser
+history or server logs, and is not protection against arbitrary same-origin code.
+
 Local scores and preferences are device data, not a secure vault. A script
 running on this origin can read them and the SDK's session. Do not add arbitrary
 third-party scripts or render unsanitized names, URLs, or stored HTML.

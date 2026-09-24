@@ -1,6 +1,6 @@
 # Tiny Arcade Feature Catalog
 
-Status: September 23, 2026. "Implemented" describes repository behavior, not a
+Status: September 24, 2026. "Implemented" describes repository behavior, not a
 guarantee about every browser or future deployment. See
 [DOCUMENTATION.md](DOCUMENTATION.md) for architecture, commands, and contracts.
 
@@ -50,6 +50,12 @@ hub, its ItemList, and its public leaderboard contain ten games.
   smoke tests, service-worker tests, dependency audits, and a release CI workflow.
 
 ## Historical Changes
+
+The September 24 follow-up tightened cloud and avatar registry membership,
+rejected nonfinite score inputs, and escaped rank labels with numeric runtime
+validation. In-game OAuth redirects no longer carry query strings or fragments.
+Offline caching excludes sensitive callback requests and explicitly private
+traffic; the cache-version reset requires online revisits before offline reuse.
 
 The September 23 audit completed compact point-score labels in Flashmath and
 Interval, fixed delayed share-caption races in seven games, distinguished

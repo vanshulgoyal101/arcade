@@ -1,6 +1,6 @@
 # Tiny Arcade: Architecture and Operations
 
-This guide describes the repository as of September 23, 2026. There are twelve
+This guide describes the repository as of September 24, 2026. There are twelve
 playable applications and ten featured hub games. Word of the Day and Interval
 remain available at their own URLs, but are excluded from the featured grid,
 public hub leaderboard, and sitemap. Hidden does not mean private or disabled.
@@ -259,6 +259,12 @@ successful network response. Hashed bundles are cache-first; other assets are
 stale-while-revalidate with an explicit event lifetime. Activation removes only
 obsolete `arcade-` caches, not another application's cache namespace.
 
+Authentication callback query parameters, Authorization headers, and requests
+marked `no-store` bypass the worker. Successful responses marked `private` or
+`no-store` are not persisted. Cache version `arcade-v3` removes older Arcade
+caches, including any previously retained callback URLs. After activation,
+previously visited pages need an online revisit to repopulate the new cache.
+
 The manifest supports an installable hub. Offline availability is opportunistic:
 previously fetched pages/assets can work, but there is no complete pre-cache of
 all games. Optional CDN auth, external flags/avatars, and cloud writes need a
@@ -369,7 +375,7 @@ Chromium with `npx playwright install --with-deps chromium` on Linux CI.
 | SQL/PGlite | Actual schemas, RLS/grants/triggers/RPC behavior and migration parity | Every hosted Supabase/PostgREST/Auth behavior |
 | Registry and asset tests | Game sets, headline fields, icons, versions, generated-entry contracts | Arbitrary future registry semantics |
 | SEO/sitemap tests | Metadata, visible schema correspondence, canonical/exclusion/XML safety | Search-engine ranking or guaranteed rich results |
-| Worker tests | Error handling, cache failures, cleanup ownership, refresh lifetime | Every browser update/eviction scenario |
+| Worker tests | Callback/private exclusions, error handling, cache failures, cleanup ownership, refresh lifetime | Every browser update/eviction scenario |
 | Chromium smoke | Twelve games at 1280/390px, loaded images, nonblank pixels, overflow, About content, 2048 input, privacy persistence and offline revisit | Full Safari/Firefox coverage, real OAuth, every game to completion |
 
 [scripts/browser-test.mjs](scripts/browser-test.mjs) owns an ephemeral loopback
@@ -432,6 +438,14 @@ sitemap filename execution, invalid sitemap scanning, disabled zoom, unsupported
 FAQ markup, account-transition races, share snapshots, terminal 2048 continuation,
 and worker cache error handling. Each area has focused automated regression
 coverage; live database checks supplement the isolated tests.
+
+The September 24 follow-up rejects inherited object keys in cloud game and
+avatar registries, rejects nonfinite score submissions before SDK initialization,
+and normalizes queued scores to nonnegative integers. Rank rendering escapes
+labels and requires positive safe-integer ranks and totals. OAuth return URLs
+exclude query strings and fragments; worker caching excludes sensitive callbacks
+and explicitly private traffic. These are client-side robustness and privacy
+boundaries, not substitutes for database authorization or trusted anti-cheat.
 
 The prioritized unimplemented backlog is in [FEATURES.md](FEATURES.md).
 Important remaining limits include client-forgeable scores, anonymous analytics

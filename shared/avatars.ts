@@ -20,6 +20,7 @@ export const AVATAR_SVG: Record<string, string> = {
 /** Full standalone <svg> markup for an "a:<id>" avatar code, or null. */
 export function codedAvatarSvg(code: string | null | undefined): string | null {
   if (typeof code !== 'string' || code.slice(0, 2) !== 'a:') return null;
+  if (!Object.prototype.hasOwnProperty.call(AVATAR_SVG, code.slice(2))) return null;
   const inner = AVATAR_SVG[code.slice(2)];
   if (!inner) return null;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">${inner}</svg>`;

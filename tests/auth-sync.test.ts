@@ -150,6 +150,15 @@ function onUserHarness(options: {
 describe('hub score sync', () => {
   beforeEach(() => localStorage.clear());
 
+  it('only renders own avatar registry entries as SVG', () => {
+    const factory = new Function('AV', 'esc', `${between('function isUrl', '// Hand-drawn')} return avatarHtml;`);
+    const render = factory({ panda: '<circle />' }, (value: unknown) => String(value));
+    for (const id of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+      expect(render(`a:${id}`, 'avatar')).not.toContain('<svg');
+    }
+    expect(render('a:panda', 'avatar')).toContain('<circle />');
+  });
+
   it('does not report a saved profile as failed when identity restamping rejects', async () => {
     const harness = saveProfileHarness(null);
     harness.scoreEq.mockRejectedValueOnce(new Error('offline'));

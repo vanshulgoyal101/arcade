@@ -46,7 +46,7 @@ const LS_KEYS: Record<string, string> = {
 
 function readBlob(game: string): unknown {
   try {
-    const k = LS_KEYS[game];
+    const k = Object.prototype.hasOwnProperty.call(LS_KEYS, game) ? LS_KEYS[game] : null;
     if (!k) return null;
     const raw = localStorage.getItem(k);
     return raw ? JSON.parse(raw) : null;
@@ -99,7 +99,9 @@ export function readPending(): Record<string, number> {
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
     const out: Record<string, number> = {};
     // Ignore unknown slugs so a corrupt entry can't grow the queue unbounded.
-    for (const [game, best] of Object.entries(parsed)) if (LS_KEYS[game]) out[game] = n(best);
+    for (const [game, best] of Object.entries(parsed)) {
+      if (Object.prototype.hasOwnProperty.call(LS_KEYS, game)) out[game] = Math.max(0, Math.floor(n(best)));
+    }
     return out;
   } catch {
     return {};
@@ -117,7 +119,7 @@ function writePending(queue: Record<string, number>): void {
 
 /** Park a best for retry, keeping the highest per game. Exported for tests. */
 export function queuePending(game: string, best: number): void {
-  if (sessionChanged || !LS_KEYS[game]) return;
+  if (sessionChanged || !Object.prototype.hasOwnProperty.call(LS_KEYS, game) || !Number.isFinite(best)) return;
   const queue = readPending();
   queue[game] = Math.max(n(queue[game]), Math.max(0, Math.floor(best) || 0));
   writePending(queue);
@@ -146,7 +148,7 @@ export function unqueuePending(game: string, acknowledgedBest = Infinity, acknow
  * the cloud best. Returns null to keep local. Never throws.
  */
 export function reconcileRestore(slug: string, localRaw: string | null, row: CloudRow | null): unknown | null {
-  const meta = HEADLINE[slug];
+  const meta = Object.prototype.hasOwnProperty.call(HEADLINE, slug) ? HEADLINE[slug] : null;
   if (!meta || !row || !isStore(row.data)) return null;
   let local: unknown = null;
   if (localRaw) {
@@ -173,6 +175,7 @@ export function reconcileRestore(slug: string, localRaw: string | null, row: Clo
  * updated so the caller can reload its store and repaint. No-op when signed out.
  */
 export async function restoreGame(slug: string): Promise<boolean> {
+  if (!Object.prototype.hasOwnProperty.call(LS_KEYS, slug)) return false;
   await init();
   void flushPending(); // every game load is a chance to land an offline score
   if (!client || !user) return false;
@@ -297,7 +300,7 @@ export async function signIn(): Promise<void> {
   await init();
   if (!client || sessionChanged) return;
   try {
-    await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href } });
+    await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin + location.pathname } });
   } catch {
     /* ignore */
   }
@@ -321,7 +324,7 @@ export function cloudProfile(): CloudProfile | null {
  * daily streak). The server keeps the max best, so this never lowers a score.
  */
 export async function submitScore(game: string, best: number, opts?: { backup?: boolean }): Promise<void> {
-  if (sessionChanged) return;
+  if (sessionChanged || !Object.prototype.hasOwnProperty.call(LS_KEYS, game) || !Number.isFinite(best)) return;
   if (!(best > 0) && !opts?.backup) return;
   const safeBest = Math.max(0, Math.floor(best) || 0);
   if (hasStoredSession()) queuePending(game, safeBest);
@@ -430,6 +433,7 @@ export function mountRank(modal: Element, game: string, score: number): void {
 
 /** Where `score` would place on `game`'s all-time board, plus the field size. */
 export async function getRank(game: string, score: number): Promise<RankInfo | null> {
+  if (!Object.prototype.hasOwnProperty.call(LS_KEYS, game) || !Number.isFinite(score)) return null;
   await init();
   if (sessionChanged) return null;
   if (!(score > 0)) return null;

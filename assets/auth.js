@@ -59,7 +59,7 @@ function fmtScore(n) {
   return _compactNum.format(v).replace('K', 'k');
 }
 function isUrl(a) { return typeof a === 'string' && /^https?:/.test(a); }
-function isSvgAv(a) { return typeof a === 'string' && a.slice(0, 2) === 'a:' && AV[a.slice(2)]; }
+function isSvgAv(a) { return typeof a === 'string' && a.slice(0, 2) === 'a:' && Object.prototype.hasOwnProperty.call(AV, a.slice(2)); }
 function avatarHtml(a, cls) {
   a = a || 'a:panda'; // bespoke SVG avatar fallback (no more emoji placeholder)
   if (isUrl(a)) return `<img class="${cls}" src="${esc(a)}" alt="" referrerpolicy="no-referrer" />`;

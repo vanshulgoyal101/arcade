@@ -26,6 +26,25 @@ describe('shared/rank · rankText', () => {
 });
 
 describe('shared/rank · rankBadgeHtml', () => {
+  it.each([1, 4])('escapes markup in labels at rank %i', rank => {
+    const label = '<img src=x onerror="alert(1)"> & rank';
+    const container = document.createElement('div');
+    container.innerHTML = rankBadgeHtml({ rank, total: 50 }, label);
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.textContent).toContain(label);
+  });
+
+  it.each([
+    { rank: 0, total: 10 }, { rank: -1, total: 10 },
+    { rank: 1.5, total: 10 }, { rank: 11, total: 10 },
+    { rank: 1, total: Infinity }, { rank: NaN, total: 10 },
+    { rank: 1, total: '<img src=x onerror="alert(1)">' },
+    { rank: '1', total: 10 },
+  ])('rejects malformed ranking data %j', info => {
+    const unsafe = info as unknown as Parameters<typeof rankText>[0];
+    expect(rankText(unsafe)).toBe('');
+    expect(rankBadgeHtml(unsafe)).toBe('');
+  });
   it('renders nothing when there is no rank', () => {
     expect(rankBadgeHtml(null)).toBe('');
     expect(rankBadgeHtml({ rank: 0, total: 0 })).toBe('');
@@ -62,6 +81,9 @@ describe('shared/avatars · codedAvatarSvg', () => {
     expect(codedAvatarSvg('🎮')).toBeNull();
     expect(codedAvatarSvg('panda')).toBeNull(); // missing "a:" prefix
     expect(codedAvatarSvg('a:unknown')).toBeNull();
+    for (const id of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+      expect(codedAvatarSvg(`a:${id}`)).toBeNull();
+    }
   });
 
   it('wraps a known avatar id in standalone svg markup', () => {

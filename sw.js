@@ -4,8 +4,9 @@
 // the HTTP cache), cache-first for content-hashed bundles (immutable), and
 // stale-while-revalidate for everything else.
 
-const CACHE = 'arcade-v2';
+const CACHE = 'arcade-v3';
 const IMMUTABLE = /-[A-Za-z0-9_-]{8,}\.(?:js|css)$/;
+const AUTH_PARAMS = new Set(['code', 'access_token', 'refresh_token', 'token', 'token_hash', 'id_token', 'error', 'error_description']);
 
 async function cachedResponse(request) {
   try { return await caches.match(request); } catch { return null; }
@@ -13,6 +14,7 @@ async function cachedResponse(request) {
 
 async function storeResponse(request, response) {
   if (!response.ok || response.type === 'opaque') return;
+  if (/(?:^|,)\s*(?:no-store|private)(?:\s|=|,|$)/i.test(response.headers.get('cache-control') || '')) return;
   try {
     const cache = await caches.open(CACHE);
     await cache.put(request, response.clone());
@@ -37,6 +39,8 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  if (req.cache === 'no-store' || req.headers.has('authorization') ||
+      [...url.searchParams.keys()].some(key => AUTH_PARAMS.has(key.toLowerCase()))) return;
 
   const isDocument =
     req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html');

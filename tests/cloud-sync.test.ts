@@ -1,10 +1,26 @@
 import { describe, it, expect } from 'vitest';
-import { reconcileRestore } from '../shared/cloud';
+import { reconcileRestore, readPending, queuePending } from '../shared/cloud';
 
 const row = (best: number, data: unknown) => ({ best, data });
 const raw = (o: unknown) => JSON.stringify(o);
 
 describe('cloud/reconcileRestore', () => {
+  it.each(['__proto__', 'constructor', 'toString', 'hasOwnProperty'])('rejects inherited game identifier %s', slug => {
+    expect(reconcileRestore(slug, raw({}), row(100, {}))).toBeNull();
+    localStorage.setItem('arcade.pending.v1', JSON.stringify({ [slug]: 100, wordle: 5 }));
+    expect(readPending()).toEqual({ wordle: 5 });
+    queuePending(slug, 500);
+    expect(readPending()).toEqual({ wordle: 5 });
+    localStorage.removeItem('arcade.pending.v1');
+  });
+
+  it('does not queue non-finite scores or retain negative and fractional retries', () => {
+    localStorage.setItem('arcade.pending.v1', '{"wordle":-5,"echo":2.8}');
+    expect(readPending()).toEqual({ wordle: 0, echo: 2 });
+    for (const best of [Infinity, -Infinity, NaN]) queuePending('wordle', best);
+    expect(readPending()).toEqual({ wordle: 0, echo: 2 });
+    localStorage.removeItem('arcade.pending.v1');
+  });
   it('heals a stale Wordle blob up to the real cloud best (the Yash bug)', () => {
     // cloud best 58 (monotonic, real) but the device blob had reset to 6
     const blob = reconcileRestore('wordle', raw({ maxStreak: 6, played: 11 }), row(58, { maxStreak: 6, played: 11 }));

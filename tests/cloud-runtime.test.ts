@@ -27,6 +27,35 @@ function client() {
 }
 
 describe('cloud runtime failures', () => {
+  it('does not propagate callback credentials into OAuth return URLs', async () => {
+    const backend = client();
+    const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });
+    Object.assign(backend.auth, { signInWithOAuth });
+    sdk.createClient.mockReturnValue(backend);
+    vi.stubGlobal('location', {
+      origin: 'https://games.vanshul.com', pathname: '/wordle/',
+      href: 'https://games.vanshul.com/wordle/?code=private#access_token=private',
+    });
+    const cloud = await import('../shared/cloud');
+    await cloud.signIn();
+    expect(signInWithOAuth).toHaveBeenCalledExactlyOnceWith({
+      provider: 'google', options: { redirectTo: 'https://games.vanshul.com/wordle/' },
+    });
+  });
+  it('rejects invalid game identifiers and scores before SDK initialization', async () => {
+    const cloud = await import('../shared/cloud');
+    for (const slug of ['__proto__', 'constructor', 'toString', 'not-a-game']) {
+      expect(await cloud.restoreGame(slug)).toBe(false);
+      await cloud.submitScore(slug, 10);
+      expect(await cloud.getRank(slug, 10)).toBeNull();
+    }
+    for (const score of [NaN, Infinity, -Infinity]) {
+      await cloud.submitScore('wordle', score);
+      expect(await cloud.getRank('wordle', score)).toBeNull();
+    }
+    expect(sdk.createClient).not.toHaveBeenCalled();
+    expect(localStorage.getItem('arcade.pending.v1')).toBeNull();
+  });
   it('keeps the current game running on a same-user token refresh', async () => {
     const backend = client();
     const reload = vi.fn();

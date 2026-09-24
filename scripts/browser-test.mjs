@@ -173,9 +173,26 @@ try {
   await offlinePage.evaluate(async () => { await navigator.serviceWorker.ready; });
   await offlinePage.reload({ waitUntil: 'networkidle' });
   await offlinePage.waitForFunction(async () => {
-    const urls = (await (await caches.open('arcade-v2')).keys()).map(request => request.url);
+    const urls = (await (await caches.open('arcade-v3')).keys()).map(request => request.url);
     return urls.some(url => url.endsWith('/2048/')) && urls.some(url => /\/2048\/assets\/.*\.js$/.test(url));
   });
+  const privateRequests = await offlinePage.evaluate(async () => {
+    const requests = [
+      new Request(`${location.origin}/2048/?code=test-only`),
+      new Request(`${location.origin}/2048/?access_token=test-only`),
+      new Request(`${location.origin}/2048/?privacy-check=auth`, { headers: { Authorization: 'Bearer test-only' } }),
+      new Request(`${location.origin}/2048/?privacy-check=no-store`, { cache: 'no-store' }),
+    ];
+    const results = [];
+    for (const request of requests) {
+      const response = await fetch(request);
+      await response.text();
+      results.push({ status: response.status, cached: !!(await caches.match(request)) });
+    }
+    return results;
+  });
+  assert.deepEqual(privateRequests, Array.from({ length: 4 }, () => ({ status: 200, cached: false })));
+  console.log('PASS service worker: callback and private requests bypass offline storage');
   await offlineContext.setOffline(true);
   await offlinePage.reload({ waitUntil: 'networkidle' });
   assert.equal(await offlinePage.locator('.tile').count(), 2);

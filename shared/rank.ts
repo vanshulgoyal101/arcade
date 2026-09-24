@@ -4,9 +4,16 @@
 
 import type { RankInfo } from './cloud';
 
+const validRank = (info: RankInfo | null | undefined): info is RankInfo =>
+  !!info && Number.isSafeInteger(info.rank) && Number.isSafeInteger(info.total) &&
+  info.rank >= 1 && info.total >= info.rank;
+
+const escapeHtml = (value: string): string =>
+  value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
+
 /** A friendly one-liner, e.g. "#4 of 128 · top 3%". Empty when unranked. */
 export function rankText(info: RankInfo | null | undefined): string {
-  if (!info || !info.total) return '';
+  if (!validRank(info)) return '';
   if (info.rank <= 1) return `🥇 #1 of ${info.total}`;
   if (info.rank <= 3) {
     const medal = info.rank === 2 ? '🥈' : '🥉';
@@ -54,11 +61,13 @@ export function rankBadgeHtml(info: RankInfo | null | undefined, label = 'Global
     );
   }
   // Podium ranks get a coloured medal icon instead of rankText's emoji prefix.
-  if (info && info.rank >= 1 && info.rank <= 3 && info.total) {
+  if (!validRank(info)) return '';
+  const safeLabel = escapeHtml(label);
+  if (info.rank <= 3) {
     return (
       `<div class="cloud-rank" style="text-align:center;margin:12px 0 0">` +
       `<span style="${pill}">` +
-      `<span style="color:var(--muted,#949cb0);font-weight:600">${label}</span>` +
+      `<span style="color:var(--muted,#949cb0);font-weight:600">${safeLabel}</span>` +
       `<span style="display:inline-flex;align-items:center;gap:5px;color:var(--accent,#fb7185);font-weight:800">` +
       `${medalIcon(info.rank)}#${info.rank} of ${info.total}</span></span></div>`
     );
@@ -68,7 +77,7 @@ export function rankBadgeHtml(info: RankInfo | null | undefined, label = 'Global
   return (
     `<div class="cloud-rank" style="text-align:center;margin:12px 0 0">` +
     `<span style="${pill}">` +
-    `<span style="color:var(--muted,#949cb0);font-weight:600">${label}</span>` +
+    `<span style="color:var(--muted,#949cb0);font-weight:600">${safeLabel}</span>` +
     `<span style="color:var(--accent,#fb7185);font-weight:800">${t}</span></span></div>`
   );
 }
