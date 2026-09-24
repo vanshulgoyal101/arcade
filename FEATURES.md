@@ -100,6 +100,10 @@ with Enter; held letters, secondary pointer presses, and input behind an open
 overlay are ignored.
 Physical letters and digits still reach these games after using a toolbar button;
 only Enter/Space are reserved for that button's normal activation.
+Where's answer buttons accept native keyboard/assistive activation as well as
+primary pointer presses, reject secondary presses, and still grade once per round.
+Interval cancels pending next-round autoplay when Play, Replay, or an answer
+arrives first, preventing duplicate notes or playback over answer feedback.
 Hub theme writes are tied to the account that initiated them; partial profiles
 retain their theme, authentication errors remain retryable, and a failed score
 identity refresh does not misreport a saved profile as failed. The private stats

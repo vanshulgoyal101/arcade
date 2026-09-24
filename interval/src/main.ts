@@ -60,6 +60,7 @@ const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 
 let answered = false;
+let autoplayTimer = 0;
 
 const NOTE_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
 function noteName(midi: number): string {
@@ -82,6 +83,8 @@ function renderHud(): void {
 }
 
 function playCurrent(): void {
+  clearTimeout(autoplayTimer);
+  autoplayTimer = 0;
   playBtn.classList.remove('pulse');
   void playBtn.offsetWidth;
   playBtn.classList.add('pulse');
@@ -93,16 +96,20 @@ function clearOptionStates(): void {
 }
 
 function newRound(autoplay = true): void {
+  clearTimeout(autoplayTimer);
+  autoplayTimer = 0;
   answered = false;
   game.nextRound();
   clearOptionStates();
   optionsEl.classList.remove('locked');
   hint.textContent = 'Listen, then pick the interval you heard.';
-  if (autoplay) window.setTimeout(playCurrent, 250);
+  if (autoplay) autoplayTimer = window.setTimeout(playCurrent, 250);
 }
 
 function onAnswer(semis: number, btn: HTMLButtonElement): void {
   if (answered) return;
+  clearTimeout(autoplayTimer);
+  autoplayTimer = 0;
   answered = true;
   optionsEl.classList.add('locked');
   const res = game.answer(semis);

@@ -133,7 +133,13 @@ function renderOptions(): void {
     .map((c) => `<button class="opt" data-name="${c.name}">${c.name}</button>`)
     .join('');
   optionsEl.querySelectorAll<HTMLButtonElement>('.opt').forEach((btn) => {
-    btn.addEventListener('pointerdown', () => onAnswer(btn.dataset.name!, btn));
+    btn.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.isPrimary === false) return;
+      onAnswer(btn.dataset.name!, btn);
+    });
+    btn.addEventListener('click', (event) => {
+      if (event.detail === 0) onAnswer(btn.dataset.name!, btn);
+    });
   });
 }
 

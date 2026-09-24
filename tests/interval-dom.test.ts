@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mountGame, click, text, gameEnv } from './helpers/dom';
 
 const load = () => mountGame(() => import('../interval/src/main.ts'));
@@ -37,5 +37,49 @@ describe('interval/dom', () => {
     click(opts[1]);
     expect(text(app.querySelector('#lives'))).toBe(lives);
     expect(text(app.querySelector('#score'))).toBe(score);
+  });
+
+  it.each(['play', 'replay'])('manual %s replaces pending autoplay', async (button) => {
+    const app = await load();
+    const audio = await import('../interval/src/audio');
+    const play = vi.spyOn(audio, 'playInterval').mockImplementation(() => {});
+    try {
+      click(app.querySelector('#options .opt')!);
+      await vi.advanceTimersByTimeAsync(850);
+      click(app.querySelector(`#${button}`)!);
+      expect(play).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(250);
+      expect(play).toHaveBeenCalledTimes(1);
+    } finally {
+      play.mockRestore();
+    }
+  });
+
+  it('cancels pending autoplay when an answer arrives first', async () => {
+    const app = await load();
+    const audio = await import('../interval/src/audio');
+    const play = vi.spyOn(audio, 'playInterval').mockImplementation(() => {});
+    try {
+      click(app.querySelector('#options .opt')!);
+      await vi.advanceTimersByTimeAsync(850);
+      click(app.querySelector('#options .opt')!);
+      await vi.advanceTimersByTimeAsync(250);
+      expect(play).not.toHaveBeenCalled();
+    } finally {
+      play.mockRestore();
+    }
+  });
+
+  it('still autoplays an unanswered new round once', async () => {
+    const app = await load();
+    const audio = await import('../interval/src/audio');
+    const play = vi.spyOn(audio, 'playInterval').mockImplementation(() => {});
+    try {
+      click(app.querySelector('#options .opt')!);
+      await vi.advanceTimersByTimeAsync(1100);
+      expect(play).toHaveBeenCalledTimes(1);
+    } finally {
+      play.mockRestore();
+    }
   });
 });

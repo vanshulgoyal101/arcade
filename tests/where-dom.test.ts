@@ -58,6 +58,27 @@ describe('where/dom', () => {
     expect(app.querySelectorAll('#options .opt.correct').length).toBe(1);
   });
 
+  it('accepts native keyboard activation of an answer exactly once', async () => {
+    const app = await load();
+    const option = app.querySelector<HTMLButtonElement>('#options .opt')!;
+    option.click();
+    expect(app.querySelectorAll('#options .opt.correct')).toHaveLength(1);
+    expect(app.querySelector('#options')!.classList.contains('locked')).toBe(true);
+    const score = text(app.querySelector('#score'));
+    const remaining = lives(app);
+    option.click();
+    expect(text(app.querySelector('#score'))).toBe(score);
+    expect(lives(app)).toBe(remaining);
+  });
+
+  it('does not answer on a secondary pointer press', async () => {
+    const app = await load();
+    app.querySelector('#options .opt')!.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 2 }));
+    expect(app.querySelector('#options')!.classList.contains('locked')).toBe(false);
+    expect(app.querySelectorAll('#options .opt.correct')).toHaveLength(0);
+    expect(lives(app)).toBe(3);
+  });
+
   it('locks the difficulty toggle once a run is underway', async () => {
     const app = await load();
     const diffBtns = app.querySelectorAll<HTMLButtonElement>('#diffToggle button');
