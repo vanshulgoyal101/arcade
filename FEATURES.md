@@ -33,8 +33,8 @@ hub, its ItemList, and its public leaderboard contain ten games.
 - Generated 1080-by-1080 result cards, native sharing where supported, and
   clipboard fallbacks. Result snapshots survive a replay during image encoding.
 - Restart, result dismissal/replay controls, answer feedback, and personal bests.
-- Local catalog search by name, description, or category; Random selects from
-  current matches. Best-score badges refresh on return navigation.
+- Fixed catalog order and Random selection from all ten featured games.
+  Best-score badges refresh on return navigation.
 - Optional Google sign-in, editable profile/avatars, cloud backup and restoration.
 - Persistent retry queue, monotonic headline scores, competition-style tied ranks,
   bounded public leaderboard queries, and private saved-data/profile reads.
@@ -52,7 +52,8 @@ hub, its ItemList, and its public leaderboard contain ten games.
 
 ## Historical Changes
 
-The September 24 discovery release adds local catalog search, source-to-published
+The September 24 discovery release initially added local catalog search (removed
+at the owner's request later that day), source-to-published
 SEO parity checks, a crawlable PNG favicon, and a CollectionPage linked to the
 ten-game ItemList. All game descriptions are distinct and concise; game schemas
 include WebApplication with GameApplication or EducationalApplication categories.
@@ -111,7 +112,7 @@ not live counters, completed rounds, or a strictly descending popularity rank.
 [assets/games.js](assets/games.js) owns the frozen `GAME_ORDER` list. Leaderboard
 game sections and stats use it; static hub cards and JSON-LD positions are checked
 against it by [tests/registry-parity.test.ts](tests/registry-parity.test.ts).
-Search filters the existing cards without changing their relative order. Player
+The hub renders all cards directly without filtering or reordering. Player
 rankings within each game's leaderboard remain score-based.
 
 Stats lists the featured games first, then the hidden Word and Interval games.
@@ -121,27 +122,13 @@ Hidden games remain excluded from the hub and its leaderboard. There is no
 popularity RPC, scheduled reorder, polling-based catalog update, or mid-game
 navigation. Future ordering changes require an explicit code change and release.
 
-### Catalog Search
+### Catalog Navigation
 
-[assets/catalog.js](assets/catalog.js) progressively enhances the static hub.
-It indexes card headings, descriptions, and category tags once, excluding personal
-best badges and profile data. Whitespace and hyphens split search terms; all terms
-must match, ignoring case. British `colour` and American `color` are equivalent.
-This is a small substring filter, not fuzzy search or a remote search service.
-
-The form has a visible label, an 80-character input limit, and a polite result
-count. No matches hides the cards and disables Random. Clear restores every card
-and returns focus to the input. Enter does not navigate or submit a query. Random
-chooses uniformly among matching cards. Returning through browser history reruns
-the filter for any browser-restored input value. The ten links remain in the
-initial HTML; without JavaScript the search form stays hidden and navigation works.
-
-Search text is not written to storage, URLs, analytics, or network requests by
-the catalog module. Browser-managed form history is outside this guarantee.
-There are no generated search-result pages, SearchAction claims, new database
-tables, or changes to the featured-game registry. Adding a card automatically
-adds its visible text to the search index; update ItemList and sitemap policy
-when changing which games are featured.
+The homepage has no search box. All ten featured links are present in static HTML
+and remain usable without JavaScript. [assets/catalog.js](assets/catalog.js)
+only wires Random to select uniformly among those links; it does not filter,
+rearrange, or persist catalog state. Update ItemList and the fixed-order tests
+when intentionally changing the featured catalog.
 
 ### Worker Registration
 
@@ -176,7 +163,7 @@ Disallow would prevent compliant crawlers from reading its noindex directive.
 This does not expose owner-only analytics: database authorization remains the
 security boundary. Word and Interval are still playable and potentially indexable
 through related links, but intentionally absent from the submitted sitemap and
-featured grid. Filtering does not alter canonical URLs or schema.
+featured grid. Catalog navigation does not alter canonical URLs or schema.
 
 After deployment, inspect the hub and representative game URLs in the owner's
 Search Console, check selected canonicals and rendered content, and submit
@@ -193,7 +180,7 @@ submission, indexing outcomes, and ranking gains are not established by local te
 
 | Contract | Executable evidence |
 | --- | --- |
-| Catalog filtering, no-JS links, reset, focus, empty results, Random, history | [tests/catalog.test.ts](tests/catalog.test.ts) |
+| No search UI, no-JS links, Random selection, stable history navigation | [tests/catalog.test.ts](tests/catalog.test.ts) |
 | Metadata uniqueness, generated parity, schema/card agreement, favicon dimensions, internal links, noindex | [tests/seo.test.ts](tests/seo.test.ts) |
 | Sitemap exclusions, canonical handling, XML and path safety | [tests/sitemap.test.ts](tests/sitemap.test.ts) |
 | All thirteen worker imports, plain asset versions and content hashes | [tests/asset-version.test.ts](tests/asset-version.test.ts) |

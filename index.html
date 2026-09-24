@@ -47,7 +47,7 @@
   <link rel="preconnect" href="https://esm.sh" crossorigin />
   <link rel="preconnect" href="https://tmngedsmgcgbkbkmsnsw.supabase.co" crossorigin />
   <link rel="modulepreload" href="https://esm.sh/@supabase/supabase-js@2.45.4?bundle" crossorigin />
-  <link rel="stylesheet" href="assets/style.css?v=12" />
+  <link rel="stylesheet" href="assets/style.css?v=13" />
   <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-192.png" />
   <link rel="manifest" href="/site.webmanifest" />
   <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png" />
@@ -119,14 +119,6 @@
       <button type="button" id="lbBtn" class="theme-btn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;color:#facc15" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3M12 13v3.2M9 19.5h6"/></svg> Leaderboard</button>
       <span id="account" class="account"></span>
     </div>
-    <form id="catalog-search" class="catalog-search" role="search" aria-label="Find a game" hidden>
-      <label for="game-search">Find a game</label>
-      <div class="catalog-fields">
-        <input id="game-search" type="search" placeholder="Name or category" maxlength="80" autocomplete="off" spellcheck="false" aria-controls="game-grid" />
-        <button type="reset" class="theme-btn">Clear</button>
-      </div>
-      <p id="game-count" role="status" aria-live="polite" aria-atomic="true"></p>
-    </form>
   </header>
 
   <main class="grid" id="game-grid">
@@ -261,6 +253,6 @@
     })();
   </script>
   <script type="module" src="assets/auth.js?v=29"></script>
-  <script type="module" src="assets/catalog.js?v=1"></script>
+  <script type="module" src="assets/catalog.js?v=2"></script>
 </body>
 </html>

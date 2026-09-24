@@ -112,19 +112,6 @@ a { color: inherit; text-decoration: none; }
 }
 .tagline { color: var(--muted); font-size: 1.05rem; margin-top: 10px; }
 
-.catalog-search { max-width: 520px; margin: 20px auto 0; text-align: left; }
-.catalog-search label { display: block; margin-bottom: 6px; font-size: .85rem; font-weight: 700; }
-.catalog-fields { display: flex; gap: 8px; align-items: stretch; }
-.catalog-fields input {
-  min-width: 0; flex: 1; min-height: 44px; padding: 9px 12px;
-  font: inherit; font-size: 1rem; color: var(--text); background: var(--bg-soft);
-  border: 1px solid var(--line); border-radius: 8px;
-}
-.catalog-fields button { min-width: 64px; border-radius: 8px; }
-.catalog-search [role="status"] { min-height: 1.3em; margin: 6px 0 0; font-size: .8rem; color: var(--muted); }
-.grid .card[hidden] { display: none; }
-.theme-btn:disabled { opacity: .45; cursor: default; }
-
 .theme-switch { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
 .theme-btn {
   font-family: inherit;

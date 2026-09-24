@@ -77,8 +77,7 @@ Local scores and preferences are device data, not a secure vault. A script
 running on this origin can read them and the SDK's session. Do not add arbitrary
 third-party scripts or render unsanitized names, URLs, or stored HTML.
 
-Catalog search is local-only: its module neither persists nor transmits the query
-and never renders it as HTML. Filtering does not modify account or score data.
+Catalog navigation does not collect search queries or modify account or score data.
 Allowing crawlers to fetch the stats page exposes its noindex directive, not its
 owner-only database results. Robots directives are not access controls.
 

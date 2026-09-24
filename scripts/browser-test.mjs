@@ -33,26 +33,16 @@ try {
     await context.route('https://esm.sh/**', route => route.fulfill({ contentType: 'text/javascript', body: 'export function createClient(){throw new Error("Cloud intentionally unavailable in offline browser test")}' }));
     await context.route('https://*.supabase.co/**', route => route.fulfill({ status: 204 }));
     const hub = await context.newPage();
+    await hub.addInitScript(() => { Math.random = () => 0; });
     await hub.goto(base, { waitUntil: 'networkidle' });
     assert.equal(await hub.locator('.grid a.card').count(), 10);
     assert.deepEqual(await hub.locator('.grid a.card').evaluateAll(cards => cards.map(card => card.dataset.game)), GAME_ORDER.slice(0, 10));
-    const search = hub.locator('#game-search');
-    await search.fill('typing');
-    assert.equal(await hub.locator('.grid a.card:visible').count(), 1);
-    assert.equal(await hub.locator('.grid a.card:visible').getAttribute('data-game'), 'sprint');
-    await search.press('Enter');
-    assert.equal(hub.url(), `${base}/`);
+    assert.equal(await hub.locator('input[type="search"], [role="search"]').count(), 0);
     await hub.locator('#randomBtn').click();
-    await hub.waitForURL(`${base}/sprint/`);
+    await hub.waitForURL(`${base}/hue-hunt/`);
     await hub.goBack({ waitUntil: 'networkidle' });
-    await search.fill('no-such-game');
-    assert.equal(await hub.locator('.grid a.card:visible').count(), 0);
-    assert.equal(await hub.locator('#randomBtn').isDisabled(), true);
-    assert.equal(await hub.locator('#game-count').innerText(), 'No games match.');
-    await hub.locator('#catalog-search button[type="reset"]').click();
     assert.equal(await hub.locator('.grid a.card:visible').count(), 10);
     assert.deepEqual(await hub.locator('.grid a.card:visible').evaluateAll(cards => cards.map(card => card.dataset.game)), GAME_ORDER.slice(0, 10));
-    assert.equal(await search.evaluate(element => element === document.activeElement), true);
     assert.equal(await hub.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `hub: overflow at ${width}`);
     for (const image of await hub.locator('.card-art img').all()) {
       await image.scrollIntoViewIfNeeded();
@@ -62,7 +52,7 @@ try {
     if (artifacts) await hub.screenshot({ path: resolve(artifacts, `hub-${width}.png`), fullPage: true });
     await hub.locator('a[href="/privacy/"]').click();
     assert.equal(await hub.locator('#analytics-enabled').count(), 1);
-    console.log(`PASS hub ${width}px: search, reset, filtered random, art, layout, privacy navigation`);
+    console.log(`PASS hub ${width}px: no search, fixed order, random, art, layout, privacy navigation`);
     await hub.close();
     for (const game of games) {
       const page = await context.newPage();

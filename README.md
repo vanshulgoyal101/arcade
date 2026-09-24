@@ -38,7 +38,7 @@ an optional cloud leaderboard (Google sign-in), and works great on mobile.
 
 - **Zero backend to play.** Each game is a self-contained static site; scores live in `localStorage`.
 - **Testable architecture.** Game rules are separated from DOM/UI, with model, interaction, database, and browser regression tests.
-- **Find a game.** Local name/category search, clear and empty states, and Random selection from matching games.
+- **Pick and play.** A fixed game grid with a Random button for quick selection.
 - **Offline revisits.** Visited content can be cached; worker updates do not force an active game to reload.
 - **SEO + share cards.** Per-game Open Graph / Twitter / JSON-LD metadata and generated 1080×1080 share images.
 - **Optional cloud.** Supabase-backed accounts, profiles, and per-game leaderboards with row-level security.
@@ -93,7 +93,7 @@ developer guide. Edit game templates and sources, not promoted build output.
 
 See [FEATURES.md](FEATURES.md) for implemented versus proposed capabilities and
 [SECURITY.md](SECURITY.md) for data access, safe migrations, and known limits.
-The feature catalog also documents search privacy, worker lifecycle, SEO
+The feature catalog also documents fixed game order, worker lifecycle, SEO
 measurement, and their regression/release checks.
 The [privacy page](privacy/index.html) includes analytics opt-out. Client-reported
 scores are not anti-cheat verified; search rankings are not guaranteed.
