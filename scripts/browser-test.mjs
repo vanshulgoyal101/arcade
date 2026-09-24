@@ -259,6 +259,10 @@ try {
     await page.waitForFunction(() => document.querySelector('.chip.on')?.getAttribute('data-days') === '1');
     assert.deepEqual(await page.locator('.row .k b').allTextContents(), GAME_ORDER.map(gameName));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `stats: overflow at ${width}`);
+    const updated = await page.locator('.upd').boundingBox();
+    const signout = await page.locator('#out').boundingBox();
+    assert.ok(signout.x - updated.x - updated.width >= 12, `stats: timestamp/sign-out spacing at ${width}`);
+    assert.ok(Math.abs(updated.y + updated.height / 2 - signout.y - signout.height / 2) <= 1, `stats: header alignment at ${width}`);
     if (artifacts) await page.screenshot({ path: resolve(artifacts, `stats-${width}.png`), fullPage: true });
     console.log(`PASS fixed order ${width}px: leaderboard sections, player ranks, stats range changes`);
     await page.goto(`${base}/word/`, { waitUntil: 'networkidle' });
