@@ -41,4 +41,14 @@ describe('chromatic/dom', () => {
     click(app.querySelector('#submit')!);
     expect(app.querySelector('#diff')!.classList.contains('disabled')).toBe(true);
   });
+
+  it.each(['#mute', '#diff .diff-btn'])('does not submit when Enter activates %s', async (selector) => {
+    const app = await load();
+    const control = app.querySelector<HTMLButtonElement>(selector)!;
+    control.focus();
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    control.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(app.querySelector('#diff')!.classList.contains('disabled')).toBe(false);
+  });
 });

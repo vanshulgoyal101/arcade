@@ -49,7 +49,7 @@ const timerEl = app.querySelector<HTMLSpanElement>('#timer')!;
 const hintEl = app.querySelector<HTMLParagraphElement>('#hint')!;
 const comboFlash = app.querySelector<HTMLDivElement>('#comboFlash')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay, () => start());
+const resultOverlay = makeDismissable(overlay, () => start());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
@@ -226,7 +226,7 @@ function showResults(newBest: boolean): void {
 
 function start(): void {
   clearTimeout(revealTimer);
-  overlay.classList.remove('show');
+  resultOverlay.reset();
   game.start(performance.now());
   renderHud();
   buildBoard();

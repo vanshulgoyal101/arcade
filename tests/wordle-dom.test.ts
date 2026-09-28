@@ -133,4 +133,22 @@ describe('wordle/dom', () => {
     expect(app.querySelectorAll('.tile.reveal').length).toBe(0);
     expect(rowText(app.querySelector('.row')!)).toBe('');
   });
+
+  it('removes dismissed-result replay when a new word starts from the toolbar', async () => {
+    const app = await load();
+    for (let guess = 0; guess < 6 && !app.querySelector('#overlay.show'); guess++) {
+      type(app, ANSWER_WORDS[0]);
+      press(app, 'enter');
+      await vi.advanceTimersByTimeAsync(3000);
+    }
+    expect(app.querySelector('#overlay.show')).not.toBeNull();
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    const replay = [...document.querySelectorAll<HTMLButtonElement>('body > button')]
+      .find(button => button.textContent?.includes('Play again'))!;
+    expect(replay.style.display).toBe('block');
+    app.querySelector<HTMLButtonElement>('#restart')!.click();
+    type(app, 'unity');
+    expect(rowText(app.querySelector('.row')!)).toBe('unity');
+    expect(replay.style.display).toBe('none');
+  });
 });

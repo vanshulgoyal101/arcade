@@ -52,7 +52,7 @@ const tileEl = app.querySelector<HTMLSpanElement>('#tile')!;
 const bestEl = app.querySelector<HTMLSpanElement>('#best')!;
 const hintEl = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(
+const resultOverlay = makeDismissable(
   overlay,
   () => start(),
   () => {
@@ -259,7 +259,7 @@ function continueAfterWin(): void {
     endGame();
     return;
   }
-  overlay.classList.remove('show');
+  resultOverlay.reset();
   hintEl.textContent = 'Past 2048 — how far can you push it?';
 }
 
@@ -306,7 +306,7 @@ function wireShare(): void {
 
 // ---- lifecycle ----
 function start(): void {
-  overlay.classList.remove('show');
+  resultOverlay.reset();
   clearTimeout(settle);
   settle = 0;
   swiping = false;

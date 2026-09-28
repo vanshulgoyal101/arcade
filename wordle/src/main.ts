@@ -50,7 +50,7 @@ const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 const statsBtn = app.querySelector<HTMLButtonElement>('#stats')!;
 
-makeDismissable(overlay, () => newGame());
+const resultOverlay = makeDismissable(overlay, () => newGame());
 makeDismissable(statsOverlay);
 
 // ---- board + keyboard construction ----
@@ -303,7 +303,7 @@ function openStats(): void {
 }
 
 function newGame(): void {
-  overlay.classList.remove('show');
+  resultOverlay.reset();
   statsOverlay.classList.remove('show');
   runId++;
   locked = false;

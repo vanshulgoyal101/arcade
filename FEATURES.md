@@ -118,6 +118,17 @@ These changes address specific reproduced defects, not a claim that all future
 states or devices are covered. The proposed work below requires separate product
 or infrastructure decisions and is not represented as already implemented.
 
+The September 28 result-lifecycle audit gives all twelve games an explicit shared
+overlay reset on new runs and view changes. Dismissed-result replay controls cannot
+survive into active games or fire again while hidden. Closed dialogs are inert,
+release hidden focus, and hand focus to the visible replay action on dismissal.
+Secondary backdrop presses do not dismiss results; 2048 can still continue after
+a win without starting over. Flash locks completed quizzes against repeat scoring
+and answer edits. Sprint and Chromatic preserve Enter activation on focused
+controls instead of also restarting or grading the game. The browser release gate
+now finishes, dismisses, and restarts every game twice at each supported test width,
+including alternate toolbar and mode/tab paths and the active Wordle guess case.
+
 Chromatic's former daily mode and unused shared daily-leaderboard groundwork
 were removed; they are not current features. Word replaced Interval in the
 featured catalog, then 2048 replaced Word. Neither hidden game was deleted.

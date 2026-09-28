@@ -57,7 +57,7 @@ const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
 
-makeDismissable(overlay, () => startPractice());
+const resultOverlay = makeDismissable(overlay, () => startPractice());
 
 function renderMute(): void {
   muteBtn.innerHTML = muteIcon(sfx.isMuted());
@@ -116,7 +116,7 @@ tabs.querySelectorAll<HTMLButtonElement>('.tab').forEach((b) => {
 function switchTab(next: Mode): void {
   if (next === mode) return;
   mode = next;
-  overlay.classList.remove('show');
+  resultOverlay.reset();
   tabs.querySelectorAll<HTMLButtonElement>('.tab').forEach((b) => {
     b.classList.toggle('active', b.dataset.tab === mode);
   });
@@ -255,7 +255,7 @@ async function shareDaily(): Promise<void> {
 // ---- Practice ----
 function startPractice(): void {
   viewId++;
-  overlay.classList.remove('show');
+  resultOverlay.reset();
   practiceLock = false;
   practice.reset();
   renderPractice();

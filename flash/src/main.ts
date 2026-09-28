@@ -103,7 +103,7 @@ const questionsEl = app.querySelector<HTMLDivElement>('#questions')!;
 const submitBtn = app.querySelector<HTMLButtonElement>('#submitBtn')!;
 
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay, () => void startReading());
+const resultOverlay = makeDismissable(overlay, () => void startReading());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
@@ -112,6 +112,7 @@ let player: RsvpPlayer | null = null;
 let activePassage: Passage | null = null;
 let answers: number[] = [];
 let readingRun = 0;
+let quizActive = false;
 
 function renderMute(): void {
   muteBtn.innerHTML = muteIcon(sfx.isMuted());
@@ -144,6 +145,7 @@ function renderLifetime(): void {
 }
 
 function showPanel(which: 'ready' | 'reader' | 'quiz'): void {
+  quizActive = which === 'quiz';
   panelReady.classList.toggle('hidden', which !== 'ready');
   panelReader.classList.toggle('hidden', which !== 'reader');
   panelQuiz.classList.toggle('hidden', which !== 'quiz');
@@ -196,6 +198,7 @@ async function countdown(run: number): Promise<boolean> {
 }
 
 async function startReading(): Promise<void> {
+  resultOverlay.reset();
   const run = ++readingRun;
   player?.stop();
   player = null;
@@ -256,6 +259,7 @@ function showQuiz(): void {
       b.className = 'option';
       b.textContent = opt;
       const selectOption = () => {
+        if (!quizActive) return;
         sfx.select();
         answers[qi] = oi;
         opts.querySelectorAll('.option').forEach((el) => el.classList.remove('selected'));
@@ -280,7 +284,10 @@ function showQuiz(): void {
 }
 
 submitBtn.addEventListener('click', () => {
-  if (!activePassage || answers.includes(-1)) return;
+  if (!quizActive || !activePassage || answers.includes(-1)) return;
+  quizActive = false;
+  submitBtn.disabled = true;
+  questionsEl.querySelectorAll<HTMLButtonElement>('.option').forEach(button => { button.disabled = true; });
   sfx.click();
   const result = game.finishRound(activePassage, answers);
   renderHud();

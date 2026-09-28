@@ -5,9 +5,9 @@ function setup(withReplay = false, onDismiss?: () => boolean | void) {
   document.body.innerHTML = '<div class="overlay" id="ov"><div class="modal">content</div></div>';
   const overlay = document.querySelector<HTMLElement>('#ov')!;
   const onReplay = vi.fn();
-  makeDismissable(overlay, withReplay ? onReplay : undefined, onDismiss);
+  const controller = makeDismissable(overlay, withReplay ? onReplay : undefined, onDismiss);
   overlay.classList.add('show');
-  return { overlay, onReplay };
+  return { overlay, onReplay, controller };
 }
 const pill = () =>
   [...document.querySelectorAll('button')].find((b) => (b.textContent || '').includes('Play again')) as
@@ -39,6 +39,41 @@ describe('shared/overlay · makeDismissable', () => {
     expect(overlay.classList.contains('show')).toBe(true);
   });
 
+  it('ignores secondary backdrop presses', () => {
+    const { overlay } = setup(true);
+    overlay.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, button: 2 }));
+    expect(overlay.classList.contains('show')).toBe(true);
+    expect(pill()!.style.display).toBe('none');
+  });
+
+  it('makes hidden dialogs inert and restores interaction only while open', async () => {
+    const { overlay } = setup(true);
+    await Promise.resolve();
+    expect(overlay.hasAttribute('inert')).toBe(false);
+    escape();
+    expect(overlay.hasAttribute('inert')).toBe(true);
+    overlay.classList.add('show');
+    await Promise.resolve();
+    expect(overlay.hasAttribute('inert')).toBe(false);
+    overlay.classList.remove('show');
+    await Promise.resolve();
+    expect(overlay.hasAttribute('inert')).toBe(true);
+  });
+
+  it('reset clears result UI without invoking dismissal or replay', () => {
+    const onDismiss = vi.fn();
+    const { overlay, onReplay, controller } = setup(true, onDismiss);
+    escape();
+    onDismiss.mockClear();
+    expect(pill()!.style.display).toBe('block');
+    controller.reset();
+    expect(overlay.classList.contains('show')).toBe(false);
+    expect(overlay.hasAttribute('inert')).toBe(true);
+    expect(pill()!.style.display).toBe('none');
+    expect(onReplay).not.toHaveBeenCalled();
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
   it('the replay pill fires onReplay once, then hides itself', () => {
     const { onReplay } = setup(true);
     escape();
@@ -46,6 +81,33 @@ describe('shared/overlay · makeDismissable', () => {
     p.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(onReplay).toHaveBeenCalledTimes(1);
     expect(p.style.display).toBe('none');
+  });
+
+  it('does not restart again through an already-hidden replay control', () => {
+    const { onReplay } = setup(true);
+    escape();
+    pill()!.click();
+    pill()!.click();
+    expect(onReplay).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the dismissed-result replay when the result opens again', async () => {
+    const { overlay } = setup(true);
+    escape();
+    expect(pill()!.style.display).toBe('block');
+    overlay.classList.add('show');
+    await Promise.resolve();
+    expect(pill()!.style.display).toBe('none');
+  });
+
+  it('moves focus out of dismissed results and releases replay focus on reset', async () => {
+    const { overlay, controller } = setup(true);
+    await Promise.resolve();
+    overlay.querySelector<HTMLButtonElement>('[aria-label="Close"]')!.focus();
+    escape();
+    expect(document.activeElement).toBe(pill());
+    controller.reset();
+    expect(document.activeElement).toBe(document.body);
   });
 
   it('injects a ✕ button on the modal on show, which closes', async () => {

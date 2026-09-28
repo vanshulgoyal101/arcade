@@ -60,7 +60,7 @@ const statusEl = app.querySelector<HTMLParagraphElement>('#status')!;
 const hintEl = app.querySelector<HTMLParagraphElement>('#hint')!;
 const startBtn = app.querySelector<HTMLButtonElement>('#startBtn')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay, () => startGame());
+const resultOverlay = makeDismissable(overlay, () => startGame());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
@@ -262,7 +262,7 @@ function showGameOver(reached: number, newBest: boolean): void {
 function startGame(): void {
   if (playing) return;
   clearTimeout(revealTimer);
-  overlay.classList.remove('show');
+  resultOverlay.reset();
   acceptingInput = false;
   playing = true;
   game.reset();

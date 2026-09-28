@@ -79,7 +79,7 @@ const youHex = app.querySelector<HTMLSpanElement>('#youHex')!;
 const submitBtn = app.querySelector<HTMLButtonElement>('#submit')!;
 const hint = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay, restartEndless);
+const resultOverlay = makeDismissable(overlay, restartEndless);
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
@@ -164,7 +164,7 @@ function renderAll(): void {
 
 // ---- Modal ----
 function closeModal(): void {
-  overlay.classList.remove('show');
+  resultOverlay.reset();
 }
 
 function openEndlessModal(): void {
@@ -260,7 +260,11 @@ function handleSubmit(): void {
 submitBtn.addEventListener('click', handleSubmit);
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !game.finished) handleSubmit();
+  if (e.key !== 'Enter' || game.finished || e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+  const target = e.target;
+  if (target instanceof HTMLElement && target.closest('button, a, input, textarea, select, [contenteditable]')) return;
+  e.preventDefault();
+  handleSubmit();
 });
 
 diff.querySelectorAll<HTMLButtonElement>('.diff-btn').forEach((btn) => {
@@ -277,10 +281,6 @@ function restartEndless(): void {
   game.startEndless();
   renderAll();
 }
-
-overlay.addEventListener('click', (e) => {
-  if (e.target === overlay) closeModal();
-});
 
 muteBtn.addEventListener('click', () => {
   const next = !sfx.isMuted();

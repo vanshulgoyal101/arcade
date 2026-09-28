@@ -4,8 +4,8 @@
 // result modal is dismissed so the player is never stranded at a frozen end screen.
 //
 // The injected controls live outside the modal and inherit the theme's CSS vars, so
-// no per-game markup or CSS is needed. `onReplay` only fires from a dismissed result
-// modal (i.e. the game is already over), so triggering a restart from it is safe.
+// no per-game markup or CSS is needed. Games call reset() when a run or view changes
+// so dismissed-result controls cannot outlive the result that owns them.
 
 import { ICON_CLOSE } from './icons';
 
@@ -13,8 +13,15 @@ export function makeDismissable(
   overlay: HTMLElement,
   onReplay?: () => void,
   onDismiss?: () => boolean | void
-): void {
+): { reset(): void } {
   let replay: HTMLButtonElement | null = null;
+  const reset = (): void => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && (overlay.contains(active) || active === replay)) active.blur();
+    overlay.classList.remove('show');
+    overlay.setAttribute('inert', '');
+    if (replay) replay.style.display = 'none';
+  };
   if (onReplay) {
     replay = document.createElement('button');
     replay.type = 'button';
@@ -40,20 +47,25 @@ export function makeDismissable(
       WebkitTapHighlightColor: 'transparent',
     });
     replay.addEventListener('click', () => {
-      replay!.style.display = 'none';
+      if (!overlay.isConnected || overlay.classList.contains('show') || replay!.style.display === 'none') return;
+      reset();
       onReplay();
     });
     document.body.appendChild(replay);
   }
 
   const close = (): void => {
-    if (!overlay.classList.contains('show')) return;
-    overlay.classList.remove('show');
+    if (!overlay.isConnected || !overlay.classList.contains('show')) return;
+    reset();
     const offerReplay = onDismiss?.() !== false;
-    if (replay) replay.style.display = offerReplay ? 'block' : 'none';
+    if (replay) {
+      replay.style.display = offerReplay ? 'block' : 'none';
+      if (offerReplay) replay.focus();
+    }
   };
 
   overlay.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.isPrimary === false) return;
     if (e.target === overlay) close();
   });
 
@@ -93,15 +105,19 @@ export function makeDismissable(
   const modal = overlay.querySelector<HTMLElement>('.modal');
   if (modal) {
     modal.style.position = 'relative';
-    const attach = (): void => {
-      if (overlay.classList.contains('show') && !modal.contains(btn)) modal.appendChild(btn);
-    };
-    new MutationObserver(attach).observe(overlay, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-    attach();
   } else {
     overlay.appendChild(btn);
   }
+  const attach = (): void => {
+    overlay.toggleAttribute('inert', !overlay.classList.contains('show'));
+    if (!overlay.classList.contains('show')) return;
+    if (replay) replay.style.display = 'none';
+    if (modal && !modal.contains(btn)) modal.appendChild(btn);
+  };
+  new MutationObserver(attach).observe(overlay, {
+    attributes: true,
+    attributeFilter: ['class'],
+  });
+  attach();
+  return { reset };
 }

@@ -79,4 +79,28 @@ describe('flash/dom', () => {
     expect(app.querySelectorAll('.option.selected')).toHaveLength(input === 'keyboard' ? options.length : 0);
     expect(app.querySelector<HTMLButtonElement>('#submitBtn')!.disabled).toBe(input !== 'keyboard');
   });
+
+  it('counts a quiz once and does not reactivate its answers after dismissing results', async () => {
+    const app = await load();
+    click(app.querySelector('#startBtn')!);
+    await vi.advanceTimersByTimeAsync(120000);
+    app.querySelectorAll('.question').forEach(question => pointerdown(question.querySelector('.option')!));
+    click(app.querySelector('#submitBtn')!);
+    expect(text(app.querySelector('#hud-done'))).toBe('1');
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    const selected = [...app.querySelectorAll('.option.selected')];
+    pointerdown(app.querySelector('.question .option:last-child')!);
+    click(app.querySelector('#submitBtn')!);
+    expect(text(app.querySelector('#hud-done'))).toBe('1');
+    expect([...app.querySelectorAll('.option.selected')]).toEqual(selected);
+    expect(app.querySelector<HTMLButtonElement>('#submitBtn')!.disabled).toBe(true);
+    expect(app.querySelector('#overlay.show')).toBeNull();
+    const replay = [...document.querySelectorAll<HTMLButtonElement>('body > button')]
+      .find(button => button.textContent?.includes('Play again'))!;
+    replay.click();
+    await vi.advanceTimersByTimeAsync(120000);
+    app.querySelectorAll('.question').forEach(question => pointerdown(question.querySelector('.option')!));
+    click(app.querySelector('#submitBtn')!);
+    expect(text(app.querySelector('#hud-done'))).toBe('2');
+  });
 });

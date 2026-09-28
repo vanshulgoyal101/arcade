@@ -57,7 +57,7 @@ const problemEl = app.querySelector<HTMLDivElement>('#problem')!;
 const answerEl = app.querySelector<HTMLDivElement>('#answer')!;
 const keypad = app.querySelector<HTMLDivElement>('#keypad')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay, () => start());
+const resultOverlay = makeDismissable(overlay, () => start());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
@@ -256,7 +256,7 @@ function start(): void {
   entry = '';
   answerEl.classList.remove('flash-bad');
   answerEl.innerHTML = '&nbsp;';
-  overlay.classList.remove('show');
+  resultOverlay.reset();
   game.start(performance.now());
   renderHud();
   renderProblem();

@@ -56,7 +56,7 @@ const timerEl = app.querySelector<HTMLSpanElement>('#timer')!;
 const streamEl = app.querySelector<HTMLDivElement>('#stream')!;
 const field = app.querySelector<HTMLInputElement>('#field')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay, () => resetRun());
+const resultOverlay = makeDismissable(overlay, () => resetRun());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
@@ -189,7 +189,7 @@ function endRun(now: number): void {
 }
 
 function resetRun(): void {
-  overlay.classList.remove('show');
+  resultOverlay.reset();
   cancelAnimationFrame(rafId);
   game.reset();
   field.value = '';
@@ -255,10 +255,11 @@ document.addEventListener('click', () => {
 
 // Enter restarts from the results screen.
 document.addEventListener('keydown', (e) => {
-  if (game.finished && e.key === 'Enter') {
-    e.preventDefault();
-    resetRun();
-  }
+  if (!game.finished || e.key !== 'Enter' || e.defaultPrevented || e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+  const target = e.target;
+  if (target instanceof HTMLElement && target !== field && target.closest('button, a, input, textarea, select, [contenteditable]')) return;
+  e.preventDefault();
+  resetRun();
 });
 
 muteBtn.addEventListener('click', () => {

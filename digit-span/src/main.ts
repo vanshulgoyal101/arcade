@@ -62,7 +62,7 @@ const startBtn = app.querySelector<HTMLButtonElement>('#startBtn')!;
 const keypad = app.querySelector<HTMLDivElement>('#keypad')!;
 const hint = app.querySelector<HTMLParagraphElement>('#hint')!;
 const overlay = app.querySelector<HTMLDivElement>('#overlay')!;
-makeDismissable(overlay, () => startRun());
+const resultOverlay = makeDismissable(overlay, () => startRun());
 const modal = app.querySelector<HTMLDivElement>('#modal')!;
 const toast = app.querySelector<HTMLDivElement>('#toast')!;
 const muteBtn = app.querySelector<HTMLButtonElement>('#mute')!;
@@ -200,7 +200,7 @@ function gameOver(): void {
 function startRun(): void {
   if (running) return;
   running = true;
-  overlay.classList.remove('show');
+  resultOverlay.reset();
   startWrap.classList.add('hidden');
   modeToggle.classList.add('locked');
   game.reset();

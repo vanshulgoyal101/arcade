@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import { GAME_ORDER, gameName } from '../assets/games.js';
+import { verifyResultCycles } from './result-lifecycle.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const games = readdirSync(root).filter(name => existsSync(resolve(root, name, 'src/main.ts')));
@@ -31,6 +32,7 @@ const base = `http://127.0.0.1:${server.address().port}`;
 let browser;
 try {
   browser = await chromium.launch();
+  for (const width of [1280, 390, 320]) await verifyResultCycles(browser, base, games, width, artifacts);
   for (const width of [1280, 390, 320]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, serviceWorkers: 'block', reducedMotion: 'reduce' });
     await context.route('https://**', route => route.abort());

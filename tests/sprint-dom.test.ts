@@ -96,4 +96,23 @@ describe('sprint/dom', () => {
     observer.disconnect();
     animationFrame.mockRestore();
   });
+
+  it.each(['#m-share', '[aria-label="Close"]', '#mute'])('preserves native Enter activation on %s after finishing', async (selector) => {
+    let frame: FrameRequestCallback = () => {};
+    const app = await mountGame(() => {
+      globalThis.requestAnimationFrame = callback => { frame = callback; return 1; };
+      return import('../sprint/src/main.ts');
+    });
+    submit(app, currentWord(app));
+    frame(performance.now() + 31_000);
+    await vi.advanceTimersByTimeAsync(0);
+    const control = app.querySelector<HTMLButtonElement>(selector)!;
+    expect(control).not.toBeNull();
+    control.focus();
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    control.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(app.querySelector('#overlay.show')).not.toBeNull();
+    expect(app.querySelectorAll('.w.done')).toHaveLength(1);
+  });
 });
